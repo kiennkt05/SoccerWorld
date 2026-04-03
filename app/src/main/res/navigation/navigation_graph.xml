@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/navigation_graph"
+    app:startDestination="@id/fixtureFragment">
+
+    <fragment
+        android:id="@+id/standingsFragment"
+        android:name="com.example.soccerworld.ui.home.HomeFragment"
+        android:label="fragment_standings"
+        tools:layout="@layout/fragment_home" />
+    <fragment
+        android:id="@+id/fixtureFragment"
+        android:name="com.example.soccerworld.ui.fixture.FixtureFragment"
+        android:label="fragment_fixture"
+        tools:layout="@layout/fragment_fixture" >
+        <action
+            android:id="@+id/action_fixtureFragment_to_fixtureDetailFragment"
+            app:destination="@id/fixtureDetailFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/teamFragment"
+        android:name="com.example.soccerworld.ui.team.TeamFragment"
+        android:label="fragment_team"
+        tools:layout="@layout/fragment_team" >
+        <action
+            android:id="@+id/action_teamFragment_to_teamDetailFragment"
+            app:destination="@id/teamDetailFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/settingFragment"
+        android:name="com.example.soccerworld.ui.setting.SettingFragment"
+        android:label="fragment_setting"
+        tools:layout="@layout/fragment_setting" />
+    <fragment
+        android:id="@+id/teamDetailFragment"
+        android:name="com.example.soccerworld.ui.team.team_detail.TeamDetailFragment"
+        android:label="fragment_team_detail"
+        tools:layout="@layout/fragment_team_detail" >
+        <argument
+            android:name="teamId"
+            app:argType="integer" />
+    </fragment>
+    <fragment
+        android:id="@+id/fixtureDetailFragment"
+        android:name="com.example.soccerworld.ui.fixture.detail.FixtureDetailFragment"
+        android:label="FixtureDetailFragment" >
+
+    </fragment>
+</navigation>
