@@ -1,96 +1,44 @@
-package com.example.soccerworld.ui.home.topscorer
+    package com.example.soccerworld.ui.home.topscorer
 
-import android.app.Application
-import androidx.lifecycle.MutableLiveData
-import com.example.soccerworld.base.BaseViewModel
-import com.example.soccerworld.data.local.FootballDatabase
-import com.example.soccerworld.data.remote.ApiClient
-import com.example.soccerworld.model.topscorer.TopScorerResponse
-import com.example.soccerworld.model.topscorer.Topscorer
-import com.example.soccerworld.util.CustomSharedPreferences
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.observers.DisposableSingleObserver
-import io.reactivex.schedulers.Schedulers
-import kotlinx.coroutines.launch
+    import androidx.lifecycle.ViewModel
+    import androidx.lifecycle.viewModelScope
+    import com.example.soccerworld.data.FootballRepository
+    import kotlinx.coroutines.flow.MutableStateFlow
+    import kotlinx.coroutines.flow.asStateFlow
+    import kotlinx.coroutines.flow.update
+    import kotlinx.coroutines.launch
 
-class TopScorerViewModel(application: Application) : BaseViewModel(application) {
+    // 1. Gói trạng thái giao diện (Giống hệt bên Bảng xếp hạng)
+    data class TopScorerUiState(
+        val isLoading: Boolean = true,
+        // LƯU Ý: Sửa Any thành TopScorerEntity hoặc Model tương ứng của bạn
+        val topScorerList: List<Any> = emptyList(),
+        val error: String? = null
+    )
 
-    private val apiClient =  ApiClient()
-    private val disposable = CompositeDisposable()
+    // Kế thừa AndroidViewModel để lấy được context của Application (dùng cho Room và SharedPreferences)
+    class TopScorerViewModel(private val repository: FootballRepository) : ViewModel() {
 
-    private var customPreferences = CustomSharedPreferences(getApplication())
-    private var refreshTime = 24 * 60 * 60 * 1000 * 1000 * 1000L
 
-    val topScorerList = MutableLiveData<List<Topscorer>>()
-    val loadingTopScorer = MutableLiveData<Boolean>()
+        // 3. Ống nước StateFlow
+        private val _uiState = MutableStateFlow(TopScorerUiState())
+        val uiState = _uiState.asStateFlow()
 
-    fun getTopScorers(leagueId: Int){
+        // Lưu ý: Đổi leagueId từ Int thành String (VD: "PL") cho khớp API v4
+        fun getTopScorers(leagueId: String) {
+            viewModelScope.launch {
+                _uiState.update { it.copy(isLoading = true, error = null) }
 
-        val updateTime = customPreferences.getTime()
-        if (updateTime != null && updateTime != 0L && (System.nanoTime() - updateTime) < refreshTime) {
-            val temp = arrayListOf(0)
-            temp.add(542)
-            temp.add(leagueId)
-            if (temp[(temp.lastIndex)-1] == leagueId){
-                getDataFromSQLite()
-            }else{
-                getTopScorersFromApi(leagueId)
-            }
-        } else {
-            getTopScorersFromApi(leagueId)
-        }
-    }
+                try {
+                    // VIỆC NHẸ LƯƠNG CAO: Chỉ cần gọi đúng 1 hàm, Repository tự lo mọi thứ bên trong!
+                    val data = repository.getTopScorers(leagueId)
 
-    private fun getDataFromSQLite() {
-        loadingTopScorer.value = true
-        launch {
-            val countries = FootballDatabase(getApplication()).footballDao().getTopscorer()
-            showLayout(countries)
-        }
-    }
+                    _uiState.update { it.copy(isLoading = false, topScorerList = data) }
 
-    fun getTopScorersFromApi(leagueId: Int){
-        loadingTopScorer.value = true
-        disposable.add(
-            apiClient.getTopScorers(leagueId)
-                .subscribeOn(Schedulers.newThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeWith(object : DisposableSingleObserver<TopScorerResponse>(){
-                    override fun onSuccess(t: TopScorerResponse) {
-                        saveDataInSQLite(t.api?.topscorers)
-                    }
-                    override fun onError(e: Throwable) {
-                        loadingTopScorer.value = false
-                    }
-                })
-        )
-    }
-
-    private fun showLayout(topscorerList: List<Topscorer>?) {
-        topScorerList.value = topscorerList ?: emptyList()
-        loadingTopScorer.value = false
-    }
-
-    private fun saveDataInSQLite(list: List<Topscorer>?) {
-        launch {
-            val dao = FootballDatabase(getApplication()).footballDao()
-            dao.deleteTopscorer()
-            list?.let {
-                val listLong = dao.insertAllTopscorer(*it.toTypedArray())
-                var i = 0
-                while (i < it.size) {
-                    it[i].playerId = listLong[i].toInt()
-                    i = i + 1
+                } catch (e: Exception) {
+                    _uiState.update { it.copy(isLoading = false, error = "Lỗi: ${e.message}") }
                 }
             }
-            showLayout(list)
         }
-        customPreferences.saveTime(System.nanoTime())
-    }
 
-    override fun onCleared() {
-        super.onCleared()
-        disposable.clear()
     }
-}

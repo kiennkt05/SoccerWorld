@@ -1,45 +1,50 @@
 package com.example.soccerworld.ui.fixture
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.soccerworld.data.remote.ApiClient
-import com.example.soccerworld.model.fixture.Fixture
-import com.example.soccerworld.model.fixture.FixtureResponse
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.observers.DisposableSingleObserver
-import io.reactivex.schedulers.Schedulers
+import androidx.lifecycle.viewModelScope
+import com.example.soccerworld.data.FootballRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class FixtureViewModel : ViewModel() {
+// 1. Tạo hộp chứa trạng thái (UiState)
+data class FixtureUiState(
+    val isLoading: Boolean = true,
+    // LƯU Ý 1: Thay 'Any' bằng Data Class chứa 1 trận đấu của bạn (Ví dụ: Match hoặc Fixture)
+    val fixtureList: List<Any> = emptyList(),
+    val error: String? = null
+)
 
-    private val apiClient = ApiClient()
-    private val disposable = CompositeDisposable()
+class FixtureViewModel(private val repository: FootballRepository) : ViewModel() {
 
-    val fixtureList = MutableLiveData<List<Fixture>>()
-    val loadinFixture = MutableLiveData<Boolean>()
 
-    fun getAllFixtureOfLeague(leagueId: Int) {
-        loadinFixture.value = true
-        disposable.add(apiClient.getAllFixtureOfLeague(leagueId)
-            .subscribeOn(Schedulers.newThread())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribeWith(object : DisposableSingleObserver<FixtureResponse>() {
-                override fun onSuccess(t: FixtureResponse) {
-                    fixtureList.value = t.api?.fixtures
-                    loadinFixture.value = false
-                }
+    // 3. Ống nước StateFlow thay cho LiveData
+    private val _uiState = MutableStateFlow(FixtureUiState())
+    val uiState = _uiState.asStateFlow()
 
-                override fun onError(e: Throwable) {
-                    loadinFixture.value = false
-                }
+    // 🌟 LƯU Ý 2: Đổi leagueId từ Int thành String
+    fun getAllFixtureOfLeague(leagueId: String) {
+        viewModelScope.launch {
+            // Bật cờ loading
+            _uiState.update { it.copy(isLoading = true, error = null) }
 
-            })
-        )
+            try {
+                // Gọi API lấy lịch thi đấu
+                val response = repository.getAllFixtureOfLeague(leagueId)
+
+                // 🌟 LƯU Ý 3: Bóc tách mảng dữ liệu.
+                // Ở API v4, danh sách trận đấu thường nằm trong mảng 'matches'.
+                // Bạn hãy gõ 'response.' và chọn đúng tên mảng nhé, kèm theo ?: emptyList() để an toàn.
+                val data = response.matches ?: emptyList()
+
+                // Thành công: tắt loading, cập nhật list
+                _uiState.update { it.copy(isLoading = false, fixtureList = data) }
+
+            } catch (e: Exception) {
+                // Thất bại: báo lỗi
+                _uiState.update { it.copy(isLoading = false, error = "Lỗi mạng: ${e.message}") }
+            }
+        }
     }
-
-    override fun onCleared() {
-        super.onCleared()
-        disposable.clear()
-    }
-
 }

@@ -4,26 +4,29 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.soccerworld.model.topscorer.Topscorer
+import com.example.soccerworld.model.topscorer.TopScorerEntity
 
-@Database(entities = (arrayOf(Topscorer::class)),version = 2)
-abstract class FootballDatabase: RoomDatabase() {
+// 1. Đổi entities thành class mới, tăng version lên 3
+@Database(entities = [TopScorerEntity::class], version = 3, exportSchema = false)
+abstract class FootballDatabase : RoomDatabase() {
 
-    abstract fun footballDao() : FootballDao
+    abstract fun footballDao(): FootballDao
 
-    companion object{
+    companion object {
         @Volatile
-        private var instance : FootballDatabase?=null
+        private var instance: FootballDatabase? = null
         private val lock = Any()
-        operator fun invoke(context: Context)= instance?: synchronized(lock){
-            instance?:makeDatabase(context).also{
+
+        operator fun invoke(context: Context) = instance ?: synchronized(lock) {
+            instance ?: makeDatabase(context).also {
                 instance = it
             }
         }
 
         private fun makeDatabase(context: Context) = Room.databaseBuilder(
-            context.applicationContext,FootballDatabase::class.java, "footballdatabase")
-            .fallbackToDestructiveMigration().build()
+            context.applicationContext,
+            FootballDatabase::class.java,
+            "footballdatabase"
+        ).fallbackToDestructiveMigration().build()
     }
-
 }

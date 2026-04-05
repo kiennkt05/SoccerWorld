@@ -1,23 +1,31 @@
 package com.example.soccerworld.ui
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import androidx.navigation.findNavController
-import androidx.navigation.ui.setupWithNavController
-import com.example.soccerworld.R
-import com.example.soccerworld.databinding.ActivityMainBinding
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.ui.Modifier
+import com.example.soccerworld.ui.home.leaguetable.LeagueTableScreen
 
-class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
+class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        // Xóa dòng setContentView(...) cũ đi nhé
 
-        val navController = findNavController(R.id.fragment)
-        binding.bottomNavigationView.setupWithNavController(navController)
-
+        setContent {
+            MaterialTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    // Gọi màn hình Compose của bạn ra đây
+                    LeagueTableScreen()
+                }
+            }
+        }
     }
 }

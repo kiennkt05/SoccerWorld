@@ -1,44 +1,50 @@
 package com.example.soccerworld.ui.team
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.soccerworld.data.remote.ApiClient
+import androidx.lifecycle.viewModelScope
+import com.example.soccerworld.data.FootballRepository
 import com.example.soccerworld.model.team.Team
-import com.example.soccerworld.model.team.TeamResponse
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.observers.DisposableSingleObserver
-import io.reactivex.schedulers.Schedulers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class TeamViewModel : ViewModel() {
+// 1. Gói trạng thái giao diện (UiState Pattern)
+data class TeamUiState(
+    val isLoading: Boolean = true,
+    // LƯU Ý 1: Thay chữ 'Any' bằng Data Class chứa thông tin đội bóng của bạn (Ví dụ: Team)
+    val teamsList: List<Team?> = emptyList(),
+    val error: String? = null
+)
 
-    private val apiClient = ApiClient()
-    private val disposable = CompositeDisposable()
+class TeamViewModel(private val repository: FootballRepository) : ViewModel() {
 
-    val teamsList = MutableLiveData<List<Team>>()
-    val loadingTeamList = MutableLiveData<Boolean>()
+    // 3. Đường ống StateFlow (Thay thế hoàn toàn LiveData)
+    private val _uiState = MutableStateFlow(TeamUiState())
+    val uiState = _uiState.asStateFlow()
 
-    fun getAllTeamsOfLeague(leagueId: Int){
-        loadingTeamList.value = true
-        disposable.add(apiClient.getAllTeamsOfLeague(leagueId)
-            .subscribeOn(Schedulers.newThread())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribeWith(object : DisposableSingleObserver<TeamResponse>(){
-                override fun onSuccess(t: TeamResponse) {
-                    teamsList.value = t.api.teams
-                    loadingTeamList.value = false
-                }
+    // 🌟 LƯU Ý 2: Đổi leagueId từ Int thành String
+    fun getAllTeamsOfLeague(leagueId: String) {
+        viewModelScope.launch {
+            // Báo cho UI biết là đang tải dữ liệu
+            _uiState.update { it.copy(isLoading = true, error = null) }
 
-                override fun onError(e: Throwable) {
+            try {
+                // Gọi API lấy danh sách đội bóng trong giải
+                val response = repository.getAllTeamsOfLeague(leagueId)
 
-                }
+                // Bóc tách mảng dữ liệu đội bóng
+                // LƯU Ý 3: Chấm đúng vào mảng danh sách đội bóng (thường là '.teams')
+                // Chốt chặn ?: emptyList() để chống null an toàn
+                val data = response.teams ?: emptyList()
 
-            })
-        )
-    }
+                // Thành công: Gửi danh sách lên UI, tắt loading
+                _uiState.update { it.copy(isLoading = false, teamsList = data) }
 
-    override fun onCleared() {
-        super.onCleared()
-        disposable.clear()
+            } catch (e: Exception) {
+                // Thất bại: Ghi nhận lỗi thay vì bỏ trống
+                _uiState.update { it.copy(isLoading = false, error = "Lỗi tải danh sách đội bóng: ${e.message}") }
+            }
+        }
     }
 }

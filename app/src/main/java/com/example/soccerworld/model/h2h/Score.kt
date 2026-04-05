@@ -4,12 +4,12 @@ package com.example.soccerworld.model.h2h
 import com.google.gson.annotations.SerializedName
 
 data class Score(
-    @SerializedName("halftime")
-    var halftime: String,
-    @SerializedName("fulltime")
-    var fulltime: String,
-    @SerializedName("extratime")
-    var extratime: Any,
-    @SerializedName("penalty")
-    var penalty: Any
+    @SerializedName("winner")
+    val winner: String? = null,
+    @SerializedName("duration")
+    val duration: String? = null,
+    @SerializedName("fullTime")
+    val fullTime: FullTime? = null,
+    @SerializedName("halfTime")
+    val halfTime: HalfTime? = null
 )

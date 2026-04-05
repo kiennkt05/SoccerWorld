@@ -1,48 +1,49 @@
 package com.example.soccerworld.ui.fixture.detail.h2h
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.soccerworld.data.remote.ApiClient
-import com.example.soccerworld.model.h2h.Fixture
-import com.example.soccerworld.model.h2h.H2HResponse
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.observers.DisposableSingleObserver
-import io.reactivex.schedulers.Schedulers
+import androidx.lifecycle.viewModelScope
+import com.example.soccerworld.data.FootballRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class H2HViewModel : ViewModel() {
+// 1. Gói trạng thái giao diện (UiState Pattern)
+data class H2HUiState(
+    val isLoading: Boolean = true,
+    // LƯU Ý: Thay 'Any' bằng class Model chứa thông tin 1 trận đấu (ví dụ: Match/Fixture)
+    val h2hList: List<Any> = emptyList(),
+    val error: String? = null
+)
 
-    private val apiClient = ApiClient()
-    private val disposable = CompositeDisposable()
+class H2HViewModel(private val repository: FootballRepository) : ViewModel() {
 
-    val h2hList = MutableLiveData<List<Fixture>>()
-    val loadingH2h = MutableLiveData<Boolean>()
+    // 3. Khởi tạo StateFlow thay thế hoàn toàn cho MutableLiveData
+    private val _uiState = MutableStateFlow(H2HUiState())
+    val uiState = _uiState.asStateFlow()
 
+    // 🌟 THAY ĐỔI LỚN: Nhận vào fixtureId thay vì homeTeamId/awayTeamId
+    fun getHeadToHead(fixtureId: Int) {
+        viewModelScope.launch {
+            // Bật trạng thái loading
+            _uiState.update { it.copy(isLoading = true, error = null) }
 
-    fun getAllH2hItems(homeTeamId:Int, awayTeamId:Int){
-        loadingH2h.value = true
-        disposable.add(
-            apiClient.getAllH2hItems(homeTeamId, awayTeamId)
-                .subscribeOn(Schedulers.newThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeWith(object : DisposableSingleObserver<H2HResponse>(){
-                    override fun onSuccess(t: H2HResponse) {
-                        h2hList.value = t.api.fixtures
-                        loadingH2h.value = false
-                    }
+            try {
+                // Gọi API lấy lịch sử đối đầu
+                val response = repository.getAllH2hItems(fixtureId)
 
-                    override fun onError(e: Throwable) {
+                // Bóc tách JSON: Lấy mảng các trận đấu (matches)
+                // LƯU Ý: Chỉnh chữ '.matches' cho khớp với tên biến trong Model H2HResponse của bạn
+                // Dùng ?: emptyList() để an toàn tuyệt đối nếu API không trả về mảng nào
+                val data = response.matches ?: emptyList()
 
-                    }
+                // Thành công: Cập nhật dữ liệu lên UI
+                _uiState.update { it.copy(isLoading = false, h2hList = data) }
 
-                })
-        )
+            } catch (e: Exception) {
+                // Thất bại: Báo lỗi
+                _uiState.update { it.copy(isLoading = false, error = "Lỗi mạng: ${e.message}") }
+            }
+        }
     }
-
-
-    override fun onCleared() {
-        super.onCleared()
-        disposable.clear()
-    }
-
 }

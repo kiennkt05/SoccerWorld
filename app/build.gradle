@@ -2,8 +2,8 @@ plugins {
     id 'com.android.application'
     id 'kotlin-android'
     id 'kotlin-parcelize'
-    id 'androidx.navigation.safeargs.kotlin'
-    id 'kotlin-kapt'
+    id 'kotlin-kapt' // Vẫn giữ lại để biên dịch Room Database
+    // Đã xóa 'androidx.navigation.safeargs.kotlin' vì Compose có cách điều hướng riêng
 }
 
 android {
@@ -13,12 +13,16 @@ android {
 
     defaultConfig {
         applicationId "com.example.soccerworld"
-        minSdk 23
+        minSdk 24 // Nâng lên 24 để Compose hoạt động mượt nhất
         targetSdk 34
         versionCode 1
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        vectorDrawables {
+            useSupportLibrary true
+        }
     }
 
     buildTypes {
@@ -37,53 +41,65 @@ android {
         jvmTarget = '1.8'
     }
 
+    // --- SỰ THAY ĐỔI LỚN NHẤT NẰM Ở ĐÂY ---
     buildFeatures {
-        dataBinding true
-        viewBinding true
+        compose true // Bật công tắc Jetpack Compose
+        // Đã xóa DataBinding và ViewBinding
+    }
+
+    composeOptions {
+        // Tương thích với Kotlin phiên bản hiện tại của bạn
+        kotlinCompilerExtensionVersion = "1.5.10"
     }
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    // 1. CÁC THƯ VIỆN LÕI ANDROID
     implementation 'androidx.core:core-ktx:1.12.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2'
-    implementation 'androidx.lifecycle:lifecycle-livedata-ktx:2.6.2'
-    
-    testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
+    implementation 'androidx.activity:activity-compose:1.8.2'
+    implementation 'androidx.compose.ui:ui-desktop:1.7.0'// Activity đặc biệt cho Compose
 
-    implementation "com.google.android.material:material:1.11.0"
-    implementation "androidx.legacy:legacy-support-v4:1.0.0"
+    // 2. JETPACK COMPOSE (Sử dụng BOM để tự động quản lý phiên bản)
+    def composeBom = platform('androidx.compose:compose-bom:2024.02.00')
+    implementation composeBom
+    androidTestImplementation composeBom
 
-    def roomVersion = '2.6.1'
-    implementation "androidx.room:room-runtime:$roomVersion"
-    kapt "androidx.room:room-compiler:$roomVersion"
-    implementation "androidx.room:room-ktx:$roomVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-graphics'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    implementation 'androidx.compose.material3:material3' // Giao diện Material 3 đẹp nhất
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2' // ViewModel cho Compose
+    implementation 'androidx.navigation:navigation-compose:2.7.7' // Điều hướng các màn hình
 
-    def navVersion = '2.7.7'
-    implementation "androidx.navigation:navigation-fragment-ktx:$navVersion"
-    implementation "androidx.navigation:navigation-ui-ktx:$navVersion"
-
+    // 3. THƯ VIỆN TẢI ẢNH (Coil thay thế hoàn toàn Glide)
+    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("androidx.preference:preference-ktx:1.2.1")
+    // 4. GỌI MẠNG (Retrofit) - Đã xóa RxJava
     def retrofitVersion = '2.9.0'
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
     implementation "com.squareup.retrofit2:converter-gson:$retrofitVersion"
-    implementation "com.squareup.retrofit2:adapter-rxjava2:$retrofitVersion"
 
-    implementation "io.reactivex.rxjava2:rxjava:2.2.21"
-    implementation "io.reactivex.rxjava2:rxandroid:2.1.1"
+    // 5. CHẠY NGẦM (Coroutines)
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
 
-    def glideVersion = '4.16.0'
-    implementation "com.github.bumptech.glide:glide:$glideVersion"
-    kapt "com.github.bumptech.glide:compiler:$glideVersion"
-    implementation 'com.github.corouteam:GlideToVectorYou:v2.0.0'
+    // 6. LƯU TRỮ Ổ CỨNG (Room Database)
+    def roomVersion = '2.6.1'
+    implementation "androidx.room:room-runtime:$roomVersion"
+    kapt "androidx.room:room-compiler:$roomVersion"
+    implementation "androidx.room:room-ktx:$roomVersion" // KTX để hỗ trợ Coroutines (suspend)
 
-    implementation "androidx.palette:palette-ktx:1.0.0"
-    implementation "androidx.preference:preference-ktx:1.2.1"
+    // 7. CÔNG CỤ DEBUG
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+    debugImplementation 'androidx.compose.ui:ui-test-manifest'
+}
+
+configurations.all {
+    exclude group: "androidx.compose.ui", module: "ui-desktop"
+    exclude group: "androidx.compose.foundation", module: "foundation-desktop"
+    exclude group: "androidx.compose.animation", module: "animation-desktop"
+    exclude group: "androidx.compose.material3", module: "material3-desktop"
+    exclude group: "androidx.compose.material", module: "material-desktop"
+    exclude group: "androidx.compose.runtime", module: "runtime-desktop"
 }

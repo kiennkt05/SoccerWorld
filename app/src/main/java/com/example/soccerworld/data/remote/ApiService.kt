@@ -7,45 +7,77 @@ import com.example.soccerworld.model.player.PlayerResponse
 import com.example.soccerworld.model.statistic.StatisticsResponse
 import com.example.soccerworld.model.team.TeamResponse
 import com.example.soccerworld.model.topscorer.TopScorerResponse
-import com.example.soccerworld.model.transfer.TransferResponse
 import com.example.soccerworld.util.Constant
-import io.reactivex.Single
 import retrofit2.http.GET
 import retrofit2.http.Headers
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ApiService {
 
+    // 1. BẢNG XẾP HẠNG (Standings)
     @Headers(Constant.API_KEY)
     @GET(Constant.GET_LEAGUE_TABLE)
-    fun getLeagueTable(@Path("league_id") leagueId: Int): Single<LeagueTableResponse>
+    suspend fun getLeagueTable(
+        @Path("league_id") leagueId: String,
+        @Query("season") season: String? = null,     // VD: "2023"
+        @Query("matchday") matchday: Int? = null,    // VD: 10 (Vòng đấu thứ 10)
+        @Query("date") date: String? = null          // VD: "2023-10-25" (Định dạng YYYY-MM-DD)
+    ): LeagueTableResponse
 
+    // 2. VUA PHÁ LƯỚI (Top Scorers)
     @Headers(Constant.API_KEY)
     @GET(Constant.GET_TOP_SCORERS)
-    fun getTopScorers(@Path("league_id") leagueId: Int): Single<TopScorerResponse>
+    suspend fun getTopScorers(
+        @Path("league_id") leagueId: String,
+        @Query("season") season: String? = null,     // VD: "2023"
+        @Query("limit") limit: Int? = null           // VD: 10 (Lấy top 10 người)
+    ): TopScorerResponse
 
+    // 3. DANH SÁCH ĐỘI BÓNG (Teams of Competition)
     @Headers(Constant.API_KEY)
     @GET(Constant.GET_ALL_TEAMS_OF_LEAGUE)
-    fun getAllTeamsOfLeague(@Path("league_id") leagueId: Int): Single<TeamResponse>
+    suspend fun getAllTeamsOfLeague(
+        @Path("league_id") leagueId: String,
+        @Query("season") season: String? = null      // VD: "2023"
+    ): TeamResponse
 
+    // 4. CHI TIẾT 1 ĐỘI BÓNG / CẦU THỦ (Team) -> KHÔNG CÓ FILTER
     @Headers(Constant.API_KEY)
     @GET(Constant.GET_ALL_PLAYERS_OF_TEAM)
-    fun getAllPlayersOfTeam(@Path("team_id") teamId: Int): Single<PlayerResponse>
+    suspend fun getAllPlayersOfTeam(
+        @Path("id") teamId: Int
+    ): PlayerResponse
 
-    @Headers(Constant.API_KEY)
-    @GET(Constant.GET_ALL_TRANSFERS_OF_TEAM)
-    fun getAllTransfersOfTeam(@Path("team_id") teamId: Int): Single<TransferResponse>
-
+    // 5. LỊCH THI ĐẤU (Matches of Competition) -> CÓ NHIỀU FILTER NHẤT
     @Headers(Constant.API_KEY)
     @GET(Constant.GET_ALL_FIXTURE_OF_LEAGUE)
-    fun getAllFixtureOfLeague(@Path("league_id") leagueId: Int): Single<FixtureResponse>
+    suspend fun getAllFixtureOfLeague(
+        @Path("league_id") leagueId: String,
+        @Query("dateFrom") dateFrom: String? = null, // VD: "2023-11-01"
+        @Query("dateTo") dateTo: String? = null,     // VD: "2023-11-30"
+        @Query("stage") stage: String? = null,       // VD: "GROUP_STAGE", "FINAL"
+        @Query("status") status: String? = null,     // VD: "SCHEDULED" (Sắp đá), "FINISHED" (Đã đá xong)
+        @Query("matchday") matchday: Int? = null,    // VD: 15
+        @Query("group") group: String? = null,       // VD: "GROUP_A"
+        @Query("season") season: String? = null      // VD: "2023"
+    ): FixtureResponse
 
+    // 6. LỊCH SỬ ĐỐI ĐẦU (Head to Head)
     @Headers(Constant.API_KEY)
     @GET(Constant.GET_ALL_H2H_ITEMS)
-    fun getAllH2hItems(@Path("home_team_id") homeTeamId: Int, @Path("away_team_id") awayTeamId: Int): Single<H2HResponse>
+    suspend fun getAllH2hItems(
+        @Path("id") fixtureId: Int,                  // ID của trận đấu
+        @Query("limit") limit: Int? = null,          // VD: 5 (Lấy 5 trận đối đầu gần nhất)
+        @Query("dateFrom") dateFrom: String? = null, // VD: "2020-01-01"
+        @Query("dateTo") dateTo: String? = null,
+        @Query("competitions") competitions: String? = null // VD: "PL,CL" (Chỉ tính đối đầu ở Ngoại hạng và C1)
+    ): H2HResponse
 
+    // 7. CHI TIẾT 1 TRẬN ĐẤU (Match Detail) -> KHÔNG CÓ FILTER
     @Headers(Constant.API_KEY)
     @GET(Constant.GET_FIXTURE_STATISTICS)
-    fun getFixtureStatistics(@Path("fixture_id") fixtureId: Int): Single<StatisticsResponse>
-
+    suspend fun getFixtureStatistics(
+        @Path("fixture_id") fixtureId: Int
+    ): StatisticsResponse
 }

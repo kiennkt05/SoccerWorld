@@ -1,50 +1,54 @@
 package com.example.soccerworld.ui.home.leaguetable
 
-import android.util.Log
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.soccerworld.data.remote.ApiClient
-import com.example.soccerworld.model.leaguetable.LeagueTableResponse
-import com.example.soccerworld.model.leaguetable.Standing
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.observers.DisposableSingleObserver
-import io.reactivex.schedulers.Schedulers
+import androidx.lifecycle.viewModelScope
+import com.example.soccerworld.data.FootballRepository
+import com.example.soccerworld.model.leaguetable.Table
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
-class LeagueTableViewModel: ViewModel() {
+// 1. Khai báo cái hộp chứa trạng thái màn hình
+data class LeagueTableUiState(
+    val isLoading: Boolean = true,
+    // LƯU Ý: Thay 'Any' bằng cái class Table (hoặc StandingItem) mà Plugin sinh ra cho bạn nhé
+    val tableList: List<Table?>? = emptyList(),
+    val error: String? = null
+)
 
-    private val apiClient =  ApiClient()
-    private val disposable = CompositeDisposable()
+class LeagueTableViewModel(private val repository: FootballRepository) : ViewModel() {
 
-    val leagueTable = MutableLiveData<List<List<Standing>>>()
-    val loadingLeagueTable = MutableLiveData<Boolean>()
 
-    fun getLeagueTable(leagueId: Int){
-        loadingLeagueTable.value = true
-        disposable.add(
-            apiClient.getLeagueTable(leagueId)
-                .subscribeOn(Schedulers.newThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeWith(object : DisposableSingleObserver<LeagueTableResponse>(){
-                    override fun onSuccess(t: LeagueTableResponse) {
-                        leagueTable.value = t.api.standings
-                        loadingLeagueTable.value = false
-                        Log.i("calıstı", " calıstı")
-                    }
+    // 3. Biến StateFlow để Compose theo dõi
+    private val _uiState = MutableStateFlow(LeagueTableUiState())
+    val uiState = _uiState.asStateFlow()
 
-                    override fun onError(e: Throwable) {
-                        Log.i("hata", "  "+ e.printStackTrace() + " "+ e.message)
-
-                    }
-
-                })
-        )
-
+    init {
+        // Vừa vào app là gọi mạng luôn
+        fetchStandings()
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        disposable.clear()
-    }
+    private fun fetchStandings() {
+        viewModelScope.launch {
+            try {
+                // Đang tải...
+                _uiState.update { it.copy(isLoading = true, error = null) }
 
+                // Gọi API lấy Ngoại hạng Anh ("PL")
+                val response = repository.getLeagueTable("PL")
+
+                // Bóc tách JSON: Lấy cái mảng table bên trong standings
+                // LƯU Ý: Chỉnh lại tên biến cho khớp với Model của bạn
+                val data = response.standings?.firstOrNull()?.table ?: emptyList()
+
+                // Thành công: Ném data vào hộp, tắt loading
+                _uiState.update { it.copy(isLoading = false, tableList = data) }
+
+            } catch (e: Exception) {
+                // Thất bại: Báo lỗi
+                _uiState.update { it.copy(isLoading = false, error = "Lỗi mạng: ${e.message}") }
+            }
+        }
+    }
 }
