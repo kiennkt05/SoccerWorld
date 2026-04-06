@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.example.soccerworld.ui.home.leaguetable.LeagueTableScreen
-
+import com.example.soccerworld.ui.navigation.AppNavigation
+import com.example.soccerworld.ui.theme.SoccerWorldTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -17,13 +17,12 @@ class MainActivity : ComponentActivity() {
         // Xóa dòng setContentView(...) cũ đi nhé
 
         setContent {
-            MaterialTheme {
+            SoccerWorldTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Gọi màn hình Compose của bạn ra đây
-                    LeagueTableScreen()
+                    AppNavigation()
                 }
             }
         }

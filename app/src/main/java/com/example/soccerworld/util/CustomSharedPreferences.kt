@@ -11,6 +11,7 @@ class CustomSharedPreferences {
         private val COUNTRY_ID = "country_id"
         private val PREFERENCES_TIME = "preferences_time"
         private val RB_ID = "rb_id"
+        private val LEAGUE_ID = "league_id"
         private var sharedPreferences: SharedPreferences? = null
 
         @Volatile
@@ -53,5 +54,13 @@ class CustomSharedPreferences {
 
     fun getTime() = sharedPreferences?.getLong(PREFERENCES_TIME,0)
 
+    fun saveLeagueId(leagueId: String) {
+        sharedPreferences?.edit(commit = true) {
+            putString(LEAGUE_ID, leagueId)
+        }
+    }
 
+    fun getLeagueId(): String? = sharedPreferences?.getString(LEAGUE_ID, null)
+
+    fun hasSelectedLeague(): Boolean = sharedPreferences?.contains(LEAGUE_ID) ?: false
 }

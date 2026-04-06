@@ -7,13 +7,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.example.soccerworld.model.statistic.StatisticsResponse
 
 // 1. Tạo gói trạng thái UI (UiState Pattern)
 data class StatisticUiState(
     val isLoading: Boolean = true,
     // LƯU Ý 1: Thay chữ 'Any' bằng Data Class Thống kê của bạn (ví dụ: Statistic, hoặc List<Statistic>)
     // Để null an toàn, lỡ trận đấu chưa đá thì không có thống kê
-    val statistics: Any? = null,
+    val statistics: StatisticsResponse? = null,
     val error: String? = null
 )
 

@@ -35,8 +35,11 @@ class LeagueTableViewModel(private val repository: FootballRepository) : ViewMod
                 // Đang tải...
                 _uiState.update { it.copy(isLoading = true, error = null) }
 
-                // Gọi API lấy Ngoại hạng Anh ("PL")
-                val response = repository.getLeagueTable("PL")
+                // Lấy ID giải đấu từ người dùng đã chọn
+                val leagueId = repository.getSelectedLeagueId()
+                
+                // Gọi API
+                val response = repository.getLeagueTable(leagueId)
 
                 // Bóc tách JSON: Lấy cái mảng table bên trong standings
                 // LƯU Ý: Chỉnh lại tên biến cho khớp với Model của bạn

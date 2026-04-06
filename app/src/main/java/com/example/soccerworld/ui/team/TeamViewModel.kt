@@ -23,11 +23,17 @@ class TeamViewModel(private val repository: FootballRepository) : ViewModel() {
     private val _uiState = MutableStateFlow(TeamUiState())
     val uiState = _uiState.asStateFlow()
 
+    init {
+        getAllTeamsOfLeague()
+    }
+
     // 🌟 LƯU Ý 2: Đổi leagueId từ Int thành String
-    fun getAllTeamsOfLeague(leagueId: String) {
+    fun getAllTeamsOfLeague() {
         viewModelScope.launch {
             // Báo cho UI biết là đang tải dữ liệu
             _uiState.update { it.copy(isLoading = true, error = null) }
+            
+            val leagueId = repository.getSelectedLeagueId()
 
             try {
                 // Gọi API lấy danh sách đội bóng trong giải

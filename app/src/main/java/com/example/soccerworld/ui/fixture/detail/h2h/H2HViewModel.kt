@@ -7,12 +7,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.example.soccerworld.model.h2h.Matche
 
 // 1. Gói trạng thái giao diện (UiState Pattern)
 data class H2HUiState(
     val isLoading: Boolean = true,
     // LƯU Ý: Thay 'Any' bằng class Model chứa thông tin 1 trận đấu (ví dụ: Match/Fixture)
-    val h2hList: List<Any> = emptyList(),
+    val h2hList: List<Matche> = emptyList(),
     val error: String? = null
 )
 

@@ -12,6 +12,10 @@ class FootballRepository(
     private val customPreferences: CustomSharedPreferences
 ) {
     private val refreshTime = 24L * 60 * 60 * 1000 * 1000 * 1000L
+
+    // Lấy LeagueId đang chọn
+    fun getSelectedLeagueId(): String = customPreferences.getLeagueId() ?: "2021"
+
     // 1. BẢNG XẾP HẠNG
     suspend fun getLeagueTable(
         leagueId: String,

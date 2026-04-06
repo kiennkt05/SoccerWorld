@@ -7,12 +7,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.example.soccerworld.model.fixture.Matche
 
 // 1. Tạo hộp chứa trạng thái (UiState)
 data class FixtureUiState(
     val isLoading: Boolean = true,
     // LƯU Ý 1: Thay 'Any' bằng Data Class chứa 1 trận đấu của bạn (Ví dụ: Match hoặc Fixture)
-    val fixtureList: List<Any> = emptyList(),
+    val fixtureList: List<Matche> = emptyList(),
     val error: String? = null
 )
 
@@ -23,11 +24,17 @@ class FixtureViewModel(private val repository: FootballRepository) : ViewModel()
     private val _uiState = MutableStateFlow(FixtureUiState())
     val uiState = _uiState.asStateFlow()
 
+    init {
+        getAllFixtureOfLeague()
+    }
+
     // 🌟 LƯU Ý 2: Đổi leagueId từ Int thành String
-    fun getAllFixtureOfLeague(leagueId: String) {
+    fun getAllFixtureOfLeague() {
         viewModelScope.launch {
             // Bật cờ loading
             _uiState.update { it.copy(isLoading = true, error = null) }
+            
+            val leagueId = repository.getSelectedLeagueId()
 
             try {
                 // Gọi API lấy lịch thi đấu

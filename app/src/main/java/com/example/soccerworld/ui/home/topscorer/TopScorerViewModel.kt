@@ -3,6 +3,7 @@
     import androidx.lifecycle.ViewModel
     import androidx.lifecycle.viewModelScope
     import com.example.soccerworld.data.FootballRepository
+    import com.example.soccerworld.model.topscorer.TopScorerEntity
     import kotlinx.coroutines.flow.MutableStateFlow
     import kotlinx.coroutines.flow.asStateFlow
     import kotlinx.coroutines.flow.update
@@ -12,7 +13,7 @@
     data class TopScorerUiState(
         val isLoading: Boolean = true,
         // LƯU Ý: Sửa Any thành TopScorerEntity hoặc Model tương ứng của bạn
-        val topScorerList: List<Any> = emptyList(),
+        val topScorerList: List<TopScorerEntity> = emptyList(),
         val error: String? = null
     )
 
@@ -24,10 +25,15 @@
         private val _uiState = MutableStateFlow(TopScorerUiState())
         val uiState = _uiState.asStateFlow()
 
-        // Lưu ý: Đổi leagueId từ Int thành String (VD: "PL") cho khớp API v4
-        fun getTopScorers(leagueId: String) {
+        init {
+            getTopScorers()
+        }
+
+        fun getTopScorers() {
             viewModelScope.launch {
                 _uiState.update { it.copy(isLoading = true, error = null) }
+                
+                val leagueId = repository.getSelectedLeagueId()
 
                 try {
                     // VIỆC NHẸ LƯƠNG CAO: Chỉ cần gọi đúng 1 hàm, Repository tự lo mọi thứ bên trong!
