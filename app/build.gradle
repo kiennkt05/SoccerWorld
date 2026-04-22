@@ -1,9 +1,19 @@
+import java.util.Properties
+
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
     id 'kotlin-parcelize'
     id 'kotlin-kapt' // Vẫn giữ lại để biên dịch Room Database
     // Đã xóa 'androidx.navigation.safeargs.kotlin' vì Compose có cách điều hướng riêng
+}
+
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { stream ->
+        localProperties.load(stream)
+    }
 }
 
 android {
@@ -23,6 +33,9 @@ android {
         vectorDrawables {
             useSupportLibrary true
         }
+
+        def footballDataApiKey = localProperties.getProperty("FOOTBALL_DATA_API_KEY", "")
+        buildConfigField "String", "FOOTBALL_DATA_API_KEY", "\"${footballDataApiKey}\""
     }
 
     buildTypes {
@@ -44,6 +57,7 @@ android {
     // --- SỰ THAY ĐỔI LỚN NHẤT NẰM Ở ĐÂY ---
     buildFeatures {
         compose true // Bật công tắc Jetpack Compose
+        buildConfig true
         // Đã xóa DataBinding và ViewBinding
     }
 
@@ -58,7 +72,6 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
     implementation 'androidx.activity:activity-compose:1.8.2'
-    implementation 'androidx.compose.ui:ui-desktop:1.7.0'// Activity đặc biệt cho Compose
 
     // 2. JETPACK COMPOSE (Sử dụng BOM để tự động quản lý phiên bản)
     def composeBom = platform('androidx.compose:compose-bom:2024.02.00')
@@ -83,6 +96,7 @@ dependencies {
     // 5. CHẠY NGẦM (Coroutines)
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
+    implementation "androidx.work:work-runtime-ktx:2.9.1"
 
     // 6. LƯU TRỮ Ổ CỨNG (Room Database)
     def roomVersion = '2.6.1'
@@ -93,13 +107,4 @@ dependencies {
     // 7. CÔNG CỤ DEBUG
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
-}
-
-configurations.all {
-    exclude group: "androidx.compose.ui", module: "ui-desktop"
-    exclude group: "androidx.compose.foundation", module: "foundation-desktop"
-    exclude group: "androidx.compose.animation", module: "animation-desktop"
-    exclude group: "androidx.compose.material3", module: "material3-desktop"
-    exclude group: "androidx.compose.material", module: "material-desktop"
-    exclude group: "androidx.compose.runtime", module: "runtime-desktop"
 }

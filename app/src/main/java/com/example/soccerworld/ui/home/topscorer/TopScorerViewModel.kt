@@ -3,6 +3,7 @@
     import androidx.lifecycle.ViewModel
     import androidx.lifecycle.viewModelScope
     import com.example.soccerworld.data.FootballRepository
+    import com.example.soccerworld.data.model.DataResult
     import com.example.soccerworld.model.topscorer.TopScorerEntity
     import kotlinx.coroutines.flow.MutableStateFlow
     import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +15,7 @@
         val isLoading: Boolean = true,
         // LƯU Ý: Sửa Any thành TopScorerEntity hoặc Model tương ứng của bạn
         val topScorerList: List<TopScorerEntity> = emptyList(),
+        val playerImageUrls: Map<Int, String?> = emptyMap(),
         val error: String? = null
     )
 
@@ -32,17 +34,26 @@
         fun getTopScorers() {
             viewModelScope.launch {
                 _uiState.update { it.copy(isLoading = true, error = null) }
-                
+
                 val leagueId = repository.getSelectedLeagueId()
 
-                try {
-                    // VIỆC NHẸ LƯƠNG CAO: Chỉ cần gọi đúng 1 hàm, Repository tự lo mọi thứ bên trong!
-                    val data = repository.getTopScorers(leagueId)
-
-                    _uiState.update { it.copy(isLoading = false, topScorerList = data) }
-
-                } catch (e: Exception) {
-                    _uiState.update { it.copy(isLoading = false, error = "Lỗi: ${e.message}") }
+                when (val result = repository.getTopScorers(leagueId)) {
+                    is DataResult.Success -> {
+                        val imageUrls = repository.preloadPlayerMediaInParallel(result.data)
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                topScorerList = result.data,
+                                playerImageUrls = imageUrls
+                            )
+                        }
+                    }
+                    is DataResult.Error -> {
+                        _uiState.update { it.copy(isLoading = false, error = result.message ?: "Lỗi tải vua phá lưới") }
+                    }
+                    DataResult.Loading -> {
+                        _uiState.update { it.copy(isLoading = true) }
+                    }
                 }
             }
         }

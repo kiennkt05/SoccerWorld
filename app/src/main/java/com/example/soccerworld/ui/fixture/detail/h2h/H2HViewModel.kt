@@ -3,6 +3,7 @@ package com.example.soccerworld.ui.fixture.detail.h2h
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.soccerworld.data.FootballRepository
+import com.example.soccerworld.data.model.DataResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -26,24 +27,19 @@ class H2HViewModel(private val repository: FootballRepository) : ViewModel() {
     // 🌟 THAY ĐỔI LỚN: Nhận vào fixtureId thay vì homeTeamId/awayTeamId
     fun getHeadToHead(fixtureId: Int) {
         viewModelScope.launch {
-            // Bật trạng thái loading
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            try {
-                // Gọi API lấy lịch sử đối đầu
-                val response = repository.getAllH2hItems(fixtureId)
-
-                // Bóc tách JSON: Lấy mảng các trận đấu (matches)
-                // LƯU Ý: Chỉnh chữ '.matches' cho khớp với tên biến trong Model H2HResponse của bạn
-                // Dùng ?: emptyList() để an toàn tuyệt đối nếu API không trả về mảng nào
-                val data = response.matches ?: emptyList()
-
-                // Thành công: Cập nhật dữ liệu lên UI
-                _uiState.update { it.copy(isLoading = false, h2hList = data) }
-
-            } catch (e: Exception) {
-                // Thất bại: Báo lỗi
-                _uiState.update { it.copy(isLoading = false, error = "Lỗi mạng: ${e.message}") }
+            when (val result = repository.getAllH2hItems(fixtureId)) {
+                is DataResult.Success -> {
+                    val data = result.data.matches ?: emptyList()
+                    _uiState.update { it.copy(isLoading = false, h2hList = data) }
+                }
+                is DataResult.Error -> {
+                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Lỗi tải lịch sử đối đầu") }
+                }
+                DataResult.Loading -> {
+                    _uiState.update { it.copy(isLoading = true) }
+                }
             }
         }
     }

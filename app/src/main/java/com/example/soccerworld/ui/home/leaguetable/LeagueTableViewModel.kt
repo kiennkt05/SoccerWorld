@@ -3,6 +3,7 @@ package com.example.soccerworld.ui.home.leaguetable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.soccerworld.data.FootballRepository
+import com.example.soccerworld.data.model.DataResult
 import com.example.soccerworld.model.leaguetable.Table
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,26 +32,20 @@ class LeagueTableViewModel(private val repository: FootballRepository) : ViewMod
 
     private fun fetchStandings() {
         viewModelScope.launch {
-            try {
-                // Đang tải...
-                _uiState.update { it.copy(isLoading = true, error = null) }
+            _uiState.update { it.copy(isLoading = true, error = null) }
 
-                // Lấy ID giải đấu từ người dùng đã chọn
-                val leagueId = repository.getSelectedLeagueId()
-                
-                // Gọi API
-                val response = repository.getLeagueTable(leagueId)
-
-                // Bóc tách JSON: Lấy cái mảng table bên trong standings
-                // LƯU Ý: Chỉnh lại tên biến cho khớp với Model của bạn
-                val data = response.standings?.firstOrNull()?.table ?: emptyList()
-
-                // Thành công: Ném data vào hộp, tắt loading
-                _uiState.update { it.copy(isLoading = false, tableList = data) }
-
-            } catch (e: Exception) {
-                // Thất bại: Báo lỗi
-                _uiState.update { it.copy(isLoading = false, error = "Lỗi mạng: ${e.message}") }
+            val leagueId = repository.getSelectedLeagueId()
+            when (val result = repository.getLeagueTable(leagueId)) {
+                is DataResult.Success -> {
+                    val data = result.data.standings?.firstOrNull()?.table ?: emptyList()
+                    _uiState.update { it.copy(isLoading = false, tableList = data) }
+                }
+                is DataResult.Error -> {
+                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Lỗi tải bảng xếp hạng") }
+                }
+                DataResult.Loading -> {
+                    _uiState.update { it.copy(isLoading = true) }
+                }
             }
         }
     }

@@ -14,8 +14,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.soccerworld.ui.fixture.detail.h2h.H2HViewModel
-import com.example.soccerworld.ui.fixture.detail.statistic.StatisticViewModel
+import com.example.soccerworld.model.h2h.Matche
+import com.example.soccerworld.model.matchdetail.EspnLineupTeam
+import com.example.soccerworld.model.matchdetail.EspnMatchEvent
+import com.example.soccerworld.model.matchdetail.EspnStatItem
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 
@@ -24,14 +26,12 @@ import com.example.soccerworld.util.ViewModelFactory
 fun MatchDetailScreen(fixtureId: Int, onBack: () -> Unit) {
     val context = LocalContext.current
     val factory = ViewModelFactory(Injection.provideFootballRepository(context))
-
-    val statViewModel: StatisticViewModel = viewModel(factory = factory)
-    val h2hViewModel: H2HViewModel = viewModel(factory = factory)
+    val matchDetailViewModel: MatchDetailViewModel = viewModel(factory = factory)
 
     LaunchedEffect(fixtureId) {
-        statViewModel.getFixtureStatistics(fixtureId)
-        h2hViewModel.getHeadToHead(fixtureId)
+        matchDetailViewModel.loadMatchDetail(fixtureId)
     }
+    val state by matchDetailViewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -51,7 +51,7 @@ fun MatchDetailScreen(fixtureId: Int, onBack: () -> Unit) {
         }
     ) { paddingValues ->
         var selectedTabIndex by remember { mutableStateOf(0) }
-        val tabs = listOf("Tổng quan", "Đối đầu (H2H)")
+        val tabs = listOf("Summary", "Stats", "Lineups", "H2H")
 
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             TabRow(
@@ -68,84 +68,127 @@ fun MatchDetailScreen(fixtureId: Int, onBack: () -> Unit) {
                 }
             }
 
-            when (selectedTabIndex) {
-                0 -> MatchStatTab(statViewModel)
-                1 -> MatchH2HTab(h2hViewModel)
+            if (state.isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (state.error != null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(state.error ?: "Error", color = Color.Red)
+                }
+            } else {
+                val aggregate = state.data
+                when (selectedTabIndex) {
+                    0 -> SummaryTab(events = aggregate?.enrichment?.events ?: emptyList())
+                    1 -> StatsTab(stats = aggregate?.enrichment?.stats ?: emptyList())
+                    2 -> LineupsTab(lineups = aggregate?.enrichment?.lineups ?: emptyList())
+                    3 -> H2HTab(h2hList = aggregate?.h2h ?: emptyList())
+                }
             }
         }
     }
 }
 
 @Composable
-fun MatchStatTab(viewModel: StatisticViewModel) {
-    val state by viewModel.uiState.collectAsState()
-
-    if (state.isLoading) {
+fun SummaryTab(events: List<EspnMatchEvent>) {
+    if (events.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            Text("No summary events available")
         }
-    } else if (state.error != null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(state.error ?: "Error", color = Color.Red)
-        }
-    } else {
-        val stat = state.statistics
-        Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Tỷ số: ${stat?.score?.fullTime?.home ?: 0} - ${stat?.score?.fullTime?.away ?: 0}",
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = "${stat?.homeTeam?.name ?: "Home"} vs ${stat?.awayTeam?.name ?: "Away"}",
-                style = MaterialTheme.typography.titleLarge
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Trạng thái: ${stat?.status}", style = MaterialTheme.typography.bodyLarge)
-            Text(text = "Giải đấu: ${stat?.competition?.name}", style = MaterialTheme.typography.bodyLarge)
-            Text(text = "Matchday: ${stat?.matchday}", style = MaterialTheme.typography.bodyLarge)
+        return
+    }
+    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
+        items(events) { event ->
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text("${event.minute}' ${event.type}", fontWeight = FontWeight.Bold)
+                    Text(event.description)
+                    if (!event.team.isNullOrBlank()) {
+                        Text(event.team, color = Color.Gray)
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-fun MatchH2HTab(viewModel: H2HViewModel) {
-    val state by viewModel.uiState.collectAsState()
+fun StatsTab(stats: List<EspnStatItem>) {
+    if (stats.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("No stats available")
+        }
+        return
+    }
+    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
+        items(stats) { stat ->
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(stat.name, modifier = Modifier.weight(1f))
+                Text("${stat.homeValue} - ${stat.awayValue}", fontWeight = FontWeight.Bold)
+            }
+            Divider()
+        }
+    }
+}
 
-    if (state.isLoading) {
+@Composable
+fun LineupsTab(lineups: List<EspnLineupTeam>) {
+    if (lineups.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
+            Text("No lineup data available")
         }
-    } else if (state.error != null) {
+        return
+    }
+    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
+        items(lineups) { lineup ->
+            Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(lineup.teamName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Starters", fontWeight = FontWeight.SemiBold)
+                    lineup.starters.forEach { p -> Text("- ${p.name} ${p.position ?: ""}") }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Substitutes", fontWeight = FontWeight.SemiBold)
+                    lineup.substitutes.forEach { p -> Text("- ${p.name} ${p.position ?: ""}") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun H2HTab(h2hList: List<Matche>) {
+    if (h2hList.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(state.error ?: "Error", color = Color.Red)
+            Text("No H2H data available")
         }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp)
-        ) {
-            items(state.h2hList) { match ->
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "${match.homeTeam?.name} vs ${match.awayTeam?.name}",
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Score: ${match.score?.fullTime?.home ?: 0} - ${match.score?.fullTime?.away ?: 0}",
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
+        return
+    }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        items(h2hList) { match ->
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "${match.homeTeam?.name} vs ${match.awayTeam?.name}",
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Score: ${match.score?.fullTime?.home ?: 0} - ${match.score?.fullTime?.away ?: 0}",
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }

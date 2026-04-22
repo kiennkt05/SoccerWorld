@@ -13,5 +13,6 @@ data class Squad(
     @SerializedName("dateOfBirth")
     val dateOfBirth: String? = null,
     @SerializedName("nationality")
-    val nationality: String? = null
+    val nationality: String? = null,
+    val imageUrl: String? = null
 )

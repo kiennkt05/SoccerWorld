@@ -11,9 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.example.soccerworld.R
 import com.example.soccerworld.model.topscorer.TopScorerEntity
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
@@ -41,14 +44,18 @@ fun TopScorersScreen() {
             contentPadding = PaddingValues(16.dp)
         ) {
             itemsIndexed(state.topScorerList) { index, player ->
-                TopScorerRow(rank = index + 1, item = player)
+                TopScorerRow(
+                    rank = index + 1,
+                    item = player,
+                    playerImageUrl = state.playerImageUrls[player.playerId]
+                )
             }
         }
     }
 }
 
 @Composable
-fun TopScorerRow(rank: Int, item: TopScorerEntity) {
+fun TopScorerRow(rank: Int, item: TopScorerEntity, playerImageUrl: String?) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -69,6 +76,16 @@ fun TopScorerRow(rank: Int, item: TopScorerEntity) {
                 color = if (rank <= 3) MaterialTheme.colorScheme.primary else Color.Gray,
                 modifier = Modifier.width(32.dp)
             )
+
+            AsyncImage(
+                model = playerImageUrl,
+                contentDescription = item.playerName,
+                modifier = Modifier.size(36.dp),
+                placeholder = painterResource(id = R.drawable.ic_players),
+                error = painterResource(id = R.drawable.ic_players),
+                fallback = painterResource(id = R.drawable.ic_players)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
 
             // Name & Team
             Column(modifier = Modifier.weight(1f)) {

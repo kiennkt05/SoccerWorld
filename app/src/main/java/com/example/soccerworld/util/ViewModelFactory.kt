@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.soccerworld.data.FootballRepository
 import com.example.soccerworld.ui.fixture.FixtureViewModel
+import com.example.soccerworld.ui.fixture.detail.MatchDetailViewModel
 import com.example.soccerworld.ui.fixture.detail.h2h.H2HViewModel
 import com.example.soccerworld.ui.fixture.detail.statistic.StatisticViewModel
+import com.example.soccerworld.ui.favorites.FavoritesViewModel
 import com.example.soccerworld.ui.home.leaguetable.LeagueTableViewModel
 import com.example.soccerworld.ui.home.topscorer.TopScorerViewModel
 import com.example.soccerworld.ui.team.TeamViewModel
@@ -51,6 +53,14 @@ class ViewModelFactory(private val repository: FootballRepository) : ViewModelPr
         if (modelClass.isAssignableFrom(H2HViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return H2HViewModel(repository) as T
+        }
+        if (modelClass.isAssignableFrom(MatchDetailViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return MatchDetailViewModel(repository) as T
+        }
+        if (modelClass.isAssignableFrom(FavoritesViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return FavoritesViewModel(repository) as T
         }
 
         throw IllegalArgumentException("Unknown ViewModel class")

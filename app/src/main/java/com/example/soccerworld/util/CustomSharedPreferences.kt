@@ -10,6 +10,10 @@ class CustomSharedPreferences {
     companion object{
         private val COUNTRY_ID = "country_id"
         private val PREFERENCES_TIME = "preferences_time"
+        private const val TOP_SCORERS_TIME = "top_scorers_time"
+        private const val STANDINGS_TIME = "standings_time"
+        private const val FIXTURES_TIME = "fixtures_time"
+        private const val TEAMS_TIME = "teams_time"
         private val RB_ID = "rb_id"
         private val LEAGUE_ID = "league_id"
         private var sharedPreferences: SharedPreferences? = null
@@ -53,6 +57,38 @@ class CustomSharedPreferences {
     }
 
     fun getTime() = sharedPreferences?.getLong(PREFERENCES_TIME,0)
+
+    fun saveTopScorersTime(time: Long) {
+        sharedPreferences?.edit(commit = true) {
+            putLong(TOP_SCORERS_TIME, time)
+        }
+    }
+
+    fun getTopScorersTime() = sharedPreferences?.getLong(TOP_SCORERS_TIME, 0)
+
+    fun saveStandingsTime(time: Long) {
+        sharedPreferences?.edit(commit = true) {
+            putLong(STANDINGS_TIME, time)
+        }
+    }
+
+    fun getStandingsTime() = sharedPreferences?.getLong(STANDINGS_TIME, 0)
+
+    fun saveFixturesTime(time: Long) {
+        sharedPreferences?.edit(commit = true) {
+            putLong(FIXTURES_TIME, time)
+        }
+    }
+
+    fun getFixturesTime() = sharedPreferences?.getLong(FIXTURES_TIME, 0)
+
+    fun saveTeamsTime(time: Long) {
+        sharedPreferences?.edit(commit = true) {
+            putLong(TEAMS_TIME, time)
+        }
+    }
+
+    fun getTeamsTime() = sharedPreferences?.getLong(TEAMS_TIME, 0)
 
     fun saveLeagueId(leagueId: String) {
         sharedPreferences?.edit(commit = true) {

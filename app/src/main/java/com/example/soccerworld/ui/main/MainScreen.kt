@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.soccerworld.ui.favorites.FavoritesScreen
 import com.example.soccerworld.ui.home.HomeScreen
 import com.example.soccerworld.ui.fixture.FixturesScreen
 import com.example.soccerworld.ui.navigation.Screen
@@ -27,7 +28,8 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
     val items = listOf(
         BottomNavItem.Home,
         BottomNavItem.Fixtures,
-        BottomNavItem.Teams
+        BottomNavItem.Teams,
+        BottomNavItem.Favorites
     )
 
     Scaffold(
@@ -100,6 +102,11 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
             composable(BottomNavItem.Teams.route) {
                 TeamsScreen(onTeamClick = { teamId ->
                     rootNavController.navigate(Screen.TeamDetail.createRoute(teamId))
+                })
+            }
+            composable(BottomNavItem.Favorites.route) {
+                FavoritesScreen(onMatchClick = { matchId ->
+                    rootNavController.navigate(Screen.MatchDetail.createRoute(matchId))
                 })
             }
         }

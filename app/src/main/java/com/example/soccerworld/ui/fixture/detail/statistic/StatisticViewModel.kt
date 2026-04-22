@@ -3,6 +3,7 @@ package com.example.soccerworld.ui.fixture.detail.statistic
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.soccerworld.data.FootballRepository
+import com.example.soccerworld.data.model.DataResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -27,26 +28,18 @@ class StatisticViewModel(private val repository: FootballRepository) : ViewModel
 
     fun getFixtureStatistics(fixtureId: Int) {
         viewModelScope.launch {
-            // Báo cho UI biết là đang tải dữ liệu
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            try {
-                // Gọi API
-                val response = repository.getFixtureStatistics(fixtureId)
-
-                // 🌟 LƯU Ý 2: BÓC TÁCH JSON Ở ĐÂY
-                // Tùy thuộc vào việc API v4 trả về thống kê dạng mảng (List) hay một Object duy nhất.
-                // Bạn hãy gõ chữ 'response.' và chọn đúng trường dữ liệu chứa thống kê nhé.
-                // Ví dụ nếu nó là List: val data = response.statistics ?: emptyList()
-                // Ví dụ nếu nó là Object: val data = response.statistics
-                val data = response // <--- SỬA DÒNG NÀY
-
-                // Thành công, đẩy dữ liệu lên UI
-                _uiState.update { it.copy(isLoading = false, statistics = data) }
-
-            } catch (e: Exception) {
-                // Thất bại thì báo lỗi đỏ
-                _uiState.update { it.copy(isLoading = false, error = "Lỗi mạng: ${e.message}") }
+            when (val result = repository.getFixtureStatistics(fixtureId)) {
+                is DataResult.Success -> {
+                    _uiState.update { it.copy(isLoading = false, statistics = result.data) }
+                }
+                is DataResult.Error -> {
+                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Lỗi tải thống kê trận đấu") }
+                }
+                DataResult.Loading -> {
+                    _uiState.update { it.copy(isLoading = true) }
+                }
             }
         }
     }

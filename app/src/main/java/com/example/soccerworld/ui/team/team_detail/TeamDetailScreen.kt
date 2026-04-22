@@ -5,16 +5,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
+import com.example.soccerworld.R
 import com.example.soccerworld.ui.team.team_detail.player.PlayerViewModel
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
@@ -76,7 +78,14 @@ fun TeamDetailScreen(teamId: Int, onBack: () -> Unit) {
                             modifier = Modifier.fillMaxWidth().padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            AsyncImage(
+                                model = player.imageUrl,
+                                contentDescription = player.name,
+                                modifier = Modifier.size(36.dp),
+                                placeholder = painterResource(id = R.drawable.ic_players),
+                                error = painterResource(id = R.drawable.ic_players),
+                                fallback = painterResource(id = R.drawable.ic_players)
+                            )
                             Spacer(modifier = Modifier.width(16.dp))
                             Column {
                                 Text(text = player.name ?: "Unknown Player", fontWeight = FontWeight.Bold)

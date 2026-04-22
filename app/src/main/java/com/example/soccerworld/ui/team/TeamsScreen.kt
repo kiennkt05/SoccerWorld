@@ -14,11 +14,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.soccerworld.R
 import com.example.soccerworld.model.team.Team
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
@@ -78,7 +80,10 @@ fun TeamCard(team: Team, onClick: () -> Unit) {
             AsyncImage(
                 model = team.crest,
                 contentDescription = team.name,
-                modifier = Modifier.size(64.dp)
+                modifier = Modifier.size(64.dp),
+                placeholder = painterResource(id = R.drawable.ic_ball),
+                error = painterResource(id = R.drawable.ic_ball),
+                fallback = painterResource(id = R.drawable.ic_ball)
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(

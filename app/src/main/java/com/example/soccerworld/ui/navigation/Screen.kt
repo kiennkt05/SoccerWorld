@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String) {
@@ -21,4 +22,5 @@ sealed class BottomNavItem(val route: String, val title: String, val icon: Image
     object Home : BottomNavItem("home", "League", Icons.Default.Home)
     object Fixtures : BottomNavItem("fixtures", "Fixtures", Icons.Default.DateRange)
     object Teams : BottomNavItem("teams", "Teams", Icons.Default.List)
+    object Favorites : BottomNavItem("favorites", "Favorites", Icons.Default.Favorite)
 }

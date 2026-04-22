@@ -22,11 +22,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.soccerworld.R
 import com.example.soccerworld.model.leaguetable.Table
 import com.example.soccerworld.model.leaguetable.Team
 import com.example.soccerworld.util.Injection
@@ -118,7 +120,10 @@ fun TeamRow(item: Table) {
             AsyncImage(
                 model = item.team?.crest,
                 contentDescription = "Logo of ${item.team?.name ?: "Unknown"}",
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(36.dp),
+                placeholder = painterResource(id = R.drawable.ic_ball),
+                error = painterResource(id = R.drawable.ic_ball),
+                fallback = painterResource(id = R.drawable.ic_ball)
             )
 
             Spacer(modifier = Modifier.width(12.dp))

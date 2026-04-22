@@ -2,7 +2,6 @@ package com.example.soccerworld.util
 
 object Constant {
     const val BASE_URL = "https://api.football-data.org"
-    const val API_KEY = "X-Auth-Token: 9be55943cdcc4bef93f3560df795c7a4"
     const val GET_LEAGUE_TABLE = "v4/competitions/{league_id}/standings"
     const val GET_TOP_SCORERS = "v4/competitions/{league_id}/scorers"
     const val GET_ALL_TEAMS_OF_LEAGUE = "v4/competitions/{league_id}/teams"
