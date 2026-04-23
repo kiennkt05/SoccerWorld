@@ -3,9 +3,9 @@ package com.example.soccerworld.ui.fixture
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -35,7 +35,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
-fun FixturesScreen(onMatchClick: (Int) -> Unit = {}) {
+fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
     val context = LocalContext.current
     val viewModel: FixtureViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideFootballRepository(context))
@@ -61,34 +61,56 @@ fun FixturesScreen(onMatchClick: (Int) -> Unit = {}) {
             Text(text = state.error ?: "Lỗi tải lịch thi đấu", color = Color.Red)
         }
     } else {
-        // Group matches by "matchday" or just display them
-        val matches = state.fixtureList.reversed() // Usually recent matches are at the bottom, reverse to show latest/upcoming
+        val groupedForSelected = state.stageRoundGroups[state.selectedTab].orEmpty()
+        val listState = rememberLazyListState()
+        val totalItems = groupedForSelected.size + groupedForSelected.values.sumOf { it.size }
+
+        LaunchedEffect(state.selectedTab, totalItems) {
+            if (totalItems == 0) return@LaunchedEffect
+            if (state.selectedTab == "SCHEDULED") {
+                listState.scrollToItem(totalItems - 1)
+            } else {
+                listState.scrollToItem(0)
+            }
+        }
+
         Column(modifier = Modifier.fillMaxSize()) {
-            LazyRow(
+            ScrollableTabRow(
+                selectedTabIndex = state.availableTabs.indexOf(state.selectedTab).coerceAtLeast(0),
                 modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                edgePadding = 8.dp
             ) {
-                items(state.availableDates) { date ->
-                    val selected = date == state.selectedDate
-                    FilterChip(
-                        selected = selected,
-                        onClick = { viewModel.onDateSelected(date) },
-                        label = { Text(date) }
+                state.availableTabs.forEach { tab ->
+                    Tab(
+                        selected = state.selectedTab == tab,
+                        onClick = { viewModel.onTabSelected(tab) },
+                        text = { Text(formatTabTitle(tab)) }
                     )
                 }
             }
+
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                state = listState
             ) {
-                items(matches) { match ->
-                    FixtureCard(
-                        match = match,
-                        isFavorite = state.favoriteIds.contains(match.id ?: -1),
-                        onToggleFavorite = { viewModel.toggleFavorite(match) },
-                        onClick = { onMatchClick(match.id ?: 0) }
-                    )
+                groupedForSelected.forEach { (roundLabel, matches) ->
+                    item(key = "header-$roundLabel") {
+                        Text(
+                            text = roundLabel,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        )
+                    }
+                    items(matches, key = { it.id ?: UUID.randomUUID().toString() }) { match ->
+                        FixtureCard(
+                            match = match,
+                            isFavorite = state.favoriteIds.contains(match.id ?: ""),
+                            onToggleFavorite = { viewModel.toggleFavorite(match) },
+                            onClick = { onMatchClick(match.id ?: "") }
+                        )
+                    }
                 }
             }
         }
@@ -244,5 +266,14 @@ private fun formatTime(utcString: String?): String {
         date?.let { formatter.format(it) } ?: utcString
     } catch (e: Exception) {
         utcString
+    }
+}
+
+private fun formatTabTitle(tab: String): String {
+    return when (tab) {
+        "IN_PLAY" -> "Live"
+        "SCHEDULED" -> "Scheduled"
+        "FINISHED" -> "Finished"
+        else -> tab
     }
 }

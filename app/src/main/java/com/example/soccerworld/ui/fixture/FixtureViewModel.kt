@@ -10,26 +10,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 
-// 1. Tạo hộp chứa trạng thái (UiState)
 data class FixtureUiState(
     val isLoading: Boolean = true,
-    // LƯU Ý 1: Thay 'Any' bằng Data Class chứa 1 trận đấu của bạn (Ví dụ: Match hoặc Fixture)
     val fixtureList: List<Matche> = emptyList(),
-    val selectedDate: String = currentDateIso(),
-    val availableDates: List<String> = buildDateWindow(),
-    val favoriteIds: Set<Int> = emptySet(),
+    val stageRoundGroups: Map<String, Map<String, List<Matche>>> = emptyMap(),
+    val selectedTab: String = "",
+    val availableTabs: List<String> = emptyList(),
+    val favoriteIds: Set<String> = emptySet(),
     val hasLiveMatches: Boolean = false,
     val error: String? = null
 )
 
 class FixtureViewModel(private val repository: FootballRepository) : ViewModel() {
-
-
-    // 3. Ống nước StateFlow thay cho LiveData
     private val _uiState = MutableStateFlow(FixtureUiState())
     val uiState = _uiState.asStateFlow()
 
@@ -38,24 +31,29 @@ class FixtureViewModel(private val repository: FootballRepository) : ViewModel()
         getAllFixtureOfLeague()
     }
 
-    // 🌟 LƯU Ý 2: Đổi leagueId từ Int thành String
     fun getAllFixtureOfLeague(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             val leagueId = repository.getSelectedLeagueId()
-            val selectedDate = _uiState.value.selectedDate
 
-            when (val result = repository.getAllFixtureOfLeague(
-                leagueId = leagueId,
-                dateFrom = selectedDate,
-                dateTo = selectedDate,
-                forceRefresh = forceRefresh
-            )) {
+            when (val result = repository.getAllFixtureOfLeague(leagueId = leagueId, forceRefresh = forceRefresh)) {
                 is DataResult.Success -> {
-                    val data = result.data.matches ?: emptyList()
-                    val hasLive = data.any { it.status == "IN_PLAY" || it.status == "PAUSED" }
-                    Log.d("FixtureViewModel", "Fixtures refreshed selectedDate=$selectedDate count=${data.size} liveCount=${data.count { it.status == "IN_PLAY" || it.status == "PAUSED" }}")
-                    _uiState.update { it.copy(isLoading = false, fixtureList = data, hasLiveMatches = hasLive) }
+                    val matches = result.data.matches.orEmpty().sortedByDescending { it.utcDate ?: "" }
+                    val groups = buildStageRoundGroups(matches)
+                    val tabs = groups.keys.toList()
+                    val selectedTab = _uiState.value.selectedTab.takeIf { it in tabs } ?: tabs.firstOrNull().orEmpty()
+                    val hasLive = matches.any { it.status == "IN_PLAY" || it.status == "PAUSED" }
+                    Log.d("FixtureViewModel", "Fixtures refreshed count=${matches.size} tabs=${tabs.size}")
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            fixtureList = matches,
+                            stageRoundGroups = groups,
+                            selectedTab = selectedTab,
+                            availableTabs = tabs,
+                            hasLiveMatches = hasLive
+                        )
+                    }
                 }
                 is DataResult.Error -> {
                     _uiState.update { it.copy(isLoading = false, error = result.message ?: "Lỗi tải lịch thi đấu") }
@@ -67,10 +65,8 @@ class FixtureViewModel(private val repository: FootballRepository) : ViewModel()
         }
     }
 
-    fun onDateSelected(date: String) {
-        Log.d("FixtureViewModel", "Date selected: $date")
-        _uiState.update { it.copy(selectedDate = date) }
-        getAllFixtureOfLeague(forceRefresh = true)
+    fun onTabSelected(tab: String) {
+        _uiState.update { it.copy(selectedTab = tab) }
     }
 
     fun toggleFavorite(match: Matche) {
@@ -86,16 +82,44 @@ class FixtureViewModel(private val repository: FootballRepository) : ViewModel()
             }
         }
     }
-}
 
-private fun currentDateIso(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Calendar.getInstance().time)
+    private fun buildStageRoundGroups(matches: List<Matche>): Map<String, Map<String, List<Matche>>> {
+        val groupedByStage = matches.groupBy { normalizeStage(it.status ?: it.stage) }
+        val orderedStageKeys = groupedByStage.keys.sortedWith(compareBy { stagePriority(it) })
+        return orderedStageKeys.associateWith { stage ->
+            val stageMatches = groupedByStage[stage].orEmpty()
+            val groupedByRound = stageMatches.groupBy { roundLabel(it.group) }
+            groupedByRound.keys
+                .sortedWith(compareByDescending<String> { extractRoundNumber(it) ?: Int.MIN_VALUE }.thenByDescending { it })
+                .associateWith { round -> groupedByRound[round].orEmpty().sortedByDescending { it.utcDate ?: "" } }
+        }
+    }
 
-private fun buildDateWindow(): List<String> {
-    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-    val cal = Calendar.getInstance()
-    return (-3..3).map { offset ->
-        val temp = cal.clone() as Calendar
-        temp.add(Calendar.DATE, offset)
-        sdf.format(temp.time)
+    private fun normalizeStage(stage: String?): String {
+        return when (stage?.uppercase()) {
+            "IN_PLAY", "LIVE", "PAUSED", "HALFTIME" -> "IN_PLAY"
+            "FINISHED", "FT" -> "FINISHED"
+            "SCHEDULED" -> "SCHEDULED"
+            null, "" -> "UNKNOWN"
+            else -> stage.uppercase()
+        }
+    }
+
+    private fun stagePriority(stage: String): Int {
+        return when (stage) {
+            "IN_PLAY" -> 0
+            "SCHEDULED" -> 1
+            "FINISHED" -> 2
+            else -> 3
+        }
+    }
+
+    private fun roundLabel(groupValue: Any?): String {
+        val raw = groupValue?.toString()?.trim().orEmpty()
+        return raw.ifBlank { "Unknown Round" }
+    }
+
+    private fun extractRoundNumber(label: String): Int? {
+        return Regex("(\\d+)").find(label)?.groupValues?.getOrNull(1)?.toIntOrNull()
     }
 }

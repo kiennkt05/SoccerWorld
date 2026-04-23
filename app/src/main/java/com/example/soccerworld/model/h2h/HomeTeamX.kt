@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName
 
 data class HomeTeamX(
     @SerializedName("id")
-    val id: Int? = null,
+    val id: String? = null,
     @SerializedName("name")
     val name: String? = null,
     @SerializedName("shortName")

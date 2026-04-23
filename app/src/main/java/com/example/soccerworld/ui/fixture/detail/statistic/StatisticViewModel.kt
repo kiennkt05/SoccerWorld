@@ -26,7 +26,7 @@ class StatisticViewModel(private val repository: FootballRepository) : ViewModel
     private val _uiState = MutableStateFlow(StatisticUiState())
     val uiState = _uiState.asStateFlow()
 
-    fun getFixtureStatistics(fixtureId: Int) {
+    fun getFixtureStatistics(fixtureId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 

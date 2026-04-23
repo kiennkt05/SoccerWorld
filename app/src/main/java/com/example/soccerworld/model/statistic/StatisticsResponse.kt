@@ -11,7 +11,7 @@ data class StatisticsResponse(
     @SerializedName("season")
     val season: Season? = null,
     @SerializedName("id")
-    val id: Int? = null,
+    val id: String? = null,
     @SerializedName("utcDate")
     val utcDate: String? = null,
     @SerializedName("status")

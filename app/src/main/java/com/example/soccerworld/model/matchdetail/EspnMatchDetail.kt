@@ -1,37 +1,37 @@
 package com.example.soccerworld.model.matchdetail
 
-data class EspnMatchEvent(
+data class MatchEvent(
     val minute: String,
     val type: String,
     val description: String,
     val team: String?
 )
 
-data class EspnStatItem(
+data class MatchStatItem(
     val name: String,
     val homeValue: String,
     val awayValue: String
 )
 
-data class EspnLineupPlayer(
+data class MatchLineupPlayer(
     val name: String,
     val position: String?,
     val imageUrl: String?
 )
 
-data class EspnLineupTeam(
+data class MatchLineupTeam(
     val teamName: String,
     val formation: String?,
-    val starters: List<EspnLineupPlayer>,
-    val substitutes: List<EspnLineupPlayer>
+    val starters: List<MatchLineupPlayer>,
+    val substitutes: List<MatchLineupPlayer>
 )
 
-data class EspnMatchDetail(
+data class MatchEnrichmentDetail(
     val eventId: String,
     val venue: String?,
-    val events: List<EspnMatchEvent>,
-    val stats: List<EspnStatItem>,
-    val lineups: List<EspnLineupTeam>,
+    val events: List<MatchEvent>,
+    val stats: List<MatchStatItem>,
+    val lineups: List<MatchLineupTeam>,
     val status: String?,
     val lastUpdated: Long
 )

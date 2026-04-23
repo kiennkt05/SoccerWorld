@@ -96,7 +96,25 @@ class CustomSharedPreferences {
         }
     }
 
-    fun getLeagueId(): String? = sharedPreferences?.getString(LEAGUE_ID, null)
+    fun getLeagueId(): String? {
+        val raw = sharedPreferences?.getString(LEAGUE_ID, null) ?: return null
+        return normalizeLeagueCode(raw)
+    }
 
-    fun hasSelectedLeague(): Boolean = sharedPreferences?.contains(LEAGUE_ID) ?: false
+    fun hasSelectedLeague(): Boolean = getLeagueId() != null
+
+    private fun normalizeLeagueCode(raw: String): String? {
+        return when (raw.uppercase()) {
+            // New FlashLive league codes
+            "PL", "PD", "BL1", "SA", "FL1", "CL" -> raw.uppercase()
+            // Legacy football-data numeric IDs -> FlashLive codes
+            "2021" -> "PL"
+            "2014" -> "PD"
+            "2002" -> "BL1"
+            "2019" -> "SA"
+            "2015" -> "FL1"
+            "2001" -> "CL"
+            else -> null
+        }
+    }
 }

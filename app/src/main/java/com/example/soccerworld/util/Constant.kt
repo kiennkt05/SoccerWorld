@@ -1,17 +1,26 @@
 package com.example.soccerworld.util
 
-object Constant {
-    const val BASE_URL = "https://api.football-data.org"
-    const val GET_LEAGUE_TABLE = "v4/competitions/{league_id}/standings"
-    const val GET_TOP_SCORERS = "v4/competitions/{league_id}/scorers"
-    const val GET_ALL_TEAMS_OF_LEAGUE = "v4/competitions/{league_id}/teams"
-    const val GET_ALL_PLAYERS_OF_TEAM = "v4/teams/{id}"
+data class FlashLiveLeague(
+    val stageId: String,
+    val seasonId: String,
+    val name: String
+)
 
-    // GET ALL TRANSFER OF TEAM INAVAILABLE IN THIS API
-    // const val GET_ALL_TRANSFERS_OF_TEAM = "transfers/team/{team_id}"
-    const val GET_ALL_FIXTURE_OF_LEAGUE = "v4/competitions/{league_id}/matches"
-    const val GET_ALL_H2H_ITEMS = "v4/matches/{id}/head2head" //"fixtures/h2h/{home_team_id}/{away_team_id}"
-    const val GET_FIXTURE_STATISTICS = "v4/matches/{fixture_id}"//"statistics/fixture/{fixture_id}"
+object Constant {
+    const val LOCALE = "en_INT"
+    const val SPORT_ID = 1
+    const val TIMEZONE = 0
+
+    val FLASHLIVE_LEAGUES = mapOf(
+        "PL" to FlashLiveLeague("OEEq9Yvp", "KKay4EE8", "Premier League"),
+        "PD" to FlashLiveLeague("vcm2MhGk", "UkksTK1s", "LaLiga"),
+        "BL1" to FlashLiveLeague("8UYeqfiD", "QwzghtID", "Bundesliga"),
+        "SA" to FlashLiveLeague("6PWwAsA7", "04lKZTBr", "Serie A"),
+        "FL1" to FlashLiveLeague("j9QeTLPP", "hnFBS5hK", "Ligue 1"),
+        "CL" to FlashLiveLeague("UiRZST3U", "bLJeeS2d", "Champions League")
+    )
+
+    fun league(leagueCode: String): FlashLiveLeague? = FLASHLIVE_LEAGUES[leagueCode]
 
     const val TEAM_ID = "team_id"
     const val FIXTURE_TEAM_IDS = "h2h_team_ids"

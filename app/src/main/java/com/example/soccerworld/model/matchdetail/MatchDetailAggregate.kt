@@ -6,5 +6,5 @@ import com.example.soccerworld.model.statistic.StatisticsResponse
 data class MatchDetailAggregate(
     val core: StatisticsResponse?,
     val h2h: List<H2HMatch>,
-    val enrichment: EspnMatchDetail?
+    val enrichment: MatchEnrichmentDetail?
 )

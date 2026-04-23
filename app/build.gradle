@@ -34,8 +34,8 @@ android {
             useSupportLibrary true
         }
 
-        def footballDataApiKey = localProperties.getProperty("FOOTBALL_DATA_API_KEY", "")
-        buildConfigField "String", "FOOTBALL_DATA_API_KEY", "\"${footballDataApiKey}\""
+        def flashLiveApiKey = localProperties.getProperty("FLASHLIVE_API_KEY", "")
+        buildConfigField "String", "FLASHLIVE_API_KEY", "\"${flashLiveApiKey}\""
     }
 
     buildTypes {

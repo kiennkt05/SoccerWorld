@@ -7,7 +7,7 @@ data class PlayerResponse(
     @SerializedName("area")
     val area: Area? = null,
     @SerializedName("id")
-    val id: Int? = null,
+    val id: String? = null,
     @SerializedName("name")
     val name: String? = null,
     @SerializedName("shortName")

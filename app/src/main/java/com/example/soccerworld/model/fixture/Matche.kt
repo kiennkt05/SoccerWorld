@@ -11,7 +11,7 @@ data class Matche(
     @SerializedName("season")
     val season: Season? = Season(),
     @SerializedName("id")
-    val id: Int? = 0,
+    val id: String? = "",
     @SerializedName("utcDate")
     val utcDate: String? = "",
     @SerializedName("status")

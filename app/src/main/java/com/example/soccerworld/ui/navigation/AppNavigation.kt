@@ -40,16 +40,16 @@ fun AppNavigation() {
         }
         composable(
             route = Screen.MatchDetail.route,
-            arguments = listOf(navArgument("fixture_id") { type = NavType.IntType })
+            arguments = listOf(navArgument("fixture_id") { type = NavType.StringType })
         ) { backStackEntry ->
-            val fixtureId = backStackEntry.arguments?.getInt("fixture_id") ?: return@composable
+            val fixtureId = backStackEntry.arguments?.getString("fixture_id") ?: return@composable
             MatchDetailScreen(fixtureId = fixtureId, onBack = { navController.popBackStack() })
         }
         composable(
             route = Screen.TeamDetail.route,
-            arguments = listOf(navArgument("team_id") { type = NavType.IntType })
+            arguments = listOf(navArgument("team_id") { type = NavType.StringType })
         ) { backStackEntry ->
-            val teamId = backStackEntry.arguments?.getInt("team_id") ?: return@composable
+            val teamId = backStackEntry.arguments?.getString("team_id") ?: return@composable
             TeamDetailScreen(teamId = teamId, onBack = { navController.popBackStack() })
         }
     }

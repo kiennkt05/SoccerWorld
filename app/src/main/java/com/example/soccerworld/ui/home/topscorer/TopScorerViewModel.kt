@@ -15,7 +15,7 @@
         val isLoading: Boolean = true,
         // LƯU Ý: Sửa Any thành TopScorerEntity hoặc Model tương ứng của bạn
         val topScorerList: List<TopScorerEntity> = emptyList(),
-        val playerImageUrls: Map<Int, String?> = emptyMap(),
+        val playerImageUrls: Map<String, String?> = emptyMap(),
         val error: String? = null
     )
 

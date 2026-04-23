@@ -170,15 +170,15 @@ fun PreviewLeagueTableSuccess() {
     val fakeData = listOf(
         Table(
             position = 1, team = Team(
-                id = 57,
+                id = "57",
                 name = "Arsenal FC",
                 crest = "https://crests.football-data.org/57.png"
             ), playedGames = 31, points = 70, goalDifference = 39
         ),
-        Table(position = 2, team = Team(65, "Manchester City", "https://crests.football-data.org/65.png"), playedGames = 30, points = 61, goalDifference = 32),
+        Table(position = 2, team = Team(id = "65", name = "Manchester City", crest = "https://crests.football-data.org/65.png"), playedGames = 30, points = 61, goalDifference = 32),
         Table(
             position = 3,
-            team = Team(66, "Manchester United", "https://crests.football-data.org/66.png"),
+            team = Team(id = "66", name = "Manchester United", crest = "https://crests.football-data.org/66.png"),
             playedGames = 31,
             points = 55,
             goalDifference = 13

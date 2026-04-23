@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,15 +15,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.soccerworld.model.h2h.Matche
-import com.example.soccerworld.model.matchdetail.EspnLineupTeam
-import com.example.soccerworld.model.matchdetail.EspnMatchEvent
-import com.example.soccerworld.model.matchdetail.EspnStatItem
+import com.example.soccerworld.model.matchdetail.MatchLineupTeam
+import com.example.soccerworld.model.matchdetail.MatchEvent
+import com.example.soccerworld.model.matchdetail.MatchStatItem
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MatchDetailScreen(fixtureId: Int, onBack: () -> Unit) {
+fun MatchDetailScreen(fixtureId: String, onBack: () -> Unit) {
     val context = LocalContext.current
     val factory = ViewModelFactory(Injection.provideFootballRepository(context))
     val matchDetailViewModel: MatchDetailViewModel = viewModel(factory = factory)
@@ -39,7 +39,7 @@ fun MatchDetailScreen(fixtureId: Int, onBack: () -> Unit) {
                 title = { Text("Match Details") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -90,7 +90,7 @@ fun MatchDetailScreen(fixtureId: Int, onBack: () -> Unit) {
 }
 
 @Composable
-fun SummaryTab(events: List<EspnMatchEvent>) {
+fun SummaryTab(events: List<MatchEvent>) {
     if (events.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No summary events available")
@@ -116,7 +116,7 @@ fun SummaryTab(events: List<EspnMatchEvent>) {
 }
 
 @Composable
-fun StatsTab(stats: List<EspnStatItem>) {
+fun StatsTab(stats: List<MatchStatItem>) {
     if (stats.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No stats available")
@@ -132,13 +132,13 @@ fun StatsTab(stats: List<EspnStatItem>) {
                 Text(stat.name, modifier = Modifier.weight(1f))
                 Text("${stat.homeValue} - ${stat.awayValue}", fontWeight = FontWeight.Bold)
             }
-            Divider()
+            HorizontalDivider()
         }
     }
 }
 
 @Composable
-fun LineupsTab(lineups: List<EspnLineupTeam>) {
+fun LineupsTab(lineups: List<MatchLineupTeam>) {
     if (lineups.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No lineup data available")

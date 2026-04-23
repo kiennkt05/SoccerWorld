@@ -10,7 +10,7 @@ fun TopScorerResponse.toEntityList(): List<TopScorerEntity> {
     // 2. Dùng map để biến List<ScorerItem> thành List<TopScorerEntity>
     return this.scorers?.map { item ->
         TopScorerEntity(
-            playerId = item?.player?.id ?: 0,
+            playerId = item?.player?.id?.toString() ?: "unknown",
             playerName = item?.player?.name ?: "Unknown Player",
             teamName = item?.team?.name ?: "Unknown Team",
             goals = item?.goals ?: 0

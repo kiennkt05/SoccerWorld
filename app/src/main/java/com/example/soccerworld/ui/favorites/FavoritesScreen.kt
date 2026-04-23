@@ -21,7 +21,7 @@ import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 
 @Composable
-fun FavoritesScreen(onMatchClick: (Int) -> Unit = {}) {
+fun FavoritesScreen(onMatchClick: (String) -> Unit = {}) {
     val context = LocalContext.current
     val viewModel: FavoritesViewModel = viewModel(factory = ViewModelFactory(Injection.provideFootballRepository(context)))
     val state by viewModel.uiState.collectAsState()
@@ -44,7 +44,7 @@ fun FavoritesScreen(onMatchClick: (Int) -> Unit = {}) {
                         match = match,
                         isFavorite = true,
                         onToggleFavorite = {},
-                        onClick = { onMatchClick(match.id ?: 0) }
+                        onClick = { onMatchClick(match.id ?: "") }
                     )
                 }
             }

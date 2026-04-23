@@ -25,7 +25,7 @@ class H2HViewModel(private val repository: FootballRepository) : ViewModel() {
     val uiState = _uiState.asStateFlow()
 
     // 🌟 THAY ĐỔI LỚN: Nhận vào fixtureId thay vì homeTeamId/awayTeamId
-    fun getHeadToHead(fixtureId: Int) {
+    fun getHeadToHead(fixtureId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 

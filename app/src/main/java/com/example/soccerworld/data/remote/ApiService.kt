@@ -1,83 +1,124 @@
 package com.example.soccerworld.data.remote
 
-import com.example.soccerworld.model.fixture.FixtureResponse
-import com.example.soccerworld.model.h2h.H2HResponse
-import com.example.soccerworld.model.leaguetable.LeagueTableResponse
-import com.example.soccerworld.model.player.PlayerResponse
-import com.example.soccerworld.model.statistic.StatisticsResponse
-import com.example.soccerworld.model.team.TeamResponse
-import com.example.soccerworld.model.topscorer.TopScorerResponse
-import com.example.soccerworld.util.Constant
+import com.example.soccerworld.data.remote.flashlive.EventDataResponse
+import com.example.soccerworld.data.remote.flashlive.EventStatsResponse
+import com.example.soccerworld.data.remote.flashlive.EventSummaryResponse
+import com.example.soccerworld.data.remote.flashlive.EventsListResponse
+import com.example.soccerworld.data.remote.flashlive.FixturesResponse
+import com.example.soccerworld.data.remote.flashlive.H2HResponse
+import com.example.soccerworld.data.remote.flashlive.LineupsResponse
+import com.example.soccerworld.data.remote.flashlive.PlayerDataResponse
+import com.example.soccerworld.data.remote.flashlive.SearchResult
+import com.example.soccerworld.data.remote.flashlive.SquadResponse
+import com.example.soccerworld.data.remote.flashlive.StandingsResponse
+import com.example.soccerworld.data.remote.flashlive.TeamDataResponse
+import com.example.soccerworld.data.remote.flashlive.TopScorersResponse
+import okhttp3.ResponseBody
+import retrofit2.Response
 import retrofit2.http.GET
-import retrofit2.http.Header
-import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Streaming
 
 interface ApiService {
+    @GET("/v1/tournaments/standings")
+    suspend fun getStandings(
+        @Query("locale") locale: String,
+        @Query("standing_type") type: String,
+        @Query("tournament_stage_id") stageId: String,
+        @Query("tournament_season_id") seasonId: String,
+        @Query("page") page: Int = 1
+    ): StandingsResponse
 
-    // 1. BẢNG XẾP HẠNG (Standings)
-    @GET(Constant.GET_LEAGUE_TABLE)
-    suspend fun getLeagueTable(
-        @Header("X-Auth-Token") token: String,
-        @Path("league_id") leagueId: String,
-        @Query("season") season: String? = null,     // VD: "2023"
-        @Query("matchday") matchday: Int? = null,    // VD: 10 (Vòng đấu thứ 10)
-        @Query("date") date: String? = null          // VD: "2023-10-25" (Định dạng YYYY-MM-DD)
-    ): LeagueTableResponse
-
-    // 2. VUA PHÁ LƯỚI (Top Scorers)
-    @GET(Constant.GET_TOP_SCORERS)
+    @GET("/v1/tournaments/standings")
     suspend fun getTopScorers(
-        @Header("X-Auth-Token") token: String,
-        @Path("league_id") leagueId: String,
-        @Query("season") season: String? = null,     // VD: "2023"
-        @Query("limit") limit: Int? = null           // VD: 10 (Lấy top 10 người)
-    ): TopScorerResponse
+        @Query("locale") locale: String,
+        @Query("standing_type") type: String = "top_scores",
+        @Query("tournament_stage_id") stageId: String,
+        @Query("tournament_season_id") seasonId: String
+    ): TopScorersResponse
 
-    // 3. DANH SÁCH ĐỘI BÓNG (Teams of Competition)
-    @GET(Constant.GET_ALL_TEAMS_OF_LEAGUE)
-    suspend fun getAllTeamsOfLeague(
-        @Header("X-Auth-Token") token: String,
-        @Path("league_id") leagueId: String,
-        @Query("season") season: String? = null      // VD: "2023"
-    ): TeamResponse
+    @GET("/v1/events/list")
+    suspend fun getEventsByDay(
+        @Query("locale") locale: String,
+        @Query("sport_id") sportId: Int,
+        @Query("timezone") timezone: Int,
+        @Query("indent_days") indentDays: Int
+    ): EventsListResponse
 
-    // 4. CHI TIẾT 1 ĐỘI BÓNG / CẦU THỦ (Team) -> KHÔNG CÓ FILTER
-    @GET(Constant.GET_ALL_PLAYERS_OF_TEAM)
-    suspend fun getAllPlayersOfTeam(
-        @Header("X-Auth-Token") token: String,
-        @Path("id") teamId: Int
-    ): PlayerResponse
+    @GET("/v1/tournaments/fixtures")
+    suspend fun getTournamentFixtures(
+        @Query("locale") locale: String,
+        @Query("tournament_stage_id") stageId: String,
+        @Query("page") page: Int = 1
+    ): FixturesResponse
 
-    // 5. LỊCH THI ĐẤU (Matches of Competition) -> CÓ NHIỀU FILTER NHẤT
-    @GET(Constant.GET_ALL_FIXTURE_OF_LEAGUE)
-    suspend fun getAllFixtureOfLeague(
-        @Header("X-Auth-Token") token: String,
-        @Path("league_id") leagueId: String,
-        @Query("dateFrom") dateFrom: String? = null, // VD: "2023-11-01"
-        @Query("dateTo") dateTo: String? = null,     // VD: "2023-11-30"
-        @Query("stage") stage: String? = null,       // VD: "GROUP_STAGE", "FINAL"
-        @Query("status") status: String? = null,     // VD: "SCHEDULED" (Sắp đá), "FINISHED" (Đã đá xong)
-        @Query("matchday") matchday: Int? = null,    // VD: 15
-        @Query("group") group: String? = null,       // VD: "GROUP_A"
-        @Query("season") season: String? = null      // VD: "2023"
-    ): FixtureResponse
+    @GET("/v1/tournaments/results")
+    suspend fun getTournamentResults(
+        @Query("locale") locale: String,
+        @Query("tournament_stage_id") stageId: String,
+        @Query("page") page: Int = 1
+    ): FixturesResponse
 
-    // 6. LỊCH SỬ ĐỐI ĐẦU (Head to Head)
-    @GET(Constant.GET_ALL_H2H_ITEMS)
-    suspend fun getAllH2hItems(
-        @Header("X-Auth-Token") token: String,
-        @Path("id") fixtureId: Int,                  // ID của trận đấu
-        @Query("limit") limit: Int? = null,          // VD: 5 (Lấy 5 trận đối đầu gần nhất)
-        @Query("dateFrom") dateFrom: String? = null, // VD: "2020-01-01"
-        @Query("dateTo") dateTo: String? = null,
-        @Query("competitions") competitions: String? = null // VD: "PL,CL" (Chỉ tính đối đầu ở Ngoại hạng và C1)
+    @GET("/v1/events/data")
+    suspend fun getEventData(
+        @Query("locale") locale: String,
+        @Query("event_id") eventId: String
+    ): EventDataResponse
+
+    @GET("/v1/events/summary")
+    suspend fun getEventSummary(
+        @Query("locale") locale: String,
+        @Query("event_id") eventId: String
+    ): EventSummaryResponse
+
+    @GET("/v1/events/statistics")
+    suspend fun getEventStats(
+        @Query("locale") locale: String,
+        @Query("event_id") eventId: String
+    ): EventStatsResponse
+
+    @GET("/v1/events/lineups")
+    suspend fun getEventLineups(
+        @Query("locale") locale: String,
+        @Query("event_id") eventId: String
+    ): LineupsResponse
+
+    @GET("/v1/events/h2h")
+    suspend fun getHeadToHead(
+        @Query("locale") locale: String,
+        @Query("event_id") eventId: String
     ): H2HResponse
 
-    // 7. CHI TIẾT 1 TRẬN ĐẤU (Match Detail) -> KHÔNG CÓ FILTER
-    @GET(Constant.GET_FIXTURE_STATISTICS)
-    suspend fun getFixtureStatistics(
-        @Header("X-Auth-Token") token: String,
-        @Path("fixture_id") fixtureId: Int
-    ): StatisticsResponse
+    @GET("/v1/teams/data")
+    suspend fun getTeamData(
+        @Query("locale") locale: String,
+        @Query("sport_id") sportId: Int,
+        @Query("team_id") teamId: String
+    ): TeamDataResponse
+
+    @GET("/v1/teams/squad")
+    suspend fun getTeamSquad(
+        @Query("locale") locale: String,
+        @Query("sport_id") sportId: Int,
+        @Query("team_id") teamId: String
+    ): SquadResponse
+
+    @GET("/v1/players/data")
+    suspend fun getPlayerData(
+        @Query("locale") locale: String,
+        @Query("sport_id") sportId: Int,
+        @Query("player_id") playerId: String
+    ): PlayerDataResponse
+
+    @GET("/v1/search/multi-search")
+    suspend fun multiSearch(
+        @Query("locale") locale: String,
+        @Query("query") query: String
+    ): List<SearchResult>
+
+    @GET("/v1/images/data")
+    @Streaming
+    suspend fun getImage(
+        @Query("image_id") imageId: String
+    ): Response<ResponseBody>
 }

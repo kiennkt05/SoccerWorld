@@ -1,169 +1,190 @@
 package com.example.soccerworld.data
 
 import android.util.Log
-import com.example.soccerworld.BuildConfig
 import com.example.soccerworld.data.cache.CacheTtl
 import com.example.soccerworld.data.local.FootballDao
 import com.example.soccerworld.data.local.entity.FavoriteMatchEntity
 import com.example.soccerworld.data.model.DataResult
 import com.example.soccerworld.data.model.ErrorType
 import com.example.soccerworld.data.remote.ApiService
-import com.example.soccerworld.data.repository.MediaRepository
-import com.example.soccerworld.data.repository.EspnEnrichmentRepository
+import com.example.soccerworld.data.remote.flashlive.EventStatsResponse
+import com.example.soccerworld.data.remote.flashlive.EventSummaryResponse
+import com.example.soccerworld.data.remote.flashlive.FlashLiveEvent
+import com.example.soccerworld.data.remote.flashlive.LineupsResponse
 import com.example.soccerworld.model.fixture.AwayTeam
+import com.example.soccerworld.model.fixture.Competition
 import com.example.soccerworld.model.fixture.FixtureResponse
+import com.example.soccerworld.model.fixture.FullTime
 import com.example.soccerworld.model.fixture.HomeTeam
 import com.example.soccerworld.model.fixture.Matche
+import com.example.soccerworld.model.fixture.ResultSet
+import com.example.soccerworld.model.fixture.Score
+import com.example.soccerworld.model.h2h.AwayTeamX
+import com.example.soccerworld.model.h2h.FullTime as H2HFullTime
 import com.example.soccerworld.model.h2h.H2HResponse
-import com.example.soccerworld.model.matchdetail.MatchDetailAggregate
+import com.example.soccerworld.model.h2h.HomeTeamX
+import com.example.soccerworld.model.h2h.Matche as H2HMatch
+import com.example.soccerworld.model.h2h.Score as H2HScore
 import com.example.soccerworld.model.leaguetable.LeagueTableResponse
+import com.example.soccerworld.model.leaguetable.Standing
+import com.example.soccerworld.model.leaguetable.Table
+import com.example.soccerworld.model.leaguetable.Team
+import com.example.soccerworld.model.matchdetail.MatchLineupPlayer
+import com.example.soccerworld.model.matchdetail.MatchLineupTeam
+import com.example.soccerworld.model.matchdetail.MatchEnrichmentDetail
+import com.example.soccerworld.model.matchdetail.MatchEvent
+import com.example.soccerworld.model.matchdetail.MatchStatItem
+import com.example.soccerworld.model.matchdetail.MatchDetailAggregate
 import com.example.soccerworld.model.player.PlayerResponse
+import com.example.soccerworld.model.player.Squad
+import com.example.soccerworld.model.statistic.AwayTeam as StatsAwayTeam
+import com.example.soccerworld.model.statistic.FullTime as StatsFullTime
+import com.example.soccerworld.model.statistic.HomeTeam as StatsHomeTeam
+import com.example.soccerworld.model.statistic.Score as StatsScore
 import com.example.soccerworld.model.statistic.StatisticsResponse
+import com.example.soccerworld.model.team.Team as TeamModel
 import com.example.soccerworld.model.team.TeamResponse
 import com.example.soccerworld.model.topscorer.TopScorerEntity
+import com.example.soccerworld.util.Constant
 import com.example.soccerworld.util.CustomSharedPreferences
-import com.example.soccerworld.util.toEntityList
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 class FootballRepository(
     private val apiService: ApiService,
     private val dao: FootballDao,
-    private val customPreferences: CustomSharedPreferences,
-    private val mediaRepository: MediaRepository,
-    private val espnEnrichmentRepository: EspnEnrichmentRepository
+    private val customPreferences: CustomSharedPreferences
 ) {
-    private val apiKey: String by lazy { BuildConfig.FOOTBALL_DATA_API_KEY.trim() }
     private val leagueTableCache = mutableMapOf<String, LeagueTableResponse>()
     private val fixtureCache = mutableMapOf<String, FixtureResponse>()
     private val teamsCache = mutableMapOf<String, TeamResponse>()
 
-    // Lấy LeagueId đang chọn
-    fun getSelectedLeagueId(): String = customPreferences.getLeagueId() ?: "2021"
+    fun getSelectedLeagueId(): String = customPreferences.getLeagueId() ?: "PL"
 
-    // 1. BẢNG XẾP HẠNG
-    suspend fun getLeagueTable(
-        leagueId: String,
-        season: String? = null,
-        matchday: Int? = null,
-        date: String? = null
-    ): DataResult<LeagueTableResponse> {
-        Log.d("FootballRepository", "getLeagueTable: leagueId=$leagueId")
-        if (!hasApiKey()) {
-            Log.e("FootballRepository", "Missing API Key")
-            return missingApiKeyError()
-        }
-
+    suspend fun getLeagueTable(leagueId: String): DataResult<LeagueTableResponse> {
+        val league = Constant.league(leagueId)
+            ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
         val updateTime = customPreferences.getStandingsTime() ?: 0L
         val now = System.currentTimeMillis()
         val isCacheValid = (now - updateTime) < CacheTtl.STANDINGS_MS
         leagueTableCache[leagueId]?.takeIf { isCacheValid }?.let {
-            Log.d("FootballRepository", "Returning from cache")
             return DataResult.Success(it, fromCache = true)
         }
-
         return safeApiCall {
-            Log.d("FootballRepository", "Calling API for League Table")
-            val response = apiService.getLeagueTable(apiKey, leagueId, season, matchday, date)
-            val enriched = enrichLeagueTableMedia(response)
-            enriched.also {
-                leagueTableCache[leagueId] = enriched
+            val rows = mutableListOf<Table>()
+            for (page in 1..2) {
+                val response = apiService.getStandings(Constant.LOCALE, "overall", league.stageId, league.seasonId, page)
+                val pageRows = response.data?.firstOrNull()?.rows.orEmpty().map { row ->
+                    val goals = parseGoals(row.goals)
+                    Table(
+                        position = row.ranking,
+                        team = Team(id = row.teamId, name = row.teamName, shortName = row.teamName, crest = row.teamImagePath),
+                        playedGames = row.matchesPlayed,
+                        won = row.wins,
+                        draw = row.draws,
+                        lost = row.losses,
+                        points = row.points,
+                        goalsFor = goals.first,
+                        goalsAgainst = goals.second,
+                        goalDifference = (goals.first ?: 0) - (goals.second ?: 0)
+                    )
+                }
+                rows.addAll(pageRows)
+                if (pageRows.size < 10) break
+            }
+            LeagueTableResponse(standings = listOf(Standing(type = "TOTAL", table = rows))).also {
+                leagueTableCache[leagueId] = it
                 customPreferences.saveStandingsTime(now)
             }
         }
     }
 
-    // 2. VUA PHÁ LƯỚI
     suspend fun getTopScorers(leagueId: String): DataResult<List<TopScorerEntity>> {
-        if (!hasApiKey()) return missingApiKeyError()
-
+        val league = Constant.league(leagueId)
+            ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
         val updateTime = customPreferences.getTopScorersTime() ?: 0L
         val now = System.currentTimeMillis()
         val isCacheValid = (now - updateTime) < CacheTtl.TOP_SCORERS_MS
-
         if (isCacheValid) {
             val localData = dao.getTopScorers()
-            if (localData.isNotEmpty()) {
-                return DataResult.Success(localData, fromCache = true)
-            }
+            if (localData.isNotEmpty()) return DataResult.Success(localData, fromCache = true)
         }
-
         return safeApiCall {
-            val response = apiService.getTopScorers(apiKey, leagueId)
-            val entities = response.toEntityList()
+            val entities = apiService.getTopScorers(Constant.LOCALE, "top_scores", league.stageId, league.seasonId)
+                .data?.firstOrNull()?.rows.orEmpty()
+                .mapNotNull {
+                    val playerId = it.playerId ?: return@mapNotNull null
+                    TopScorerEntity(
+                        playerId = playerId,
+                        playerName = it.playerName ?: "Unknown Player",
+                        teamName = it.teamName ?: "Unknown Team",
+                        goals = it.goals ?: 0,
+                        imageUrl = it.imagePath
+                    )
+                }
+                .sortedByDescending { it.goals }
+                .take(10)
             dao.clearTopScorers()
             dao.insertTopScorers(entities)
             customPreferences.saveTopScorersTime(now)
-            // Keep legacy key in sync for backward compatibility.
             customPreferences.saveTime(now)
             entities
         }
     }
 
-    // 3. DANH SÁCH ĐỘI BÓNG
-    suspend fun getAllTeamsOfLeague(
-        leagueId: String,
-        season: String? = null
-    ): DataResult<TeamResponse> {
-        if (!hasApiKey()) return missingApiKeyError()
-
+    suspend fun getAllTeamsOfLeague(leagueId: String): DataResult<TeamResponse> {
+        val league = Constant.league(leagueId)
+            ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
         val updateTime = customPreferences.getTeamsTime() ?: 0L
         val now = System.currentTimeMillis()
         val isCacheValid = (now - updateTime) < CacheTtl.TEAM_INFO_MS
-        teamsCache[leagueId]?.takeIf { isCacheValid }?.let {
-            return DataResult.Success(it, fromCache = true)
-        }
-
+        teamsCache[leagueId]?.takeIf { isCacheValid }?.let { return DataResult.Success(it, fromCache = true) }
         return safeApiCall {
-            val response = apiService.getAllTeamsOfLeague(apiKey, leagueId, season)
-            val enriched = enrichTeamsMedia(response)
-            enriched.also {
-                teamsCache[leagueId] = enriched
+            val rows = mutableListOf<TeamModel>()
+            for (page in 1..2) {
+                val response = apiService.getStandings(Constant.LOCALE, "overall", league.stageId, league.seasonId, page)
+                val pageRows = response.data?.firstOrNull()?.rows.orEmpty().map {
+                    TeamModel(id = it.teamId, name = it.teamName, shortName = it.teamName, crest = it.teamImagePath)
+                }
+                rows.addAll(pageRows)
+                if (pageRows.size < 10) break
+            }
+            TeamResponse(count = rows.size, teams = rows).also {
+                teamsCache[leagueId] = it
                 customPreferences.saveTeamsTime(now)
             }
         }
     }
 
-    // 4. CHI TIẾT ĐỘI BÓNG (Không có filter)
-    suspend fun getAllPlayersOfTeam(
-        teamId: Int
-    ): DataResult<PlayerResponse> {
-        if (!hasApiKey()) return missingApiKeyError()
+    suspend fun getAllPlayersOfTeam(teamId: String): DataResult<PlayerResponse> {
         return safeApiCall {
-            val response = apiService.getAllPlayersOfTeam(apiKey, teamId)
-            val mappedSquad = coroutineScope {
-                response.squad?.map { player ->
-                    async {
-                        player?.let { squad ->
-                            val media = mediaRepository.resolvePlayerMedia(squad.id, squad.name)
-                            val mediaEntity = (media as? DataResult.Success)?.data
-                            val imageUrl = mediaEntity?.thumbUrl ?: mediaEntity?.cutoutUrl
-                            squad.copy(imageUrl = imageUrl)
-                        }
-                    }
-                }?.awaitAll()
-            }
-            response.copy(squad = mappedSquad)
+            val teamData = apiService.getTeamData(Constant.LOCALE, Constant.SPORT_ID, teamId).data
+            val players = apiService.getTeamSquad(Constant.LOCALE, Constant.SPORT_ID, teamId)
+                .data.orEmpty()
+                .flatMap { it.items.orEmpty() }
+                .map {
+                    Squad(
+                        id = it.playerId,
+                        name = it.playerName,
+                        position = mapPlayerType(it.playerTypeId),
+                        imageUrl = it.playerImagePath
+                    )
+                }
+            PlayerResponse(id = teamData?.id, name = teamData?.name, crest = teamData?.imagePath, squad = players)
         }
     }
 
-    suspend fun preloadPlayerMediaInParallel(players: List<TopScorerEntity>): Map<Int, String?> = coroutineScope {
-        players.map { scorer ->
-            async {
-                val media = mediaRepository.resolvePlayerMedia(scorer.playerId, scorer.playerName)
-                val mediaEntity = (media as? DataResult.Success)?.data
-                scorer.playerId to (mediaEntity?.thumbUrl ?: mediaEntity?.cutoutUrl)
-            }
-        }.awaitAll().toMap()
+    suspend fun preloadPlayerMediaInParallel(players: List<TopScorerEntity>): Map<String, String?> {
+        return players.associate { it.playerId to it.imageUrl }
     }
 
-    // 5. LỊCH THI ĐẤU
     suspend fun getAllFixtureOfLeague(
         leagueId: String,
         dateFrom: String? = null,
@@ -171,25 +192,36 @@ class FootballRepository(
         stage: String? = null,
         status: String? = null,
         matchday: Int? = null,
-        group: String? = null,
-        season: String? = null,
         forceRefresh: Boolean = false
     ): DataResult<FixtureResponse> {
-        if (!hasApiKey()) return missingApiKeyError()
-
+        val league = Constant.league(leagueId)
+            ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
         val updateTime = customPreferences.getFixturesTime() ?: 0L
         val now = System.currentTimeMillis()
         val isCacheValid = (now - updateTime) < CacheTtl.FIXTURES_MS
-        val cacheKey = listOf(leagueId, dateFrom, dateTo, stage, status, matchday, group, season).joinToString("|")
-        fixtureCache[cacheKey]?.takeIf { isCacheValid && !forceRefresh }?.let {
-            return DataResult.Success(it, fromCache = true)
-        }
+        val cacheKey = listOf(leagueId, dateFrom, dateTo, stage, status, matchday).joinToString("|")
+        fixtureCache[cacheKey]?.takeIf { isCacheValid && !forceRefresh }?.let { return DataResult.Success(it, fromCache = true) }
 
         return safeApiCall {
-            val response = apiService.getAllFixtureOfLeague(apiKey, leagueId, dateFrom, dateTo, stage, status, matchday, group, season)
-            val enriched = enrichFixtureMedia(response)
-            enriched.also {
-                fixtureCache[cacheKey] = enriched
+            val events = fetchTournamentEvents(league.stageId, status)
+            val mappedMatches = events
+                .map { it.toFixtureMatch(league.name, leagueId) }
+                .filter { match ->
+                    val dateFilter = if (!dateFrom.isNullOrBlank() && !dateTo.isNullOrBlank()) {
+                        val matchDate = match.utcDate?.take(10)
+                        matchDate != null && matchDate >= dateFrom && matchDate <= dateTo
+                    } else true
+                    val statusFilter = status?.let { it == match.status } ?: true
+                    val matchdayFilter = matchday?.let { it == match.matchday } ?: true
+                    val stageFilter = stage?.let { it.equals(match.stage, ignoreCase = true) } ?: true
+                    dateFilter && statusFilter && matchdayFilter && stageFilter
+                }
+            FixtureResponse(
+                competition = Competition(code = leagueId, name = league.name),
+                resultSet = ResultSet(count = mappedMatches.size),
+                matches = mappedMatches
+            ).also {
+                fixtureCache[cacheKey] = it
                 customPreferences.saveFixturesTime(now)
             }
         }
@@ -219,37 +251,49 @@ class FootballRepository(
     }
 
     fun observeFavorites(): Flow<List<FavoriteMatchEntity>> = dao.getAllFavorites()
+    fun observeIsFavorite(matchId: String): Flow<Boolean> = dao.observeIsFavorite(matchId)
 
-    fun observeIsFavorite(matchId: Int): Flow<Boolean> = dao.observeIsFavorite(matchId)
-
-    // 6. LỊCH SỬ ĐỐI ĐẦU
-    suspend fun getAllH2hItems(
-        fixtureId: Int,
-        limit: Int? = null,
-        dateFrom: String? = null,
-        dateTo: String? = null,
-        competitions: String? = null
-    ): DataResult<H2HResponse> {
-        if (!hasApiKey()) return missingApiKeyError()
+    suspend fun getAllH2hItems(fixtureId: String): DataResult<H2HResponse> {
         return safeApiCall {
-            apiService.getAllH2hItems(apiKey, fixtureId, limit, dateFrom, dateTo, competitions)
+            val items = apiService.getHeadToHead(Constant.LOCALE, fixtureId)
+                .data?.firstOrNull()
+                ?.groups?.firstOrNull()
+                ?.items.orEmpty()
+            H2HResponse(
+                matches = items.map {
+                    val scores = parseScorePair(it.currentResult)
+                    H2HMatch(
+                        id = it.eventId,
+                        utcDate = toIsoDateTime(it.startTime),
+                        homeTeam = HomeTeamX(name = it.homeParticipant),
+                        awayTeam = AwayTeamX(name = it.awayParticipant),
+                        score = H2HScore(fullTime = H2HFullTime(home = scores.first, away = scores.second))
+                    )
+                }
+            )
         }
     }
 
-    // 7. CHI TIẾT TRẬN ĐẤU (Không có filter)
-    suspend fun getFixtureStatistics(
-        fixtureId: Int
-    ): DataResult<StatisticsResponse> {
-        if (!hasApiKey()) return missingApiKeyError()
+    suspend fun getFixtureStatistics(fixtureId: String): DataResult<StatisticsResponse> {
         return safeApiCall {
-            apiService.getFixtureStatistics(apiKey, fixtureId)
+            val event = apiService.getEventData(Constant.LOCALE, fixtureId).data
+            StatisticsResponse(
+                id = event?.eventId,
+                utcDate = toIsoDateTime(event?.startTime),
+                status = mapStatus(event?.stageType),
+                homeTeam = StatsHomeTeam(id = event?.homeId, name = event?.homeName, crest = event?.homeImagePath),
+                awayTeam = StatsAwayTeam(id = event?.awayId, name = event?.awayName, crest = event?.awayImagePath),
+                score = StatsScore(
+                    fullTime = StatsFullTime(
+                        home = event?.homeScore?.toIntOrNull(),
+                        away = event?.awayScore?.toIntOrNull()
+                    )
+                )
+            )
         }
     }
 
-    suspend fun getMatchDetailAggregate(fixtureId: Int): DataResult<MatchDetailAggregate> {
-        if (!hasApiKey()) return missingApiKeyError()
-        Log.d("FootballRepository", "getMatchDetailAggregate fixtureId=$fixtureId")
-
+    suspend fun getMatchDetailAggregate(fixtureId: String): DataResult<MatchDetailAggregate> {
         val coreResult = getFixtureStatistics(fixtureId)
         if (coreResult !is DataResult.Success) {
             return when (coreResult) {
@@ -257,25 +301,18 @@ class FootballRepository(
                 else -> DataResult.Error(ErrorType.UNKNOWN, "Failed to load core match detail")
             }
         }
-
         val h2hResult = getAllH2hItems(fixtureId)
         val h2hList = (h2hResult as? DataResult.Success)?.data?.matches ?: emptyList()
-        Log.d("FootballRepository", "Aggregate coreLoaded=true h2hCount=${h2hList.size}")
-
-        val enrichmentResult = espnEnrichmentRepository.getMatchEnrichment(coreResult.data, fixtureId)
+        val enrichmentResult = safeApiCall {
+            val summary = apiService.getEventSummary(Constant.LOCALE, fixtureId)
+            val stats = apiService.getEventStats(Constant.LOCALE, fixtureId)
+            val lineups = apiService.getEventLineups(Constant.LOCALE, fixtureId)
+            mapFlashLiveDetail(fixtureId, summary, stats, lineups)
+        }
         val enrichment = (enrichmentResult as? DataResult.Success)?.data
-        Log.d(
-            "FootballRepository",
-            "Aggregate enrichment events=${enrichment?.events?.size ?: 0} stats=${enrichment?.stats?.size ?: 0} lineups=${enrichment?.lineups?.size ?: 0}"
-        )
-
         return DataResult.Success(
-            MatchDetailAggregate(
-                core = coreResult.data,
-                h2h = h2hList,
-                enrichment = enrichment
-            ),
-            fromCache = (enrichmentResult as? DataResult.Success)?.fromCache == true
+            MatchDetailAggregate(core = coreResult.data, h2h = h2hList, enrichment = enrichment),
+            fromCache = false
         )
     }
 
@@ -302,65 +339,149 @@ class FootballRepository(
         }
     }
 
-    private fun hasApiKey(): Boolean = apiKey.isNotBlank()
-
-    private fun <T> missingApiKeyError(): DataResult<T> {
-        return DataResult.Error(
-            type = ErrorType.UNKNOWN,
-            message = "Missing FOOTBALL_DATA_API_KEY in local.properties."
+    private fun mapFlashLiveDetail(
+        eventId: String,
+        summary: EventSummaryResponse,
+        stats: EventStatsResponse,
+        lineups: LineupsResponse
+    ): MatchEnrichmentDetail {
+        val events = summary.data.orEmpty().flatMap { stage ->
+            stage.items.orEmpty().flatMap { item ->
+                item.participants.orEmpty().map { participant ->
+                    MatchEvent(
+                        minute = item.time ?: "--",
+                        type = participant.type ?: participant.incidentName ?: "Event",
+                        description = participant.participantName ?: participant.incidentName ?: "Event",
+                        team = null
+                    )
+                }
+            }
+        }
+        val statItems = stats.data.orEmpty().flatMap { stage ->
+            stage.groups.orEmpty().flatMap { group ->
+                group.items.orEmpty().map { item ->
+                    MatchStatItem(
+                        name = item.incidentName ?: "Stat",
+                        homeValue = item.valueHome ?: "-",
+                        awayValue = item.valueAway ?: "-"
+                    )
+                }
+            }
+        }
+        val lineupTeams = lineups.data.orEmpty().flatMap { group ->
+            group.formations.orEmpty().map { formation ->
+                val players = formation.members.orEmpty().map { member ->
+                    MatchLineupPlayer(
+                        name = member.fullName ?: "Player",
+                        position = member.positionId?.toString(),
+                        imageUrl = null
+                    )
+                }
+                MatchLineupTeam(
+                    teamName = if (formation.playerGroupType == 1) "Home" else "Away",
+                    formation = formation.formation,
+                    starters = players,
+                    substitutes = emptyList()
+                )
+            }
+        }
+        return MatchEnrichmentDetail(
+            eventId = eventId,
+            venue = summary.info?.venue,
+            events = events,
+            stats = statItems,
+            lineups = lineupTeams,
+            status = null,
+            lastUpdated = System.currentTimeMillis()
         )
     }
 
-    private suspend fun enrichTeamsMedia(response: TeamResponse): TeamResponse {
-        val mappedTeams = response.teams?.map { team ->
-            team?.let { t ->
-                val media = mediaRepository.resolveTeamMedia(t.id, t.name, t.crest)
-                val resolvedCrest = (media as? DataResult.Success)?.data?.badgeUrl ?: t.crest
-                t.copy(crest = resolvedCrest)
+    private fun FlashLiveEvent.toFixtureMatch(leagueName: String, leagueCode: String): Matche {
+        val homeCrest = homeImagePath ?: homeImages?.firstOrNull()
+        val awayCrest = awayImagePath ?: awayImages?.firstOrNull()
+        return Matche(
+            id = eventId,
+            utcDate = toIsoDateTime(startTime),
+            status = mapStatus(stageType),
+            matchday = round?.toIntOrNull(),
+            stage = stageType,
+            group = round ?: "Unknown Round",
+            competition = Competition(code = leagueCode, name = leagueName),
+            homeTeam = HomeTeam(id = homeId, name = homeName, shortName = homeName, crest = homeCrest),
+            awayTeam = AwayTeam(id = awayId, name = awayName, shortName = awayName, crest = awayCrest),
+            score = Score(fullTime = FullTime(home = homeScore?.toIntOrNull(), away = awayScore?.toIntOrNull()))
+        )
+    }
+
+    private suspend fun fetchTournamentEvents(stageId: String, status: String?): List<FlashLiveEvent> {
+        val useResultsOnly = status == "FINISHED"
+        val useFixturesOnly = status == "SCHEDULED" || status == "IN_PLAY" || status == "LIVE" || status == "PAUSED"
+        val events = mutableListOf<FlashLiveEvent>()
+
+        if (!useResultsOnly) {
+            events += fetchPagedEvents { page ->
+                apiService.getTournamentFixtures(Constant.LOCALE, stageId, page)
+                    .data.orEmpty()
+                    .flatMap { it.events.orEmpty() }
             }
         }
-        return response.copy(teams = mappedTeams)
-    }
-
-    private suspend fun enrichLeagueTableMedia(response: LeagueTableResponse): LeagueTableResponse {
-        val mappedStandings = response.standings?.map { standing ->
-            standing?.copy(
-                table = standing.table?.map { row ->
-                    row?.let { item ->
-                        val team = item.team
-                        val media = mediaRepository.resolveTeamMedia(team?.id, team?.name, team?.crest)
-                        val resolvedCrest = (media as? DataResult.Success)?.data?.badgeUrl ?: team?.crest
-                        val mappedTeam = team?.copy(crest = resolvedCrest)
-                        item.copy(team = mappedTeam)
-                    }
-                }
-            )
+        if (!useFixturesOnly) {
+            events += fetchPagedEvents { page ->
+                apiService.getTournamentResults(Constant.LOCALE, stageId, page)
+                    .data.orEmpty()
+                    .flatMap { it.events.orEmpty() }
+            }
         }
-        return response.copy(standings = mappedStandings)
+        return events.distinctBy { it.eventId }
     }
 
-    private suspend fun enrichFixtureMedia(response: FixtureResponse): FixtureResponse {
-        val mappedMatches = response.matches?.map { match -> mapMatchMedia(match) }
-        return response.copy(matches = mappedMatches)
+    private suspend fun fetchPagedEvents(fetchPage: suspend (Int) -> List<FlashLiveEvent>): List<FlashLiveEvent> {
+        val merged = mutableListOf<FlashLiveEvent>()
+        for (page in 1..10) {
+            val pageItems = fetchPage(page)
+            if (pageItems.isEmpty()) break
+            merged += pageItems
+            if (pageItems.size < 20) break
+        }
+        return merged
     }
 
-    private suspend fun mapMatchMedia(match: Matche): Matche {
-        val home = mapHomeTeamMedia(match.homeTeam)
-        val away = mapAwayTeamMedia(match.awayTeam)
-        return match.copy(homeTeam = home, awayTeam = away)
+    private fun parseGoals(goals: String?): Pair<Int?, Int?> {
+        val parts = goals?.split(":").orEmpty()
+        if (parts.size != 2) return null to null
+        return parts[0].trim().toIntOrNull() to parts[1].trim().toIntOrNull()
     }
 
-    private suspend fun mapHomeTeamMedia(homeTeam: HomeTeam?): HomeTeam? {
-        homeTeam ?: return null
-        val media = mediaRepository.resolveTeamMedia(homeTeam.id, homeTeam.name, homeTeam.crest)
-        val resolvedCrest = (media as? DataResult.Success)?.data?.badgeUrl ?: homeTeam.crest
-        return homeTeam.copy(crest = resolvedCrest)
+    private fun parseScorePair(score: String?): Pair<Int?, Int?> {
+        val parts = score?.split(":").orEmpty()
+        if (parts.size != 2) return null to null
+        return parts[0].trim().toIntOrNull() to parts[1].trim().toIntOrNull()
     }
 
-    private suspend fun mapAwayTeamMedia(awayTeam: AwayTeam?): AwayTeam? {
-        awayTeam ?: return null
-        val media = mediaRepository.resolveTeamMedia(awayTeam.id, awayTeam.name, awayTeam.crest)
-        val resolvedCrest = (media as? DataResult.Success)?.data?.badgeUrl ?: awayTeam.crest
-        return awayTeam.copy(crest = resolvedCrest)
+    private fun mapStatus(stageType: String?): String {
+        return when (stageType?.uppercase(Locale.US)) {
+            "LIVE", "IN_PLAY" -> "IN_PLAY"
+            "PAUSED", "HALFTIME" -> "PAUSED"
+            "FINISHED", "FT" -> "FINISHED"
+            else -> "SCHEDULED"
+        }
+    }
+
+    private fun mapPlayerType(typeId: String?): String {
+        val normalized = typeId?.trim()?.uppercase(Locale.US).orEmpty()
+        return when (normalized) {
+            "1", "GOALKEEPER", "GK" -> "Goalkeeper"
+            "2", "DEFENDER", "DF" -> "Defender"
+            "3", "MIDFIELDER", "MF" -> "Midfielder"
+            "4", "FORWARD", "ATTACKER", "FW", "ST" -> "Forward"
+            else -> "Player"
+        }
+    }
+
+    private fun toIsoDateTime(unixSeconds: Long?): String? {
+        unixSeconds ?: return null
+        val formatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
+        formatter.timeZone = TimeZone.getTimeZone("UTC")
+        return formatter.format(Date(unixSeconds * 1000L))
     }
 }

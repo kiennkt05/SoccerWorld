@@ -7,8 +7,9 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "topscorer_table")
 data class TopScorerEntity(
     @PrimaryKey
-    val playerId: Int,         // ID cầu thủ làm khóa chính
+    val playerId: String,      // ID cầu thủ làm khóa chính
     val playerName: String,    // Tên cầu thủ
     val teamName: String,      // Tên đội bóng
-    val goals: Int             // Số bàn thắng
+    val goals: Int,            // Số bàn thắng
+    val imageUrl: String? = null
 )

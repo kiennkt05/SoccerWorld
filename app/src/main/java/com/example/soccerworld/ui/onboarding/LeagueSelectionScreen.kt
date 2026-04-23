@@ -21,12 +21,12 @@ import com.example.soccerworld.util.CustomSharedPreferences
 data class LeagueUI(val id: String, val name: String, val logoUrl: String)
 
 val popularLeagues = listOf(
-    LeagueUI("2021", "Premier League", "https://crests.football-data.org/PL.png"),
-    LeagueUI("2014", "La Liga", "https://crests.football-data.org/PD.png"),
-    LeagueUI("2019", "Serie A", "https://crests.football-data.org/SA.png"),
-    LeagueUI("2002", "Bundesliga", "https://crests.football-data.org/BL1.png"),
-    LeagueUI("2015", "Ligue 1", "https://crests.football-data.org/FL1.png"),
-    LeagueUI("2001", "Champions League", "https://crests.football-data.org/CL.png")
+    LeagueUI("PL", "Premier League", "https://crests.football-data.org/PL.png"),
+    LeagueUI("PD", "La Liga", "https://crests.football-data.org/PD.png"),
+    LeagueUI("SA", "Serie A", "https://crests.football-data.org/SA.png"),
+    LeagueUI("BL1", "Bundesliga", "https://crests.football-data.org/BL1.png"),
+    LeagueUI("FL1", "Ligue 1", "https://crests.football-data.org/FL1.png"),
+    LeagueUI("CL", "Champions League", "https://crests.football-data.org/CL.png")
 )
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -26,7 +26,7 @@ import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 
 @Composable
-fun TeamsScreen(onTeamClick: (Int) -> Unit = {}) {
+fun TeamsScreen(onTeamClick: (String) -> Unit = {}) {
     val context = LocalContext.current
     val viewModel: TeamViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideFootballRepository(context))
@@ -52,7 +52,7 @@ fun TeamsScreen(onTeamClick: (Int) -> Unit = {}) {
         ) {
             items(teams) { team ->
                 TeamCard(team = team) {
-                    onTeamClick(team.id ?: 0)
+                    onTeamClick(team.id ?: "")
                 }
             }
         }

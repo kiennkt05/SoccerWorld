@@ -25,7 +25,7 @@ class PlayerViewModel(private val repository: FootballRepository) : ViewModel() 
     private val _uiState = MutableStateFlow(PlayerUiState())
     val uiState = _uiState.asStateFlow()
 
-    fun getAllPlayersOfTeam(teamId: Int) {
+    fun getAllPlayersOfTeam(teamId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 

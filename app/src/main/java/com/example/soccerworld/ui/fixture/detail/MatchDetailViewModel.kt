@@ -24,7 +24,7 @@ class MatchDetailViewModel(
     private val _uiState = MutableStateFlow(MatchDetailUiState())
     val uiState = _uiState.asStateFlow()
 
-    fun loadMatchDetail(fixtureId: Int) {
+    fun loadMatchDetail(fixtureId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             Log.d(tag, "Loading aggregate for fixtureId=$fixtureId")

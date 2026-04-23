@@ -22,7 +22,7 @@ class TransferViewModel(private val repository: FootballRepository) : ViewModel(
     private val _uiState = MutableStateFlow(TransferUiState())
     val uiState = _uiState.asStateFlow()
 
-    fun getAllTransfersOfTeam(teamId: Int) {
+    fun getAllTransfersOfTeam() {
         viewModelScope.launch {
             // Bật trạng thái loading
             _uiState.update { it.copy(isLoading = true, error = null) }
