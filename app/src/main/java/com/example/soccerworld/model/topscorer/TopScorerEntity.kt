@@ -1,12 +1,11 @@
 package com.example.soccerworld.model.topscorer
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 
 // Đặt tên bảng rõ ràng
-@Entity(tableName = "topscorer_table")
+@Entity(tableName = "topscorer_table", primaryKeys = ["leagueId", "playerId"])
 data class TopScorerEntity(
-    @PrimaryKey
+    val leagueId: String = "",
     val playerId: String,      // ID cầu thủ làm khóa chính
     val playerName: String,    // Tên cầu thủ
     val teamName: String,      // Tên đội bóng

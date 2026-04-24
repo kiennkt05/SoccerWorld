@@ -7,7 +7,8 @@ data class StandingsResponse(
 )
 
 data class TopScorersResponse(
-    @SerializedName("DATA") val data: List<TopScorerBlock>? = null
+    @SerializedName("DATA") val data: List<TopScorerBlock>? = null,
+    @SerializedName("ROWS") val rows: List<TopScorerRow>? = null
 )
 
 data class StandingBlock(

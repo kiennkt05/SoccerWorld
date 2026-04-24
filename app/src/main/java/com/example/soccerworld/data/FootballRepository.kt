@@ -3,7 +3,12 @@ package com.example.soccerworld.data
 import android.util.Log
 import com.example.soccerworld.data.cache.CacheTtl
 import com.example.soccerworld.data.local.FootballDao
+import com.example.soccerworld.data.local.entity.FixturesCacheEntity
 import com.example.soccerworld.data.local.entity.FavoriteMatchEntity
+import com.example.soccerworld.data.local.entity.MatchDetailCacheEntity
+import com.example.soccerworld.data.local.entity.StandingsCacheEntity
+import com.example.soccerworld.data.local.entity.TeamPlayersCacheEntity
+import com.example.soccerworld.data.local.entity.TeamsCacheEntity
 import com.example.soccerworld.data.model.DataResult
 import com.example.soccerworld.data.model.ErrorType
 import com.example.soccerworld.data.remote.ApiService
@@ -47,6 +52,7 @@ import com.example.soccerworld.model.team.TeamResponse
 import com.example.soccerworld.model.topscorer.TopScorerEntity
 import com.example.soccerworld.util.Constant
 import com.example.soccerworld.util.CustomSharedPreferences
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -62,9 +68,12 @@ class FootballRepository(
     private val dao: FootballDao,
     private val customPreferences: CustomSharedPreferences
 ) {
+    private val gson = Gson()
     private val leagueTableCache = mutableMapOf<String, LeagueTableResponse>()
     private val fixtureCache = mutableMapOf<String, FixtureResponse>()
     private val teamsCache = mutableMapOf<String, TeamResponse>()
+    private val teamPlayersCache = mutableMapOf<String, PlayerResponse>()
+    private val matchDetailCache = mutableMapOf<String, MatchDetailAggregate>()
 
     fun getSelectedLeagueId(): String = customPreferences.getLeagueId() ?: "PL"
 
@@ -73,15 +82,23 @@ class FootballRepository(
             ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
         val updateTime = customPreferences.getStandingsTime() ?: 0L
         val now = System.currentTimeMillis()
-        val isCacheValid = (now - updateTime) < CacheTtl.STANDINGS_MS
+        val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
         leagueTableCache[leagueId]?.takeIf { isCacheValid }?.let {
             return DataResult.Success(it, fromCache = true)
         }
+        if (isCacheValid) {
+            dao.getStandingsCache(leagueId)?.takeIf { isStillValid(it.updatedAt, now) }?.let { cached ->
+                deserialize<LeagueTableResponse>(cached.payloadJson)?.also {
+                    leagueTableCache[leagueId] = it
+                    return DataResult.Success(it, fromCache = true)
+                }
+            }
+        }
         return safeApiCall {
-            val rows = mutableListOf<Table>()
-            for (page in 1..2) {
-                val response = apiService.getStandings(Constant.LOCALE, "overall", league.stageId, league.seasonId, page)
-                val pageRows = response.data?.firstOrNull()?.rows.orEmpty().map { row ->
+            val rows = apiService
+                .getStandings(Constant.LOCALE, "overall", league.stageId, league.seasonId)
+                .data?.firstOrNull()?.rows.orEmpty()
+                .map { row ->
                     val goals = parseGoals(row.goals)
                     Table(
                         position = row.ranking,
@@ -96,12 +113,16 @@ class FootballRepository(
                         goalDifference = (goals.first ?: 0) - (goals.second ?: 0)
                     )
                 }
-                rows.addAll(pageRows)
-                if (pageRows.size < 10) break
-            }
             LeagueTableResponse(standings = listOf(Standing(type = "TOTAL", table = rows))).also {
                 leagueTableCache[leagueId] = it
                 customPreferences.saveStandingsTime(now)
+                dao.upsertStandingsCache(
+                    StandingsCacheEntity(
+                        leagueId = leagueId,
+                        payloadJson = serialize(it),
+                        updatedAt = now
+                    )
+                )
             }
         }
     }
@@ -111,17 +132,18 @@ class FootballRepository(
             ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
         val updateTime = customPreferences.getTopScorersTime() ?: 0L
         val now = System.currentTimeMillis()
-        val isCacheValid = (now - updateTime) < CacheTtl.TOP_SCORERS_MS
+        val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
         if (isCacheValid) {
-            val localData = dao.getTopScorers()
+            val localData = dao.getTopScorers(leagueId)
             if (localData.isNotEmpty()) return DataResult.Success(localData, fromCache = true)
         }
         return safeApiCall {
-            val entities = apiService.getTopScorers(Constant.LOCALE, "top_scores", league.stageId, league.seasonId)
-                .data?.firstOrNull()?.rows.orEmpty()
+            val topScorerRows = fetchTopScorerRows(league.stageId, league.seasonId)
+            val entities = topScorerRows
                 .mapNotNull {
                     val playerId = it.playerId ?: return@mapNotNull null
                     TopScorerEntity(
+                        leagueId = leagueId,
                         playerId = playerId,
                         playerName = it.playerName ?: "Unknown Player",
                         teamName = it.teamName ?: "Unknown Team",
@@ -131,11 +153,34 @@ class FootballRepository(
                 }
                 .sortedByDescending { it.goals }
                 .take(10)
-            dao.clearTopScorers()
+            dao.clearTopScorers(leagueId)
             dao.insertTopScorers(entities)
             customPreferences.saveTopScorersTime(now)
             customPreferences.saveTime(now)
             entities
+        }
+    }
+
+    private suspend fun fetchTopScorerRows(stageId: String, seasonId: String): List<com.example.soccerworld.data.remote.flashlive.TopScorerRow> {
+        val primaryResponse = apiService.getTopScorers(
+            locale = Constant.LOCALE,
+            type = "top_scores",
+            stageId = stageId,
+            seasonId = seasonId
+        )
+        val primaryRows = primaryResponse.rows.orEmpty().ifEmpty {
+            primaryResponse.data?.firstOrNull()?.rows.orEmpty()
+        }
+        if (primaryRows.isNotEmpty()) return primaryRows
+
+        val fallbackResponse = apiService.getTopScorers(
+            locale = Constant.LOCALE,
+            type = "top_scorers",
+            stageId = stageId,
+            seasonId = seasonId
+        )
+        return fallbackResponse.rows.orEmpty().ifEmpty {
+            fallbackResponse.data?.firstOrNull()?.rows.orEmpty()
         }
     }
 
@@ -144,26 +189,53 @@ class FootballRepository(
             ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
         val updateTime = customPreferences.getTeamsTime() ?: 0L
         val now = System.currentTimeMillis()
-        val isCacheValid = (now - updateTime) < CacheTtl.TEAM_INFO_MS
+        val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
         teamsCache[leagueId]?.takeIf { isCacheValid }?.let { return DataResult.Success(it, fromCache = true) }
+        if (isCacheValid) {
+            dao.getTeamsCache(leagueId)?.takeIf { isStillValid(it.updatedAt, now) }?.let { cached ->
+                deserialize<TeamResponse>(cached.payloadJson)?.also {
+                    teamsCache[leagueId] = it
+                    return DataResult.Success(it, fromCache = true)
+                }
+            }
+        }
         return safeApiCall {
-            val rows = mutableListOf<TeamModel>()
-            for (page in 1..2) {
-                val response = apiService.getStandings(Constant.LOCALE, "overall", league.stageId, league.seasonId, page)
-                val pageRows = response.data?.firstOrNull()?.rows.orEmpty().map {
+            val rows = apiService
+                .getStandings(Constant.LOCALE, "overall", league.stageId, league.seasonId)
+                .data?.firstOrNull()?.rows.orEmpty()
+                .map {
                     TeamModel(id = it.teamId, name = it.teamName, shortName = it.teamName, crest = it.teamImagePath)
                 }
-                rows.addAll(pageRows)
-                if (pageRows.size < 10) break
-            }
             TeamResponse(count = rows.size, teams = rows).also {
                 teamsCache[leagueId] = it
                 customPreferences.saveTeamsTime(now)
+                dao.upsertTeamsCache(
+                    TeamsCacheEntity(
+                        leagueId = leagueId,
+                        payloadJson = serialize(it),
+                        updatedAt = now
+                    )
+                )
             }
         }
     }
 
     suspend fun getAllPlayersOfTeam(teamId: String): DataResult<PlayerResponse> {
+        val updateTime = customPreferences.getTeamDetailTime(teamId) ?: 0L
+        val now = System.currentTimeMillis()
+        val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
+        teamPlayersCache[teamId]?.takeIf { isCacheValid }?.let {
+            return DataResult.Success(it, fromCache = true)
+        }
+        if (isCacheValid) {
+            dao.getTeamPlayersCache(teamId)?.takeIf { isStillValid(it.updatedAt, now) }?.let { cached ->
+                deserialize<PlayerResponse>(cached.payloadJson)?.also {
+                    teamPlayersCache[teamId] = it
+                    return DataResult.Success(it, fromCache = true)
+                }
+            }
+        }
+
         return safeApiCall {
             val teamData = apiService.getTeamData(Constant.LOCALE, Constant.SPORT_ID, teamId).data
             val players = apiService.getTeamSquad(Constant.LOCALE, Constant.SPORT_ID, teamId)
@@ -177,7 +249,17 @@ class FootballRepository(
                         imageUrl = it.playerImagePath
                     )
                 }
-            PlayerResponse(id = teamData?.id, name = teamData?.name, crest = teamData?.imagePath, squad = players)
+            PlayerResponse(id = teamData?.id, name = teamData?.name, crest = teamData?.imagePath, squad = players).also {
+                teamPlayersCache[teamId] = it
+                customPreferences.saveTeamDetailTime(teamId, now)
+                dao.upsertTeamPlayersCache(
+                    TeamPlayersCacheEntity(
+                        teamId = teamId,
+                        payloadJson = serialize(it),
+                        updatedAt = now
+                    )
+                )
+            }
         }
     }
 
@@ -198,9 +280,17 @@ class FootballRepository(
             ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
         val updateTime = customPreferences.getFixturesTime() ?: 0L
         val now = System.currentTimeMillis()
-        val isCacheValid = (now - updateTime) < CacheTtl.FIXTURES_MS
+        val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
         val cacheKey = listOf(leagueId, dateFrom, dateTo, stage, status, matchday).joinToString("|")
         fixtureCache[cacheKey]?.takeIf { isCacheValid && !forceRefresh }?.let { return DataResult.Success(it, fromCache = true) }
+        if (!forceRefresh && isCacheValid) {
+            dao.getFixturesCache(cacheKey)?.takeIf { isStillValid(it.updatedAt, now) }?.let { cached ->
+                deserialize<FixtureResponse>(cached.payloadJson)?.also {
+                    fixtureCache[cacheKey] = it
+                    return DataResult.Success(it, fromCache = true)
+                }
+            }
+        }
 
         return safeApiCall {
             val events = fetchTournamentEvents(league.stageId, status)
@@ -223,6 +313,15 @@ class FootballRepository(
             ).also {
                 fixtureCache[cacheKey] = it
                 customPreferences.saveFixturesTime(now)
+                if (!forceRefresh) {
+                    dao.upsertFixturesCache(
+                        FixturesCacheEntity(
+                            queryKey = cacheKey,
+                            payloadJson = serialize(it),
+                            updatedAt = now
+                        )
+                    )
+                }
             }
         }
     }
@@ -294,6 +393,21 @@ class FootballRepository(
     }
 
     suspend fun getMatchDetailAggregate(fixtureId: String): DataResult<MatchDetailAggregate> {
+        val updateTime = customPreferences.getMatchDetailTime(fixtureId) ?: 0L
+        val now = System.currentTimeMillis()
+        val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
+        matchDetailCache[fixtureId]?.takeIf { isCacheValid }?.let {
+            return DataResult.Success(it, fromCache = true)
+        }
+        if (isCacheValid) {
+            dao.getMatchDetailCache(fixtureId)?.takeIf { isStillValid(it.updatedAt, now) }?.let { cached ->
+                deserialize<MatchDetailAggregate>(cached.payloadJson)?.also {
+                    matchDetailCache[fixtureId] = it
+                    return DataResult.Success(it, fromCache = true)
+                }
+            }
+        }
+
         val coreResult = getFixtureStatistics(fixtureId)
         if (coreResult !is DataResult.Success) {
             return when (coreResult) {
@@ -310,10 +424,25 @@ class FootballRepository(
             mapFlashLiveDetail(fixtureId, summary, stats, lineups)
         }
         val enrichment = (enrichmentResult as? DataResult.Success)?.data
-        return DataResult.Success(
-            MatchDetailAggregate(core = coreResult.data, h2h = h2hList, enrichment = enrichment),
-            fromCache = false
+        val aggregate = MatchDetailAggregate(core = coreResult.data, h2h = h2hList, enrichment = enrichment)
+        matchDetailCache[fixtureId] = aggregate
+        customPreferences.saveMatchDetailTime(fixtureId, now)
+        dao.upsertMatchDetailCache(
+            MatchDetailCacheEntity(
+                fixtureId = fixtureId,
+                payloadJson = serialize(aggregate),
+                updatedAt = now
+            )
         )
+        return DataResult.Success(aggregate, fromCache = false)
+    }
+
+    private fun isStillValid(updatedAt: Long, now: Long): Boolean = (now - updatedAt) < CacheTtl.CACHE_WINDOW_MS
+
+    private fun serialize(any: Any): String = gson.toJson(any)
+
+    private inline fun <reified T> deserialize(json: String): T? {
+        return runCatching { gson.fromJson(json, T::class.java) }.getOrNull()
     }
 
     private suspend fun <T> safeApiCall(block: suspend () -> T): DataResult<T> = withContext(Dispatchers.IO) {
@@ -438,7 +567,12 @@ class FootballRepository(
     private suspend fun fetchPagedEvents(fetchPage: suspend (Int) -> List<FlashLiveEvent>): List<FlashLiveEvent> {
         val merged = mutableListOf<FlashLiveEvent>()
         for (page in 1..10) {
-            val pageItems = fetchPage(page)
+            val pageItems = try {
+                fetchPage(page)
+            } catch (http: HttpException) {
+                if (http.code() == 404) break
+                throw http
+            }
             if (pageItems.isEmpty()) break
             merged += pageItems
             if (pageItems.size < 20) break

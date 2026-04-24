@@ -14,6 +14,8 @@ class CustomSharedPreferences {
         private const val STANDINGS_TIME = "standings_time"
         private const val FIXTURES_TIME = "fixtures_time"
         private const val TEAMS_TIME = "teams_time"
+        private const val TEAM_DETAIL_TIME_PREFIX = "team_detail_time_"
+        private const val MATCH_DETAIL_TIME_PREFIX = "match_detail_time_"
         private val RB_ID = "rb_id"
         private val LEAGUE_ID = "league_id"
         private var sharedPreferences: SharedPreferences? = null
@@ -89,6 +91,26 @@ class CustomSharedPreferences {
     }
 
     fun getTeamsTime() = sharedPreferences?.getLong(TEAMS_TIME, 0)
+
+    fun saveTeamDetailTime(teamId: String, time: Long) {
+        sharedPreferences?.edit(commit = true) {
+            putLong("${TEAM_DETAIL_TIME_PREFIX}${teamId}", time)
+        }
+    }
+
+    fun getTeamDetailTime(teamId: String): Long? {
+        return sharedPreferences?.getLong("${TEAM_DETAIL_TIME_PREFIX}${teamId}", 0)
+    }
+
+    fun saveMatchDetailTime(fixtureId: String, time: Long) {
+        sharedPreferences?.edit(commit = true) {
+            putLong("${MATCH_DETAIL_TIME_PREFIX}${fixtureId}", time)
+        }
+    }
+
+    fun getMatchDetailTime(fixtureId: String): Long? {
+        return sharedPreferences?.getLong("${MATCH_DETAIL_TIME_PREFIX}${fixtureId}", 0)
+    }
 
     fun saveLeagueId(leagueId: String) {
         sharedPreferences?.edit(commit = true) {

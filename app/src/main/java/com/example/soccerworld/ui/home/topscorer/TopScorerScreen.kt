@@ -38,6 +38,14 @@ fun TopScorersScreen() {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(text = state.error ?: "Unknown error", color = Color.Red)
         }
+    } else if (state.topScorerList.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                text = "Chua co du lieu vua pha luoi cho giai dau nay",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.Gray
+            )
+        }
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

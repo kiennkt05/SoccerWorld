@@ -26,7 +26,7 @@ interface ApiService {
         @Query("standing_type") type: String,
         @Query("tournament_stage_id") stageId: String,
         @Query("tournament_season_id") seasonId: String,
-        @Query("page") page: Int = 1
+        @Query("page") page: Int? = null
     ): StandingsResponse
 
     @GET("/v1/tournaments/standings")
