@@ -201,9 +201,53 @@ data class PlayerData(
     @SerializedName("IMAGE_PATH") val imagePath: String? = null
 )
 
-data class SearchResult(
-    @SerializedName("ID") val id: String? = null,
-    @SerializedName("NAME") val name: String? = null,
-    @SerializedName("TYPE") val type: String? = null,
+sealed interface SearchItemDto {
+    val id: String
+    val type: String
+}
+
+data class TeamSearchItemDto(
+    @SerializedName("ID") override val id: String,
+    @SerializedName("TYPE") override val type: String = "team",
+    @SerializedName("NAME") val name: String,
+    @SerializedName("COUNTRY_NAME") val countryName: String? = null,
     @SerializedName("IMAGE") val image: String? = null
+) : SearchItemDto
+
+data class PlayerSearchItemDto(
+    @SerializedName("ID") override val id: String,
+    @SerializedName("TYPE") override val type: String = "playersInTeam",
+    @SerializedName("NAME") val name: String,
+    @SerializedName("IMAGE") val image: String? = null,
+    @SerializedName("COUNTRY_NAME") val countryName: String? = null
+) : SearchItemDto
+
+data class TournamentSearchItemDto(
+    @SerializedName("ID") override val id: String,
+    @SerializedName("TYPE") override val type: String = "tournament",
+    @SerializedName("NAME") val name: String,
+    @SerializedName("COUNTRY_NAME") val countryName: String? = null
+) : SearchItemDto
+
+data class UnknownSearchItemDto(
+    @SerializedName("ID") override val id: String = "unknown",
+    @SerializedName("TYPE") override val type: String = "unknown",
+    val rawType: String
+) : SearchItemDto
+
+data class TeamTransfersResponse(
+    @SerializedName("DATA") val data: List<TransferData>?
+)
+
+data class TransferData(
+    @SerializedName("TRANSFER_ID") val transferId: String?,
+    @SerializedName("PLAYER_ID") val playerId: String?,
+    @SerializedName("PLAYER_NAME") val playerName: String?,
+    @SerializedName("TRANSFER_DATE") val transferDate: Long?,
+    @SerializedName("TRANSFER_TYPE") val transferType: Int?,
+    @SerializedName("FROM_TEAM_ID") val fromTeamId: String?,
+    @SerializedName("FROM_TEAM_NAME") val fromTeamName: String?,
+    @SerializedName("TO_TEAM_ID") val toTeamId: String?,
+    @SerializedName("TO_TEAM_NAME") val toTeamName: String?,
+    @SerializedName("TRANSFER_REASON") val transferReason: String?
 )

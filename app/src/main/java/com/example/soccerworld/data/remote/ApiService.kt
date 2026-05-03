@@ -8,7 +8,8 @@ import com.example.soccerworld.data.remote.flashlive.FixturesResponse
 import com.example.soccerworld.data.remote.flashlive.H2HResponse
 import com.example.soccerworld.data.remote.flashlive.LineupsResponse
 import com.example.soccerworld.data.remote.flashlive.PlayerDataResponse
-import com.example.soccerworld.data.remote.flashlive.SearchResult
+import com.example.soccerworld.data.remote.flashlive.SearchItemDto
+import com.example.soccerworld.data.remote.flashlive.TeamTransfersResponse
 import com.example.soccerworld.data.remote.flashlive.SquadResponse
 import com.example.soccerworld.data.remote.flashlive.StandingsResponse
 import com.example.soccerworld.data.remote.flashlive.TeamDataResponse
@@ -110,11 +111,34 @@ interface ApiService {
         @Query("player_id") playerId: String
     ): PlayerDataResponse
 
+    @GET("/v1/teams/fixtures")
+    suspend fun getTeamFixtures(
+        @Query("locale") locale: String,
+        @Query("sport_id") sportId: Int,
+        @Query("team_id") teamId: String,
+        @Query("page") page: Int = 1
+    ): FixturesResponse
+
+    @GET("/v1/teams/results")
+    suspend fun getTeamResults(
+        @Query("locale") locale: String,
+        @Query("sport_id") sportId: Int,
+        @Query("team_id") teamId: String,
+        @Query("page") page: Int = 1
+    ): FixturesResponse
+
+    @GET("/v1/teams/transfers")
+    suspend fun getTeamTransfers(
+        @Query("locale") locale: String,
+        @Query("sport_id") sportId: Int,
+        @Query("team_id") teamId: String
+    ): TeamTransfersResponse
+
     @GET("/v1/search/multi-search")
     suspend fun multiSearch(
         @Query("locale") locale: String,
         @Query("query") query: String
-    ): List<SearchResult>
+    ): List<SearchItemDto>
 
     @GET("/v1/images/data")
     @Streaming

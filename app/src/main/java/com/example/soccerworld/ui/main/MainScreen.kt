@@ -15,7 +15,8 @@ import com.example.soccerworld.ui.favorites.FavoritesScreen
 import com.example.soccerworld.ui.home.HomeScreen
 import com.example.soccerworld.ui.fixture.FixturesScreen
 import com.example.soccerworld.ui.navigation.Screen
-import com.example.soccerworld.ui.team.TeamsScreen
+import com.example.soccerworld.ui.search.SearchScreen
+import com.example.soccerworld.ui.profile.ProfileScreen
 import com.example.soccerworld.ui.navigation.BottomNavItem
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -28,8 +29,9 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
     val items = listOf(
         BottomNavItem.Home,
         BottomNavItem.Fixtures,
-        BottomNavItem.Teams,
-        BottomNavItem.Favorites
+        BottomNavItem.Search,
+        BottomNavItem.Favorites,
+        BottomNavItem.Profile
     )
 
     Scaffold(
@@ -99,15 +101,20 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                     rootNavController.navigate(Screen.MatchDetail.createRoute(matchId))
                 })
             }
-            composable(BottomNavItem.Teams.route) {
-                TeamsScreen(onTeamClick = { teamId ->
-                    rootNavController.navigate(Screen.TeamDetail.createRoute(teamId))
-                })
+            composable(BottomNavItem.Search.route) {
+                SearchScreen(
+                    onTeamClick = { teamId ->
+                        rootNavController.navigate(Screen.TeamDetail.createRoute(teamId))
+                    }
+                )
             }
             composable(BottomNavItem.Favorites.route) {
                 FavoritesScreen(onMatchClick = { matchId ->
                     rootNavController.navigate(Screen.MatchDetail.createRoute(matchId))
                 })
+            }
+            composable(BottomNavItem.Profile.route) {
+                ProfileScreen()
             }
         }
     }

@@ -11,10 +11,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+data class TournamentInfo(val id: String, val name: String)
+
 data class FixtureUiState(
     val isLoading: Boolean = true,
     val fixtureList: List<Matche> = emptyList(),
-    val stageRoundGroups: Map<String, Map<String, List<Matche>>> = emptyMap(),
+    val tournamentGroups: Map<String, Map<TournamentInfo, List<Matche>>> = emptyMap(),
+    val expandedTournaments: Set<TournamentInfo> = emptySet(),
     val selectedTab: String = "",
     val availableTabs: List<String> = emptyList(),
     val favoriteIds: Set<String> = emptySet(),
@@ -39,16 +42,19 @@ class FixtureViewModel(private val repository: FootballRepository) : ViewModel()
             when (val result = repository.getAllFixtureOfLeague(leagueId = leagueId, forceRefresh = forceRefresh)) {
                 is DataResult.Success -> {
                     val matches = result.data.matches.orEmpty().sortedByDescending { it.utcDate ?: "" }
-                    val groups = buildStageRoundGroups(matches)
+                    val groups = buildTournamentGroups(matches)
                     val tabs = groups.keys.toList()
                     val selectedTab = _uiState.value.selectedTab.takeIf { it in tabs } ?: tabs.firstOrNull().orEmpty()
                     val hasLive = matches.any { it.status == "IN_PLAY" || it.status == "PAUSED" }
+                    val allTournaments = groups.values.flatMap { it.keys }.toSet()
+                    
                     Log.d("FixtureViewModel", "Fixtures refreshed count=${matches.size} tabs=${tabs.size}")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             fixtureList = matches,
-                            stageRoundGroups = groups,
+                            tournamentGroups = groups,
+                            expandedTournaments = if (it.expandedTournaments.isEmpty()) allTournaments else it.expandedTournaments,
                             selectedTab = selectedTab,
                             availableTabs = tabs,
                             hasLiveMatches = hasLive
@@ -75,6 +81,18 @@ class FixtureViewModel(private val repository: FootballRepository) : ViewModel()
         }
     }
 
+    fun toggleTournamentExpanded(tournamentInfo: TournamentInfo) {
+        _uiState.update { state ->
+            val expanded = state.expandedTournaments.toMutableSet()
+            if (expanded.contains(tournamentInfo)) {
+                expanded.remove(tournamentInfo)
+            } else {
+                expanded.add(tournamentInfo)
+            }
+            state.copy(expandedTournaments = expanded)
+        }
+    }
+
     private fun observeFavorites() {
         viewModelScope.launch {
             repository.observeFavorites().collect { favorites ->
@@ -83,15 +101,17 @@ class FixtureViewModel(private val repository: FootballRepository) : ViewModel()
         }
     }
 
-    private fun buildStageRoundGroups(matches: List<Matche>): Map<String, Map<String, List<Matche>>> {
+    private fun buildTournamentGroups(matches: List<Matche>): Map<String, Map<TournamentInfo, List<Matche>>> {
         val groupedByStage = matches.groupBy { normalizeStage(it.status ?: it.stage) }
         val orderedStageKeys = groupedByStage.keys.sortedWith(compareBy { stagePriority(it) })
         return orderedStageKeys.associateWith { stage ->
             val stageMatches = groupedByStage[stage].orEmpty()
-            val groupedByRound = stageMatches.groupBy { roundLabel(it.group) }
-            groupedByRound.keys
-                .sortedWith(compareByDescending<String> { extractRoundNumber(it) ?: Int.MIN_VALUE }.thenByDescending { it })
-                .associateWith { round -> groupedByRound[round].orEmpty().sortedByDescending { it.utcDate ?: "" } }
+            val groupedByTournament = stageMatches.groupBy { 
+                TournamentInfo(it.competition?.code ?: "Unknown", it.competition?.name ?: "Unknown League")
+            }
+            groupedByTournament.mapValues { entry ->
+                entry.value.sortedByDescending { it.utcDate ?: "" }
+            }
         }
     }
 

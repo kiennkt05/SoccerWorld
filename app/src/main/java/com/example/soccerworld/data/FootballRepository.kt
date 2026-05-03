@@ -19,6 +19,8 @@ import com.example.soccerworld.data.remote.flashlive.LineupsResponse
 import com.example.soccerworld.model.fixture.AwayTeam
 import com.example.soccerworld.model.fixture.Competition
 import com.example.soccerworld.model.fixture.FixtureResponse
+import com.example.soccerworld.data.remote.flashlive.SearchItemDto
+import com.example.soccerworld.data.remote.flashlive.TransferData
 import com.example.soccerworld.model.fixture.FullTime
 import com.example.soccerworld.model.fixture.HomeTeam
 import com.example.soccerworld.model.fixture.Matche
@@ -323,6 +325,36 @@ class FootballRepository(
                     )
                 }
             }
+        }
+    }
+
+    suspend fun multiSearch(query: String): DataResult<List<SearchItemDto>> {
+        return safeApiCall {
+            apiService.multiSearch(Constant.LOCALE, query)
+        }
+    }
+
+    suspend fun getTeamTransfers(teamId: String): DataResult<List<TransferData>> {
+        return safeApiCall {
+            apiService.getTeamTransfers(Constant.LOCALE, Constant.SPORT_ID, teamId).data.orEmpty()
+        }
+    }
+
+    suspend fun getTeamMatches(teamId: String, page: Int, isResults: Boolean): DataResult<List<Matche>> {
+        return safeApiCall {
+            val response = if (isResults) {
+                apiService.getTeamResults(Constant.LOCALE, Constant.SPORT_ID, teamId, page)
+            } else {
+                apiService.getTeamFixtures(Constant.LOCALE, Constant.SPORT_ID, teamId, page)
+            }
+            val matches = mutableListOf<Matche>()
+            response.data.orEmpty().forEach { tournamentData ->
+                val stageId = tournamentData.tournamentStageId ?: "Unknown"
+                tournamentData.events.orEmpty().forEach { event ->
+                    matches.add(event.toFixtureMatch("Tournament", stageId))
+                }
+            }
+            matches
         }
     }
 

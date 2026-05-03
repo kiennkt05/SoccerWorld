@@ -9,7 +9,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,7 +67,7 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
             Text(text = state.error ?: "Lỗi tải lịch thi đấu", color = Color.Red)
         }
     } else {
-        val groupedForSelected = state.stageRoundGroups[state.selectedTab].orEmpty()
+        val groupedForSelected = state.tournamentGroups[state.selectedTab].orEmpty()
         val listState = rememberLazyListState()
         val totalItems = groupedForSelected.size + groupedForSelected.values.sumOf { it.size }
 
@@ -94,26 +100,60 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
                 modifier = Modifier.fillMaxSize(),
                 state = listState
             ) {
-                groupedForSelected.forEach { (roundLabel, matches) ->
-                    item(key = "header-$roundLabel") {
-                        Text(
-                            text = roundLabel,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                groupedForSelected.forEach { (tournament, matches) ->
+                    val isExpanded = state.expandedTournaments.contains(tournament)
+                    item(key = "header-${tournament.id}") {
+                        LeagueSectionHeader(
+                            title = tournament.name,
+                            isExpanded = isExpanded,
+                            onToggle = { viewModel.toggleTournamentExpanded(tournament) }
                         )
                     }
-                    items(matches, key = { it.id ?: UUID.randomUUID().toString() }) { match ->
-                        FixtureCard(
-                            match = match,
-                            isFavorite = state.favoriteIds.contains(match.id ?: ""),
-                            onToggleFavorite = { viewModel.toggleFavorite(match) },
-                            onClick = { onMatchClick(match.id ?: "") }
-                        )
+                    item(key = "content-${tournament.id}") {
+                        AnimatedVisibility(
+                            visible = isExpanded,
+                            enter = expandVertically(),
+                            exit = shrinkVertically()
+                        ) {
+                            Column {
+                                matches.forEach { match ->
+                                    FixtureCard(
+                                        match = match,
+                                        isFavorite = state.favoriteIds.contains(match.id ?: ""),
+                                        onToggleFavorite = { viewModel.toggleFavorite(match) },
+                                        onClick = { onMatchClick(match.id ?: "") }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun LeagueSectionHeader(title: String, isExpanded: Boolean, onToggle: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onToggle() }
+            .padding(vertical = 12.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Icon(
+            imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+            contentDescription = if (isExpanded) "Collapse" else "Expand",
+            tint = MaterialTheme.colorScheme.primary
+        )
     }
 }
 
@@ -136,106 +176,114 @@ fun FixtureCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(16.dp)
         ) {
-            Text(
-                text = "Matchday ${match.matchday ?: "--"} • ${formatDate(match.utcDate)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                IconButton(onClick = onToggleFavorite) {
+                // Time & Live Badge
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (match.status == "IN_PLAY" || match.status == "PAUSED") {
+                        Surface(
+                            color = Color.Red.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = "LIVE",
+                                color = Color.Red,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = formatTime(match.utcDate),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (match.status == "FINISHED") "FT" else if (match.status == "IN_PLAY" || match.status == "PAUSED") match.status ?: "" else "Matchday ${match.matchday ?: "--"}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.Gray
+                    )
+                }
+
+                IconButton(onClick = onToggleFavorite, modifier = Modifier.size(24.dp)) {
                     Icon(
                         imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                         contentDescription = "Toggle favorite",
                         tint = if (isFavorite) MaterialTheme.colorScheme.primary else Color.Gray
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Teams & Scores (Horizontal Layout like Sofascore)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 // Home Team
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
                     AsyncImage(
                         model = match.homeTeam?.crest,
                         contentDescription = match.homeTeam?.name,
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.size(24.dp),
                         placeholder = painterResource(id = R.drawable.ic_ball),
                         error = painterResource(id = R.drawable.ic_ball),
                         fallback = painterResource(id = R.drawable.ic_ball)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = match.homeTeam?.shortName ?: match.homeTeam?.name ?: "Unknown",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
+                        fontWeight = if ((match.score?.fullTime?.home ?: 0) > (match.score?.fullTime?.away ?: 0)) FontWeight.Bold else FontWeight.Normal,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                // Score / Status
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                // Scores
+                val isFinishedOrLive = match.status == "FINISHED" || match.status == "IN_PLAY" || match.status == "PAUSED"
+                Text(
+                    text = if (isFinishedOrLive) "${match.score?.fullTime?.home ?: 0} - ${match.score?.fullTime?.away ?: 0}" else "- : -",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = if (match.status == "IN_PLAY" || match.status == "PAUSED") Color.Red else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = 16.dp)
-                ) {
-                    if (match.status == "FINISHED" || match.status == "IN_PLAY" || match.status == "PAUSED") {
-                        val homeScore = match.score?.fullTime?.home ?: 0
-                        val awayScore = match.score?.fullTime?.away ?: 0
-                        Text(
-                            text = "$homeScore - $awayScore",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = if (match.status == "FINISHED") "FT" else match.status,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.Gray
-                        )
-                    } else {
-                        Text(
-                            text = formatTime(match.utcDate),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Upcoming",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                    }
-                }
+                )
 
                 // Away Team
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End,
                     modifier = Modifier.weight(1f)
                 ) {
-                    AsyncImage(
-                        model = match.awayTeam?.crest,
-                        contentDescription = match.awayTeam?.name,
-                        modifier = Modifier.size(48.dp),
-                        placeholder = painterResource(id = R.drawable.ic_ball),
-                        error = painterResource(id = R.drawable.ic_ball),
-                        fallback = painterResource(id = R.drawable.ic_ball)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = match.awayTeam?.shortName ?: match.awayTeam?.name ?: "Unknown",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
+                        fontWeight = if ((match.score?.fullTime?.away ?: 0) > (match.score?.fullTime?.home ?: 0)) FontWeight.Bold else FontWeight.Normal,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.End
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    AsyncImage(
+                        model = match.awayTeam?.crest,
+                        contentDescription = match.awayTeam?.name,
+                        modifier = Modifier.size(24.dp),
+                        placeholder = painterResource(id = R.drawable.ic_ball),
+                        error = painterResource(id = R.drawable.ic_ball),
+                        fallback = painterResource(id = R.drawable.ic_ball)
                     )
                 }
             }

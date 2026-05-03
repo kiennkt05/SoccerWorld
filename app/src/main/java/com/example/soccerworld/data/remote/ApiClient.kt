@@ -6,6 +6,12 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import com.example.soccerworld.data.remote.flashlive.*
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
+import java.lang.reflect.Type
 import java.util.concurrent.atomic.AtomicInteger
 
 object ApiClient {
@@ -37,8 +43,25 @@ object ApiClient {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(
+                GsonBuilder()
+                    .registerTypeAdapter(SearchItemDto::class.java, SearchItemDeserializer())
+                    .create()
+            ))
             .build()
             .create(ApiService::class.java)
+    }
+}
+
+class SearchItemDeserializer : JsonDeserializer<SearchItemDto> {
+    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): SearchItemDto {
+        val jsonObject = json.asJsonObject
+        val type = jsonObject.get("TYPE")?.asString ?: "unknown"
+        return when (type) {
+            "team" -> context.deserialize(jsonObject, TeamSearchItemDto::class.java)
+            "playersInTeam" -> context.deserialize(jsonObject, PlayerSearchItemDto::class.java)
+            "tournament" -> context.deserialize(jsonObject, TournamentSearchItemDto::class.java)
+            else -> context.deserialize(jsonObject, UnknownSearchItemDto::class.java)
+        }
     }
 }

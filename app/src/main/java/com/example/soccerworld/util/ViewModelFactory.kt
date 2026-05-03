@@ -13,6 +13,8 @@ import com.example.soccerworld.ui.home.topscorer.TopScorerViewModel
 import com.example.soccerworld.ui.team.TeamViewModel
 import com.example.soccerworld.ui.team.team_detail.player.PlayerViewModel
 import com.example.soccerworld.ui.team.team_detail.transfer.TransferViewModel
+import com.example.soccerworld.ui.search.SearchViewModel
+import com.example.soccerworld.ui.team.team_detail.TeamDetailViewModel
 
 
 class ViewModelFactory(private val repository: FootballRepository) : ViewModelProvider.Factory {
@@ -61,6 +63,14 @@ class ViewModelFactory(private val repository: FootballRepository) : ViewModelPr
         if (modelClass.isAssignableFrom(FavoritesViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return FavoritesViewModel(repository) as T
+        }
+        if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return SearchViewModel(repository) as T
+        }
+        if (modelClass.isAssignableFrom(TeamDetailViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return TeamDetailViewModel(repository) as T
         }
 
         throw IllegalArgumentException("Unknown ViewModel class")

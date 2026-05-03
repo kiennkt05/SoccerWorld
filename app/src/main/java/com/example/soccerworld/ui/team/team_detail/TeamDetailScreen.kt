@@ -1,10 +1,10 @@
 package com.example.soccerworld.ui.team.team_detail
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,9 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.soccerworld.R
-import com.example.soccerworld.ui.team.team_detail.player.PlayerViewModel
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
+import com.example.soccerworld.ui.team.team_detail.tabs.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,76 +27,82 @@ fun TeamDetailScreen(teamId: String, onBack: () -> Unit) {
     val context = LocalContext.current
     val factory = ViewModelFactory(Injection.provideFootballRepository(context))
 
-    val playerViewModel: PlayerViewModel = viewModel(factory = factory)
+    val viewModel: TeamDetailViewModel = viewModel(factory = factory)
 
     LaunchedEffect(teamId) {
-        playerViewModel.getAllPlayersOfTeam(teamId)
+        viewModel.initTeam(teamId)
     }
 
-    val state by playerViewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsState()
+    val tabs = listOf("Details", "Matches", "Standings", "Squad", "Transfers")
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Team Squad") },
+                title = { Text(state.teamName.ifEmpty { "Team Profile" }) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    IconButton(onClick = { /* TODO: Favorite Team */ }) {
+                        Icon(Icons.Outlined.FavoriteBorder, contentDescription = "Favorite")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                    navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
+                    actionIconContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
         }
     ) { paddingValues ->
-        if (state.isLoading) {
-            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else if (state.error != null) {
-            Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                Text(state.error ?: "Error loading players", color = Color.Red)
-            }
-        } else {
-            val players = state.playerList.filterNotNull()
-            LazyColumn(
-                contentPadding = PaddingValues(16.dp),
-                modifier = Modifier.fillMaxSize().padding(paddingValues)
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            // Team Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                items(players) { player ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            AsyncImage(
-                                model = player.imageUrl,
-                                contentDescription = player.name,
-                                modifier = Modifier.size(36.dp),
-                                placeholder = painterResource(id = R.drawable.ic_players),
-                                error = painterResource(id = R.drawable.ic_players),
-                                fallback = painterResource(id = R.drawable.ic_players)
-                            )
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text(text = player.name ?: "Unknown Player", fontWeight = FontWeight.Bold)
-                                Text(
-                                    text = player.position ?: "Unknown Position",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.Gray
-                                )
-                            }
-                        }
-                    }
+                AsyncImage(
+                    model = state.teamCrest,
+                    contentDescription = state.teamName,
+                    modifier = Modifier.size(64.dp),
+                    placeholder = painterResource(id = R.drawable.ic_ball),
+                    error = painterResource(id = R.drawable.ic_ball),
+                    fallback = painterResource(id = R.drawable.ic_ball)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(text = state.teamName.ifEmpty { "Loading..." }, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(text = "0 Followers", style = MaterialTheme.typography.bodyMedium, color = Color.Gray)
+                }
+            }
+
+            ScrollableTabRow(
+                selectedTabIndex = state.selectedTab,
+                edgePadding = 8.dp,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = state.selectedTab == index,
+                        onClick = { viewModel.selectTab(index) },
+                        text = { Text(title) }
+                    )
+                }
+            }
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                when (state.selectedTab) {
+                    0 -> TeamDetailsTab(state.detailsState)
+                    1 -> TeamMatchesTab(state.matchesState, onLoadMore = { viewModel.loadMoreMatches() })
+                    2 -> Box(Modifier.fillMaxSize(), Alignment.Center) { Text("Standings: Currently available via League screen") }
+                    3 -> TeamSquadTab(state.squadState)
+                    4 -> TeamTransfersTab(state.transfersState)
                 }
             }
         }
