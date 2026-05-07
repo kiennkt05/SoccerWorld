@@ -58,9 +58,9 @@ class SearchItemDeserializer : JsonDeserializer<SearchItemDto> {
         val jsonObject = json.asJsonObject
         val type = jsonObject.get("TYPE")?.asString ?: "unknown"
         return when (type) {
-            "team" -> context.deserialize(jsonObject, TeamSearchItemDto::class.java)
+            "team", "participants" -> context.deserialize(jsonObject, TeamSearchItemDto::class.java)
             "playersInTeam" -> context.deserialize(jsonObject, PlayerSearchItemDto::class.java)
-            "tournament" -> context.deserialize(jsonObject, TournamentSearchItemDto::class.java)
+            "tournament", "tournament_templates" -> context.deserialize(jsonObject, TournamentSearchItemDto::class.java)
             else -> context.deserialize(jsonObject, UnknownSearchItemDto::class.java)
         }
     }

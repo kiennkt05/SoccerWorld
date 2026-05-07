@@ -21,6 +21,7 @@ import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import com.example.soccerworld.ui.team.team_detail.tabs.*
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TeamDetailScreen(teamId: String, onBack: () -> Unit) {
@@ -100,7 +101,7 @@ fun TeamDetailScreen(teamId: String, onBack: () -> Unit) {
                 when (state.selectedTab) {
                     0 -> TeamDetailsTab(state.detailsState)
                     1 -> TeamMatchesTab(state.matchesState, onLoadMore = { viewModel.loadMoreMatches() })
-                    2 -> Box(Modifier.fillMaxSize(), Alignment.Center) { Text("Standings: Currently available via League screen") }
+                    2 -> TeamStandingsTab(teamId = state.teamId)
                     3 -> TeamSquadTab(state.squadState)
                     4 -> TeamTransfersTab(state.transfersState)
                 }

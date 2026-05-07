@@ -61,11 +61,13 @@ data class FlashLiveEvent(
     @SerializedName("START_TIME") val startTime: Long? = null,
     @SerializedName("HOME_ID") val homeId: String? = null,
     @SerializedName("HOME_NAME") val homeName: String? = null,
+    @SerializedName("SHORTNAME_HOME") val shortNameHome: String? = null,
     @SerializedName("HOME_IMAGE_PATH") val homeImagePath: String? = null,
     @SerializedName("HOME_IMAGES") val homeImages: List<String>? = null,
     @SerializedName("HOME_SCORE_CURRENT") val homeScore: String? = null,
     @SerializedName("AWAY_ID") val awayId: String? = null,
     @SerializedName("AWAY_NAME") val awayName: String? = null,
+    @SerializedName("SHORTNAME_AWAY") val shortNameAway: String? = null,
     @SerializedName("AWAY_IMAGE_PATH") val awayImagePath: String? = null,
     @SerializedName("AWAY_IMAGES") val awayImages: List<String>? = null,
     @SerializedName("AWAY_SCORE_CURRENT") val awayScore: String? = null,
@@ -74,7 +76,11 @@ data class FlashLiveEvent(
 )
 
 data class EventDataResponse(
-    @SerializedName("DATA") val data: FlashLiveEvent? = null
+    @SerializedName("DATA") val data: EventDataWrapper? = null
+)
+
+data class EventDataWrapper(
+    @SerializedName("EVENT") val event: FlashLiveEvent? = null
 )
 
 data class EventSummaryResponse(
@@ -173,7 +179,8 @@ data class TeamDataResponse(
 data class TeamData(
     @SerializedName("ID") val id: String? = null,
     @SerializedName("NAME") val name: String? = null,
-    @SerializedName("IMAGE_PATH") val imagePath: String? = null
+    @SerializedName("IMAGE_PATH") val imagePath: String? = null,
+    @SerializedName("TVN") val stadium: String? = null
 )
 
 data class SquadResponse(
@@ -229,10 +236,13 @@ data class TournamentSearchItemDto(
     @SerializedName("COUNTRY_NAME") val countryName: String? = null
 ) : SearchItemDto
 
+data class MultiSearchResponse(
+    @SerializedName("DATA") val data: List<SearchItemDto>? = null
+)
+
 data class UnknownSearchItemDto(
     @SerializedName("ID") override val id: String = "unknown",
-    @SerializedName("TYPE") override val type: String = "unknown",
-    val rawType: String
+    @SerializedName("TYPE") override val type: String = "unknown"
 ) : SearchItemDto
 
 data class TeamTransfersResponse(
@@ -240,14 +250,30 @@ data class TeamTransfersResponse(
 )
 
 data class TransferData(
-    @SerializedName("TRANSFER_ID") val transferId: String?,
-    @SerializedName("PLAYER_ID") val playerId: String?,
-    @SerializedName("PLAYER_NAME") val playerName: String?,
-    @SerializedName("TRANSFER_DATE") val transferDate: Long?,
-    @SerializedName("TRANSFER_TYPE") val transferType: Int?,
-    @SerializedName("FROM_TEAM_ID") val fromTeamId: String?,
-    @SerializedName("FROM_TEAM_NAME") val fromTeamName: String?,
-    @SerializedName("TO_TEAM_ID") val toTeamId: String?,
-    @SerializedName("TO_TEAM_NAME") val toTeamName: String?,
-    @SerializedName("TRANSFER_REASON") val transferReason: String?
+    @SerializedName("DATE") val transferDate: Long?,
+    @SerializedName("TRANSFER_TYPE") val transferTypeStr: String?,
+    @SerializedName("TRANSFER_DIRECTION") val transferDirection: String?,
+    @SerializedName("FROM") val fromTeam: TransferTeam?,
+    @SerializedName("TO") val toTeam: TransferTeam?,
+    @SerializedName("PLAYER") val player: TransferPlayer?
+) {
+    val transferId: String? get() = player?.participantId
+    val playerId: String? get() = player?.participantId
+    val playerName: String? get() = player?.value
+    val transferType: Int? get() = null
+    val fromTeamId: String? get() = null
+    val fromTeamName: String? get() = fromTeam?.value
+    val toTeamId: String? get() = null
+    val toTeamName: String? get() = toTeam?.value
+    val transferReason: String? get() = transferTypeStr
+}
+
+data class TransferTeam(
+    @SerializedName("VALUE") val value: String?,
+    @SerializedName("PARTICIPANT_IMAGE") val image: String?
+)
+
+data class TransferPlayer(
+    @SerializedName("PARTICIPANT_ID") val participantId: String?,
+    @SerializedName("VALUE") val value: String?
 )

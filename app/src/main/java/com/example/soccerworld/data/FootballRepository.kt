@@ -240,9 +240,11 @@ class FootballRepository(
 
         return safeApiCall {
             val teamData = apiService.getTeamData(Constant.LOCALE, Constant.SPORT_ID, teamId).data
-            val players = apiService.getTeamSquad(Constant.LOCALE, Constant.SPORT_ID, teamId)
-                .data.orEmpty()
+            val squadResponse = apiService.getTeamSquad(Constant.LOCALE, Constant.SPORT_ID, teamId).data.orEmpty()
+            
+            val players = squadResponse
                 .flatMap { it.items.orEmpty() }
+                .filter { it.playerTypeId != "COACH" }
                 .map {
                     Squad(
                         id = it.playerId,
@@ -251,7 +253,19 @@ class FootballRepository(
                         imageUrl = it.playerImagePath
                     )
                 }
-            PlayerResponse(id = teamData?.id, name = teamData?.name, crest = teamData?.imagePath, squad = players).also {
+            
+            val coachDto = squadResponse
+                .flatMap { it.items.orEmpty() }
+                .firstOrNull { it.playerTypeId == "COACH" }
+
+            PlayerResponse(
+                id = teamData?.id, 
+                name = teamData?.name, 
+                crest = teamData?.imagePath, 
+                venue = teamData?.stadium,
+                coach = coachDto?.let { com.example.soccerworld.model.player.Coach(name = it.playerName) },
+                squad = players
+            ).also {
                 teamPlayersCache[teamId] = it
                 customPreferences.saveTeamDetailTime(teamId, now)
                 dao.upsertTeamPlayersCache(
@@ -407,13 +421,23 @@ class FootballRepository(
 
     suspend fun getFixtureStatistics(fixtureId: String): DataResult<StatisticsResponse> {
         return safeApiCall {
-            val event = apiService.getEventData(Constant.LOCALE, fixtureId).data
+            val event = apiService.getEventData(Constant.LOCALE, fixtureId).data?.event
             StatisticsResponse(
                 id = event?.eventId,
                 utcDate = toIsoDateTime(event?.startTime),
                 status = mapStatus(event?.stageType),
-                homeTeam = StatsHomeTeam(id = event?.homeId, name = event?.homeName, crest = event?.homeImagePath),
-                awayTeam = StatsAwayTeam(id = event?.awayId, name = event?.awayName, crest = event?.awayImagePath),
+                homeTeam = StatsHomeTeam(
+                    id = event?.homeId, 
+                    name = event?.homeName, 
+                    shortName = event?.shortNameHome,
+                    crest = event?.homeImagePath ?: event?.homeImages?.firstOrNull()
+                ),
+                awayTeam = StatsAwayTeam(
+                    id = event?.awayId, 
+                    name = event?.awayName, 
+                    shortName = event?.shortNameAway,
+                    crest = event?.awayImagePath ?: event?.awayImages?.firstOrNull()
+                ),
                 score = StatsScore(
                     fullTime = StatsFullTime(
                         home = event?.homeScore?.toIntOrNull(),
@@ -427,17 +451,31 @@ class FootballRepository(
     suspend fun getMatchDetailAggregate(fixtureId: String): DataResult<MatchDetailAggregate> {
         val updateTime = customPreferences.getMatchDetailTime(fixtureId) ?: 0L
         val now = System.currentTimeMillis()
-        val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
-        matchDetailCache[fixtureId]?.takeIf { isCacheValid }?.let {
-            return DataResult.Success(it, fromCache = true)
-        }
-        if (isCacheValid) {
-            dao.getMatchDetailCache(fixtureId)?.takeIf { isStillValid(it.updatedAt, now) }?.let { cached ->
-                deserialize<MatchDetailAggregate>(cached.payloadJson)?.also {
-                    matchDetailCache[fixtureId] = it
-                    return DataResult.Success(it, fromCache = true)
-                }
+        
+        var cachedData: MatchDetailAggregate? = matchDetailCache[fixtureId]
+        if (cachedData == null) {
+            val cachedEntity = dao.getMatchDetailCache(fixtureId)
+            if (cachedEntity != null) {
+                cachedData = deserialize<MatchDetailAggregate>(cachedEntity.payloadJson)
             }
+        }
+
+        val isCacheValid = cachedData?.let { aggregate ->
+            val status = aggregate.core?.status ?: "FINISHED"
+            val hasValidData = aggregate.core?.homeTeam?.name != null
+            if (!hasValidData) return@let false
+            
+            val ttl = when {
+                status == "IN_PLAY" || status == "PAUSED" || status == "LIVE" -> CacheTtl.ESPN_ENRICHMENT_LIVE_MS
+                status == "SCHEDULED" || status == "TIMED" -> 3600_000L // 1 hour for scheduled matches
+                else -> CacheTtl.CACHE_WINDOW_MS
+            }
+            (now - updateTime) < ttl
+        } ?: false
+
+        if (isCacheValid && cachedData != null) {
+            matchDetailCache[fixtureId] = cachedData
+            return DataResult.Success(cachedData, fromCache = true)
         }
 
         val coreResult = getFixtureStatistics(fixtureId)
@@ -450,9 +488,21 @@ class FootballRepository(
         val h2hResult = getAllH2hItems(fixtureId)
         val h2hList = (h2hResult as? DataResult.Success)?.data?.matches ?: emptyList()
         val enrichmentResult = safeApiCall {
-            val summary = apiService.getEventSummary(Constant.LOCALE, fixtureId)
-            val stats = apiService.getEventStats(Constant.LOCALE, fixtureId)
-            val lineups = apiService.getEventLineups(Constant.LOCALE, fixtureId)
+            val summary = try {
+                apiService.getEventSummary(Constant.LOCALE, fixtureId)
+            } catch (e: Exception) {
+                EventSummaryResponse()
+            }
+            val stats = try {
+                apiService.getEventStats(Constant.LOCALE, fixtureId)
+            } catch (e: Exception) {
+                EventStatsResponse()
+            }
+            val lineups = try {
+                apiService.getEventLineups(Constant.LOCALE, fixtureId)
+            } catch (e: Exception) {
+                LineupsResponse()
+            }
             mapFlashLiveDetail(fixtureId, summary, stats, lineups)
         }
         val enrichment = (enrichmentResult as? DataResult.Success)?.data

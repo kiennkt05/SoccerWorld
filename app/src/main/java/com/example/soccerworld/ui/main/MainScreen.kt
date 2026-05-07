@@ -114,7 +114,11 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                 })
             }
             composable(BottomNavItem.Profile.route) {
-                ProfileScreen()
+                ProfileScreen(onChangeLeague = {
+                    rootNavController.navigate(Screen.LeagueSelection.route) {
+                        popUpTo(Screen.Main.route) { inclusive = true }
+                    }
+                })
             }
         }
     }
