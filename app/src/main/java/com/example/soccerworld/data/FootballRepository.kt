@@ -617,21 +617,68 @@ class FootballRepository(
                 }
             }
         }
-        val lineupTeams = lineups.data.orEmpty().flatMap { group ->
-            group.formations.orEmpty().map { formation ->
-                val players = formation.members.orEmpty().map { member ->
-                    MatchLineupPlayer(
-                        name = member.fullName ?: "Player",
-                        position = member.positionId?.toString(),
-                        imageUrl = null
-                    )
+        val homeStarters = mutableListOf<MatchLineupPlayer>()
+        val awayStarters = mutableListOf<MatchLineupPlayer>()
+        val homeSubs = mutableListOf<MatchLineupPlayer>()
+        val awaySubs = mutableListOf<MatchLineupPlayer>()
+        var homeCoach: MatchLineupPlayer? = null
+        var awayCoach: MatchLineupPlayer? = null
+        var homeFormationStr: String? = null
+        var awayFormationStr: String? = null
+
+        lineups.data.orEmpty().forEach { group ->
+            val isStarting = group.formationName == "Starting Lineups"
+            val isSubs = group.formationName == "Substitutes"
+            val isCoaches = group.formationName == "Coaches"
+
+            if (isStarting || isSubs || isCoaches) {
+                group.formations.orEmpty().forEach { formation ->
+                    val isHome = formation.formationLine == 1
+                    if (isStarting) {
+                        if (isHome) homeFormationStr = formation.formation
+                        else awayFormationStr = formation.formation
+                    }
+
+                    val mappedPlayers = formation.members.orEmpty().map { member ->
+                        val isCaptain = member.fullName?.contains("(C)") == true
+                        MatchLineupPlayer(
+                            name = member.fullName?.replace(" (C)", "")?.replace(" (G)", "") ?: "Player",
+                            shortName = member.shortName ?: member.fullName?.split(" ")?.lastOrNull() ?: "Player",
+                            position = member.positionId?.toString(),
+                            imageUrl = member.imageId,
+                            number = member.number,
+                            rating = member.rating,
+                            incidents = member.incidents,
+                            isCaptain = isCaptain,
+                            fieldPosition = member.position
+                        )
+                    }
+
+                    if (isHome) {
+                        if (isStarting) homeStarters.addAll(mappedPlayers) 
+                        else if (isSubs) homeSubs.addAll(mappedPlayers)
+                        else if (isCoaches) homeCoach = mappedPlayers.firstOrNull()
+                    } else {
+                        if (isStarting) awayStarters.addAll(mappedPlayers) 
+                        else if (isSubs) awaySubs.addAll(mappedPlayers)
+                        else if (isCoaches) awayCoach = mappedPlayers.firstOrNull()
+                    }
                 }
-                MatchLineupTeam(
-                    teamName = if (formation.playerGroupType == 1) "Home" else "Away",
-                    formation = formation.formation,
-                    starters = players,
-                    substitutes = emptyList()
-                )
+            }
+        }
+
+        fun calculateAverage(starters: List<MatchLineupPlayer>, subs: List<MatchLineupPlayer>): Double? {
+            val ratings = (starters + subs).mapNotNull { it.rating?.toDoubleOrNull() }.filter { it > 0.0 }
+            if (ratings.isEmpty()) return null
+            return ratings.average()
+        }
+
+        val lineupTeams = buildList {
+            if (homeStarters.isNotEmpty() || homeSubs.isNotEmpty() || homeCoach != null) {
+                add(MatchLineupTeam("Home", homeFormationStr, calculateAverage(homeStarters, homeSubs), homeStarters, homeSubs, homeCoach))
+            }
+            if (awayStarters.isNotEmpty() || awaySubs.isNotEmpty() || awayCoach != null) {
+                add(MatchLineupTeam("Away", awayFormationStr, calculateAverage(awayStarters, awaySubs), awayStarters, awaySubs, awayCoach))
             }
         }
         return MatchEnrichmentDetail(

@@ -11,6 +11,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Checkroom
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,9 +35,12 @@ import com.example.soccerworld.model.h2h.Matche
 import com.example.soccerworld.model.matchdetail.MatchDetailAggregate
 import com.example.soccerworld.model.matchdetail.MatchEnrichmentDetail
 import com.example.soccerworld.model.matchdetail.MatchEvent
+import com.example.soccerworld.model.matchdetail.MatchLineupPlayer
 import com.example.soccerworld.model.matchdetail.MatchLineupTeam
 import com.example.soccerworld.model.matchdetail.MatchStatItem
 import com.example.soccerworld.model.statistic.StatisticsResponse
+import com.example.soccerworld.model.statistic.HomeTeam
+import com.example.soccerworld.model.statistic.AwayTeam
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import java.text.SimpleDateFormat
@@ -125,7 +131,12 @@ fun MatchDetailScreen(fixtureId: String, onBack: () -> Unit) {
                 when (selectedTabIndex) {
                     0 -> SummaryTab(events = aggregate?.enrichment?.events ?: emptyList())
                     1 -> StatsTab(stats = aggregate?.enrichment?.stats ?: emptyList())
-                    2 -> LineupsTab(lineups = aggregate?.enrichment?.lineups ?: emptyList())
+                    2 -> LineupsTab(
+                        lineups = aggregate?.enrichment?.lineups ?: emptyList(),
+                        events = aggregate?.enrichment?.events ?: emptyList(),
+                        homeTeam = aggregate?.core?.homeTeam,
+                        awayTeam = aggregate?.core?.awayTeam
+                    )
                     3 -> H2HTab(h2hList = aggregate?.h2h ?: emptyList())
                 }
             }
@@ -460,7 +471,12 @@ private fun StatProgressRow(stat: MatchStatItem) {
 // ── Lineups Tab ──────────────────────────────────────────────────────────────
 
 @Composable
-fun LineupsTab(lineups: List<MatchLineupTeam>) {
+fun LineupsTab(
+    lineups: List<MatchLineupTeam>,
+    events: List<MatchEvent>,
+    homeTeam: HomeTeam?,
+    awayTeam: AwayTeam?
+) {
     if (lineups.isEmpty()) {
         EmptyState(message = "Không có dữ liệu đội hình")
         return
@@ -469,146 +485,245 @@ fun LineupsTab(lineups: List<MatchLineupTeam>) {
     val home = lineups.getOrNull(0)
     val away = lineups.getOrNull(1)
 
+    var selectedTeamTabIndex by androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp)
     ) {
-        // Formation header
-        if (home != null || away != null) {
+        // Formation headers and Pitch View
+        if (home != null && away != null) {
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    FormationBadge(teamName = home?.teamName ?: "", formation = home?.formation)
-                    FormationBadge(teamName = away?.teamName ?: "", formation = away?.formation, alignEnd = true)
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Divider()
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-        }
-
-        // Starters
-        item {
-            Text(
-                "Đội hình chính",
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-        }
-
-        val maxStarters = maxOf(home?.starters?.size ?: 0, away?.starters?.size ?: 0)
-        items(maxStarters) { i ->
-            val hp = home?.starters?.getOrNull(i)
-            val ap = away?.starters?.getOrNull(i)
-            PlayerDuelRow(
-                homeName = hp?.name,
-                awayName = ap?.name,
-                homePos = hp?.position,
-                awayPos = ap?.position
-            )
-        }
-
-        // Substitutes
-        item {
-            Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider()
-            Text(
-                "Dự bị",
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-        }
-        val maxSubs = maxOf(home?.substitutes?.size ?: 0, away?.substitutes?.size ?: 0)
-        items(maxSubs) { i ->
-            val hp = home?.substitutes?.getOrNull(i)
-            val ap = away?.substitutes?.getOrNull(i)
-            PlayerDuelRow(
-                homeName = hp?.name,
-                awayName = ap?.name,
-                homePos = hp?.position,
-                awayPos = ap?.position,
-                isSub = true
-            )
-        }
-    }
-}
-
-@Composable
-private fun FormationBadge(teamName: String, formation: String?, alignEnd: Boolean = false) {
-    Column(horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start) {
-        Text(text = teamName, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        if (!formation.isNullOrBlank()) {
-            Surface(
-                color = MaterialTheme.colorScheme.primaryContainer,
-                shape = RoundedCornerShape(6.dp)
-            ) {
-                Text(
-                    text = formation,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                TeamLineupHeader(
+                    teamName = homeTeam?.name ?: home.teamName,
+                    formation = home.formation,
+                    crestUrl = homeTeam?.crest,
+                    averageRating = home.averageRating
+                )
+                
+                com.example.soccerworld.ui.fixture.detail.components.InteractivePitchView(
+                    homeFormation = home.toFormation(isHome = true),
+                    awayFormation = away.toFormation(isHome = false)
+                )
+                
+                TeamLineupHeader(
+                    teamName = awayTeam?.name ?: away.teamName,
+                    formation = away.formation,
+                    crestUrl = awayTeam?.crest,
+                    averageRating = away.averageRating
                 )
             }
         }
+
+        // Tabbed Substitutes
+        item {
+            Spacer(modifier = Modifier.height(16.dp))
+            androidx.compose.material3.TabRow(
+                selectedTabIndex = selectedTeamTabIndex,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary
+            ) {
+                androidx.compose.material3.Tab(
+                    selected = selectedTeamTabIndex == 0,
+                    onClick = { selectedTeamTabIndex = 0 },
+                    icon = { 
+                        if (homeTeam?.crest != null) {
+                            AsyncImage(model = homeTeam.crest, contentDescription = "Home", modifier = Modifier.size(24.dp))
+                        } else {
+                            Text("Home", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                )
+                androidx.compose.material3.Tab(
+                    selected = selectedTeamTabIndex == 1,
+                    onClick = { selectedTeamTabIndex = 1 },
+                    icon = { 
+                        if (awayTeam?.crest != null) {
+                            AsyncImage(model = awayTeam.crest, contentDescription = "Away", modifier = Modifier.size(24.dp))
+                        } else {
+                            Text("Away", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                )
+            }
+        }
+
+        val activeTeam = if (selectedTeamTabIndex == 0) home else away
+        
+        // Coach
+        if (activeTeam?.coach != null) {
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val coachImage = if (activeTeam.coach.imageUrl != null) "https://www.flashscore.com/res/image/data/${activeTeam.coach.imageUrl}" else null
+                    AsyncImage(
+                        model = coachImage,
+                        contentDescription = "Coach",
+                        modifier = Modifier.size(40.dp).clip(CircleShape).background(Color.LightGray)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(text = activeTeam.coach.name, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
+                        Text(text = "Coach", fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+
+        // Substitutions List
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Substitutions",
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                textAlign = TextAlign.Center
+            )
+        }
+        
+        val subs = activeTeam?.substitutes ?: emptyList()
+        items(subs) { sub ->
+            DetailedSubstituteRow(sub, events)
+        }
     }
 }
 
 @Composable
-private fun PlayerDuelRow(
-    homeName: String?,
-    awayName: String?,
-    homePos: String?,
-    awayPos: String?,
-    isSub: Boolean = false
+private fun TeamLineupHeader(
+    teamName: String,
+    formation: String?,
+    crestUrl: String?,
+    averageRating: Double?
 ) {
-    val textAlpha = if (isSub) 0.7f else 1f
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 5.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Home player
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = homeName ?: "—",
-                fontSize = 13.sp,
-                fontWeight = if (!isSub) FontWeight.Medium else FontWeight.Normal,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = textAlpha),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (!homePos.isNullOrBlank()) {
-                Text(text = homePos, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        // Left side: Crest, Name, Rating
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (crestUrl != null) {
+                AsyncImage(model = crestUrl, contentDescription = teamName, modifier = Modifier.size(28.dp))
+                Spacer(modifier = Modifier.width(12.dp))
             }
+            Text(text = teamName, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            
+            if (averageRating != null) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(com.example.soccerworld.ui.fixture.detail.components.getRatingColor(averageRating))
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = String.format(Locale.US, "%.2f", averageRating),
+                        color = Color.White,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(Icons.Outlined.Info, contentDescription = "Info", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
         }
-        // Center divider
-        Box(
-            modifier = Modifier
-                .width(1.dp)
-                .height(32.dp)
-                .background(MaterialTheme.colorScheme.outlineVariant)
+        
+        // Right side: Formation and Jersey
+        Column(horizontalAlignment = Alignment.End) {
+            Text(
+                text = formation ?: "",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Icon(Icons.Default.Checkroom, contentDescription = "Jersey", modifier = Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+        }
+    }
+}
+
+@Composable
+private fun DetailedSubstituteRow(sub: MatchLineupPlayer, events: List<MatchEvent>) {
+    // Cross-reference substitution event
+    val subEvent = events.find { it.type == "subst" && it.description.contains(sub.name, ignoreCase = true) }
+    val outPlayer = subEvent?.description?.split(",")?.find { it.contains("out", ignoreCase = true) }?.replace("out", "", ignoreCase = true)?.trim()
+    
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Avatar
+        val imageUrl = if (sub.imageUrl != null) "https://www.flashscore.com/res/image/data/${sub.imageUrl}" else null
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = sub.name,
+            modifier = Modifier.size(40.dp).clip(CircleShape).background(Color.LightGray)
         )
-        // Away player
-        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
-            Text(
-                text = awayName ?: "—",
-                fontSize = 13.sp,
-                fontWeight = if (!isSub) FontWeight.Medium else FontWeight.Normal,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = textAlpha),
-                textAlign = TextAlign.End,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            if (!awayPos.isNullOrBlank()) {
-                Text(text = awayPos, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End)
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        // Name and details
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (sub.number != null) {
+                    Text(text = sub.number.toString(), fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
+                Text(
+                    text = sub.name,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                sub.incidents?.let { incidents ->
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        for (inc in incidents) {
+                            if (inc == 3 || inc == 10) { // Only show goals next to name in this view
+                                com.example.soccerworld.ui.fixture.detail.components.IncidentIcon(inc)
+                            }
+                        }
+                    }
+                }
+            }
+            if (subEvent != null) {
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.SwapHoriz, contentDescription = "Sub In", modifier = Modifier.size(12.dp), tint = Color.Green)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "${subEvent.minute}' Out: $outPlayer", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
+        
+        // Rating
+        if (sub.rating != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+            RatingBox(rating = sub.rating)
+        }
+    }
+    HorizontalDivider(modifier = Modifier.padding(start = 68.dp, end = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+}
+
+
+@Composable
+fun RatingBox(rating: String) {
+    val rDouble = rating.toDoubleOrNull() ?: 0.0
+    val bgColor = com.example.soccerworld.ui.fixture.detail.components.getRatingColor(rDouble)
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(bgColor)
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = rating, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -736,3 +851,31 @@ private fun formatHeaderDate(utcString: String?): String {
         utcString
     }
 }
+
+private fun MatchLineupTeam.toFormation(isHome: Boolean): com.example.soccerworld.data.remote.flashlive.dto.Formation {
+    var disp = this.formation?.takeIf { it.isNotBlank() } ?: "4-4-2"
+    val sum = disp.split("-").mapNotNull { it.toIntOrNull() }.sum()
+    if (sum < 11 && !disp.startsWith("1-")) {
+        disp = "1-$disp"
+    }
+
+    val members = this.starters.mapIndexed { index, p ->
+        val safeName = (p.name as String?) ?: "Unknown"
+        com.example.soccerworld.data.remote.flashlive.dto.LineupPlayer(
+            id = index.toString(),
+            fullName = safeName + if (p.isCaptain) " (C)" else "",
+            shortName = (p.shortName as String?) ?: safeName.split(" ").lastOrNull() ?: safeName,
+            number = p.number,
+            rating = p.rating,
+            imageId = p.imageUrl,
+            incidents = p.incidents,
+            position = p.fieldPosition ?: (index + 1)
+        )
+    }
+    return com.example.soccerworld.data.remote.flashlive.dto.Formation(
+        teamSide = if (isHome) 1 else 2,
+        disposition = disp,
+        members = members
+    )
+}
+

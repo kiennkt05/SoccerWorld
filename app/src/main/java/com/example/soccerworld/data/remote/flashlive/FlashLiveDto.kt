@@ -136,20 +136,27 @@ data class LineupsResponse(
 )
 
 data class LineupGroup(
-    @SerializedName("FORMATIONS") val formations: List<LineupFormation>? = null
+    @SerializedName("FORMATION_NAME") val formationName: String? = null,
+    @SerializedName("FORMATIONS") val formations: List<LineupFormation>? = null,
+    @SerializedName("PLAYER_GROUP_TYPE") val playerGroupType: Int? = null
 )
 
 data class LineupFormation(
+    @SerializedName("FORMATION_LINE") val formationLine: Int? = null,
     @SerializedName("FORMATION_DISPOSTION") val formation: String? = null,
-    @SerializedName("PLAYER_GROUP_TYPE") val playerGroupType: Int? = null,
     @SerializedName("MEMBERS") val members: List<LineupMember>? = null
 )
 
 data class LineupMember(
     @SerializedName("PLAYER_ID") val playerId: String? = null,
     @SerializedName("PLAYER_FULL_NAME") val fullName: String? = null,
+    @SerializedName("SHORT_NAME") val shortName: String? = null,
     @SerializedName("PLAYER_NUMBER") val number: Int? = null,
-    @SerializedName("PLAYER_POSITION_ID") val positionId: Int? = null
+    @SerializedName("PLAYER_POSITION_ID") val positionId: Int? = null,
+    @SerializedName("PLAYER_POSITION") val position: Int? = null,
+    @SerializedName("LPI") val imageId: String? = null,
+    @SerializedName("LPR") val rating: String? = null,
+    @SerializedName("INCIDENTS") val incidents: List<Int>? = null
 )
 
 data class H2HResponse(
