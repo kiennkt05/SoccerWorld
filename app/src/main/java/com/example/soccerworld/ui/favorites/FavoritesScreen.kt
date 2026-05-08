@@ -16,12 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.soccerworld.ui.fixture.FixtureCard
 import com.example.soccerworld.util.Injection
@@ -33,8 +31,9 @@ fun FavoritesScreen(onMatchClick: (String) -> Unit = {}) {
     val viewModel: FavoritesViewModel = viewModel(factory = ViewModelFactory(Injection.provideFootballRepository(context)))
     val state by viewModel.uiState.collectAsState()
 
-    val primaryBlue = Color(0xFF1E88E5)
-    val darkBlue = Color(0xFF1565C0)
+    val primary = MaterialTheme.colorScheme.primary
+    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+    val onPrimary = MaterialTheme.colorScheme.onPrimary
 
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -42,7 +41,7 @@ fun FavoritesScreen(onMatchClick: (String) -> Unit = {}) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(darkBlue, primaryBlue)))
+                .background(Brush.verticalGradient(listOf(primaryContainer, primary)))
                 .padding(horizontal = 20.dp, vertical = 20.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -50,13 +49,13 @@ fun FavoritesScreen(onMatchClick: (String) -> Unit = {}) {
                     modifier = Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White.copy(alpha = 0.2f)),
+                        .background(onPrimary.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Favorite,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = onPrimary,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -66,13 +65,13 @@ fun FavoritesScreen(onMatchClick: (String) -> Unit = {}) {
                         text = "Trận Yêu Thích",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = onPrimary
                     )
                     if (!state.isLoading) {
                         Text(
                             text = "${state.matches.size} trận đã lưu",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.White.copy(alpha = 0.8f)
+                            color = onPrimary.copy(alpha = 0.8f)
                         )
                     }
                 }
@@ -83,7 +82,7 @@ fun FavoritesScreen(onMatchClick: (String) -> Unit = {}) {
         when {
             state.isLoading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = primaryBlue)
+                    CircularProgressIndicator(color = primary)
                 }
             }
             state.matches.isEmpty() -> {
@@ -120,13 +119,13 @@ private fun FavoritesEmptyState() {
                 modifier = Modifier
                     .size(100.dp)
                     .clip(RoundedCornerShape(50.dp))
-                    .background(Color(0xFFF44336).copy(alpha = 0.08f)),
+                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Outlined.FavoriteBorder,
                     contentDescription = null,
-                    tint = Color(0xFFF44336).copy(alpha = 0.5f),
+                    tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(52.dp)
                 )
             }

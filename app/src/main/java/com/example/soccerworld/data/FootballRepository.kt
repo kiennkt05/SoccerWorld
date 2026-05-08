@@ -279,7 +279,7 @@ class FootballRepository(
         }
     }
 
-    suspend fun preloadPlayerMediaInParallel(players: List<TopScorerEntity>): Map<String, String?> {
+    fun preloadPlayerMediaInParallel(players: List<TopScorerEntity>): Map<String, String?> {
         return players.associate { it.playerId to it.imageUrl }
     }
 
@@ -319,7 +319,7 @@ class FootballRepository(
                     } else true
                     val statusFilter = status?.let { it == match.status } ?: true
                     val matchdayFilter = matchday?.let { it == match.matchday } ?: true
-                    val stageFilter = stage?.let { it.equals(match.stage, ignoreCase = true) } ?: true
+                    val stageFilter = stage?.equals(match.stage, ignoreCase = true) ?: true
                     dateFilter && statusFilter && matchdayFilter && stageFilter
                 }
             FixtureResponse(
@@ -339,6 +339,44 @@ class FootballRepository(
                     )
                 }
             }
+        }
+    }
+
+    suspend fun loadMoreFixtures(
+        leagueId: String,
+        currentPage: Int
+    ): DataResult<List<Matche>> {
+        val league = Constant.league(leagueId)
+            ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
+
+        return safeApiCall {
+            val events = mutableListOf<FlashLiveEvent>()
+            
+            // Load fixtures từ page hiện tại
+            try {
+                val fixtures = apiService
+                    .getTournamentFixtures(Constant.LOCALE, league.stageId, currentPage)
+                    .data.orEmpty()
+                    .flatMap { it.events.orEmpty() }
+                if (fixtures.isNotEmpty()) events += fixtures
+            } catch (e: HttpException) {
+                if (e.code() != 404) throw e
+            }
+            
+            // Load results từ page hiện tại
+            try {
+                val results = apiService
+                    .getTournamentResults(Constant.LOCALE, league.stageId, currentPage)
+                    .data.orEmpty()
+                    .flatMap { it.events.orEmpty() }
+                if (results.isNotEmpty()) events += results
+            } catch (e: HttpException) {
+                if (e.code() != 404) throw e
+            }
+            
+            events
+                .distinctBy { it.eventId }
+                .map { it.toFixtureMatch(league.name, leagueId) }
         }
     }
 
@@ -630,25 +668,28 @@ class FootballRepository(
         val events = mutableListOf<FlashLiveEvent>()
 
         if (!useResultsOnly) {
-            events += fetchPagedEvents { page ->
+            events += fetchPagedEvents({ page ->
                 apiService.getTournamentFixtures(Constant.LOCALE, stageId, page)
                     .data.orEmpty()
                     .flatMap { it.events.orEmpty() }
-            }
+            }, maxPages = 1)
         }
         if (!useFixturesOnly) {
-            events += fetchPagedEvents { page ->
+            events += fetchPagedEvents({ page ->
                 apiService.getTournamentResults(Constant.LOCALE, stageId, page)
                     .data.orEmpty()
                     .flatMap { it.events.orEmpty() }
-            }
+            }, maxPages = 1)
         }
         return events.distinctBy { it.eventId }
     }
 
-    private suspend fun fetchPagedEvents(fetchPage: suspend (Int) -> List<FlashLiveEvent>): List<FlashLiveEvent> {
+    private suspend fun fetchPagedEvents(
+        fetchPage: suspend (Int) -> List<FlashLiveEvent>,
+        maxPages: Int = 3
+    ): List<FlashLiveEvent> {
         val merged = mutableListOf<FlashLiveEvent>()
-        for (page in 1..10) {
+        for (page in 1..maxPages) {
             val pageItems = try {
                 fetchPage(page)
             } catch (http: HttpException) {

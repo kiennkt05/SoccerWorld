@@ -9,7 +9,7 @@ import com.example.soccerworld.ui.home.leaguetable.LeagueTableScreen
 import com.example.soccerworld.ui.home.topscorer.TopScorersScreen
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(onTeamClick: (String) -> Unit = {}) {
     var selectedTabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Bảng xếp hạng", "Vua phá lưới")
 
@@ -29,7 +29,7 @@ fun HomeScreen() {
         }
 
         when (selectedTabIndex) {
-            0 -> LeagueTableScreen()
+            0 -> LeagueTableScreen(onTeamClick = onTeamClick)
             1 -> TopScorersScreen()
         }
     }

@@ -37,7 +37,13 @@ class SearchViewModel(private val repository: FootballRepository) : ViewModel() 
                     _uiState.update { it.copy(isLoading = true, error = null) }
                     when (val result = repository.multiSearch(query)) {
                         is DataResult.Success -> {
-                            _uiState.update { it.copy(isLoading = false, results = result.data) }
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    results = result.data.distinctBy { item -> "${item.type}_${item.id}" },
+                                    error = null
+                                )
+                            }
                         }
                         is DataResult.Error -> {
                             _uiState.update { it.copy(isLoading = false, error = result.message) }

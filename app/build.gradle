@@ -63,39 +63,42 @@ android {
 
     composeOptions {
         // Tương thích với Kotlin phiên bản hiện tại của bạn
-        kotlinCompilerExtensionVersion = "1.5.10"
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
 }
 
 dependencies {
     // 1. CÁC THƯ VIỆN LÕI ANDROID
-    implementation 'androidx.core:core-ktx:1.12.0'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
-    implementation 'androidx.activity:activity-compose:1.8.2'
+    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.5'
+    implementation 'androidx.activity:activity-compose:1.9.2'
+    implementation 'com.google.android.material:material:1.12.0' // Thêm để sửa lỗi Theme.Material3 not found
 
     // 2. JETPACK COMPOSE (Sử dụng BOM để tự động quản lý phiên bản)
-    def composeBom = platform('androidx.compose:compose-bom:2024.02.00')
+    def composeBom = platform('androidx.compose:compose-bom:2024.06.00')
     implementation composeBom
     androidTestImplementation composeBom
-
     implementation 'androidx.compose.ui:ui'
     implementation 'androidx.compose.ui:ui-graphics'
     implementation 'androidx.compose.ui:ui-tooling-preview'
     implementation 'androidx.compose.material3:material3' // Giao diện Material 3 đẹp nhất
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2' // ViewModel cho Compose
-    implementation 'androidx.navigation:navigation-compose:2.7.7' // Điều hướng các màn hình
+    
+    // Hạ cấp các thư viện này để tương thích với compileSdk 34
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5' 
+    implementation 'androidx.navigation:navigation-compose:2.8.2'
 
     // 3. THƯ VIỆN TẢI ẢNH (Coil thay thế hoàn toàn Glide)
-    implementation("io.coil-kt:coil-compose:2.6.0")
+    implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("androidx.preference:preference-ktx:1.2.1")
+    
     // 4. GỌI MẠNG (Retrofit) - Đã xóa RxJava
     def retrofitVersion = '2.9.0'
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
     implementation "com.squareup.retrofit2:converter-gson:$retrofitVersion"
 
     // 5. CHẠY NGẦM (Coroutines)
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
     implementation "androidx.work:work-runtime-ktx:2.9.1"
 
     // 6. LƯU TRỮ Ổ CỨNG (Room Database)

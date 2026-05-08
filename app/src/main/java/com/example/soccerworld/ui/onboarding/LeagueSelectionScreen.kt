@@ -10,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -59,7 +58,8 @@ fun LeagueSelectionScreen(
                 text = "Vui lòng chọn giải đấu bạn muốn theo dõi:",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 24.dp),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             LazyVerticalGrid(

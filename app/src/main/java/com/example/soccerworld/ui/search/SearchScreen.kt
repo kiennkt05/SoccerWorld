@@ -20,7 +20,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -62,7 +61,7 @@ fun SearchScreen(
     )
     val state by viewModel.uiState.collectAsState()
 
-    val primaryBlue = Color(0xFF1E88E5)
+    val primary = MaterialTheme.colorScheme.primary
 
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -85,21 +84,18 @@ fun SearchScreen(
                     )
                 },
                 leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = null, tint = primaryBlue)
+                    Icon(Icons.Default.Search, contentDescription = null, tint = primary)
                 },
                 trailingIcon = {
                     if (state.query.isNotEmpty()) {
                         TextButton(onClick = { viewModel.onSearchQueryChanged("") }) {
-                            Text("Xóa", color = primaryBlue, fontSize = 13.sp)
+                            Text("Xóa", color = primary, fontSize = 13.sp)
                         }
                     }
                 },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 ),
                 shape = RoundedCornerShape(14.dp),
                 singleLine = true
@@ -112,7 +108,7 @@ fun SearchScreen(
             state.isLoading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = primaryBlue)
+                        CircularProgressIndicator(color = primary)
                         Spacer(modifier = Modifier.height(12.dp))
                         Text("Đang tìm kiếm...", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -169,7 +165,7 @@ fun SearchScreen(
 
 @Composable
 private fun SearchSuggestions(onSuggestionClick: (String) -> Unit) {
-    val primaryBlue = Color(0xFF1E88E5)
+    val primary = MaterialTheme.colorScheme.primary
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp)
@@ -203,13 +199,13 @@ private fun SearchSuggestions(onSuggestionClick: (String) -> Unit) {
                         modifier = Modifier
                             .size(38.dp)
                             .clip(CircleShape)
-                            .background(primaryBlue.copy(alpha = 0.1f)),
+                            .background(primary.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            tint = primaryBlue,
+                            tint = primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -287,31 +283,31 @@ private fun SearchResultList(
 
 @Composable
 private fun GroupHeader(title: String, icon: ImageVector, count: Int) {
-    val primaryBlue = Color(0xFF1E88E5)
+    val primary = MaterialTheme.colorScheme.primary
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(imageVector = icon, contentDescription = null, tint = primaryBlue, modifier = Modifier.size(18.dp))
+        Icon(imageVector = icon, contentDescription = null, tint = primary, modifier = Modifier.size(18.dp))
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = title,
             fontWeight = FontWeight.Bold,
-            color = primaryBlue,
+            color = primary,
             style = MaterialTheme.typography.titleSmall
         )
         Spacer(modifier = Modifier.width(8.dp))
         Surface(
-            color = primaryBlue.copy(alpha = 0.12f),
+            color = MaterialTheme.colorScheme.primaryContainer,
             shape = RoundedCornerShape(12.dp)
         ) {
             Text(
                 text = "$count",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = primaryBlue,
+                color = primary,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
             )
         }
@@ -350,10 +346,10 @@ fun SearchItemCard(
         else -> Icons.Default.Search
     }
     val typeColor = when (item) {
-        is TeamSearchItemDto -> Color(0xFF1E88E5)
-        is PlayerSearchItemDto -> Color(0xFF43A047)
-        is TournamentSearchItemDto -> Color(0xFFFFC107)
-        else -> Color.Gray
+        is TeamSearchItemDto -> MaterialTheme.colorScheme.primary
+        is PlayerSearchItemDto -> MaterialTheme.colorScheme.secondary
+        is TournamentSearchItemDto -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Card(

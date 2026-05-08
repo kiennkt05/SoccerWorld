@@ -4,15 +4,17 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -20,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.soccerworld.R
 import com.example.soccerworld.model.team.Team
 import com.example.soccerworld.util.Injection
@@ -50,7 +53,11 @@ fun TeamsScreen(onTeamClick: (String) -> Unit = {}) {
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            items(teams) { team ->
+            itemsIndexed(
+                teams,
+                key = { index, team -> "team_${index}_${team.id ?: team.name}" },
+                contentType = { _, _ -> "team_card" }
+            ) { index, team ->
                 TeamCard(team = team) {
                     onTeamClick(team.id ?: "")
                 }
@@ -61,6 +68,18 @@ fun TeamsScreen(onTeamClick: (String) -> Unit = {}) {
 
 @Composable
 fun TeamCard(team: Team, onClick: () -> Unit) {
+    val context = LocalContext.current
+    val fallbackPainter = painterResource(id = R.drawable.ic_ball)
+    
+    val imageRequest = remember(team.crest) {
+        team.crest?.let {
+            ImageRequest.Builder(context)
+                .data(it)
+                .crossfade(false)
+                .build()
+        }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -78,12 +97,13 @@ fun TeamCard(team: Team, onClick: () -> Unit) {
             verticalArrangement = Arrangement.Center
         ) {
             AsyncImage(
-                model = team.crest,
+                model = imageRequest,
                 contentDescription = team.name,
-                modifier = Modifier.size(64.dp),
-                placeholder = painterResource(id = R.drawable.ic_ball),
-                error = painterResource(id = R.drawable.ic_ball),
-                fallback = painterResource(id = R.drawable.ic_ball)
+                modifier = Modifier.size(48.dp),
+                contentScale = ContentScale.Crop,
+                placeholder = fallbackPainter,
+                error = fallbackPainter,
+                fallback = fallbackPainter
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(

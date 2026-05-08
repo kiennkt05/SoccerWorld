@@ -53,8 +53,9 @@ fun MatchDetailScreen(fixtureId: String, onBack: () -> Unit) {
     }
     val state by matchDetailViewModel.uiState.collectAsState()
 
-    val primaryBlue = Color(0xFF1565C0)
-    val darkBlue = Color(0xFF0D47A1)
+    val primary = MaterialTheme.colorScheme.primary
+    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+    val onPrimary = MaterialTheme.colorScheme.onPrimary
 
     Scaffold(
         topBar = {
@@ -66,9 +67,9 @@ fun MatchDetailScreen(fixtureId: String, onBack: () -> Unit) {
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = primaryBlue,
-                    titleContentColor = Color.White,
-                    navigationIconContentColor = Color.White
+                    containerColor = primary,
+                    titleContentColor = onPrimary,
+                    navigationIconContentColor = onPrimary
                 )
             )
         }
@@ -82,9 +83,9 @@ fun MatchDetailScreen(fixtureId: String, onBack: () -> Unit) {
             if (state.isLoading) {
                 Box(
                     modifier = Modifier.fillMaxWidth().height(140.dp)
-                        .background(Brush.verticalGradient(listOf(primaryBlue, darkBlue))),
+                        .background(Brush.verticalGradient(listOf(primaryContainer, primary))),
                     contentAlignment = Alignment.Center
-                ) { CircularProgressIndicator(color = Color.White) }
+                ) { CircularProgressIndicator(color = onPrimary) }
             } else {
                 MatchHeader(core = state.data?.core, enrichment = state.data?.enrichment)
             }
@@ -93,7 +94,7 @@ fun MatchDetailScreen(fixtureId: String, onBack: () -> Unit) {
             TabRow(
                 selectedTabIndex = selectedTabIndex,
                 containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = primaryBlue
+                contentColor = primary
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
@@ -136,8 +137,9 @@ fun MatchDetailScreen(fixtureId: String, onBack: () -> Unit) {
 
 @Composable
 fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
-    val primaryBlue = Color(0xFF1565C0)
-    val darkBlue = Color(0xFF0D47A1)
+    val primary = MaterialTheme.colorScheme.primary
+    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+    val onPrimary = MaterialTheme.colorScheme.onPrimary
 
     val status = enrichment?.status ?: core?.status ?: "UNKNOWN"
     val homeScore = core?.score?.fullTime?.home
@@ -151,7 +153,7 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(primaryBlue, darkBlue)))
+            .background(Brush.verticalGradient(listOf(primaryContainer, primary)))
             .padding(vertical = 20.dp, horizontal = 16.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -159,9 +161,9 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
             // Status badge
             Surface(
                 color = when {
-                    isLive -> Color.Red.copy(alpha = 0.85f)
-                    isFinished -> Color.White.copy(alpha = 0.25f)
-                    else -> Color.White.copy(alpha = 0.18f)
+                    isLive -> MaterialTheme.colorScheme.error.copy(alpha = 0.85f)
+                    isFinished -> onPrimary.copy(alpha = 0.25f)
+                    else -> onPrimary.copy(alpha = 0.18f)
                 },
                 shape = RoundedCornerShape(20.dp)
             ) {
@@ -173,7 +175,7 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
                         status == "TIMED" -> "Sắp diễn ra"
                         else -> status
                     },
-                    color = Color.White,
+                    color = onPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)
@@ -206,14 +208,14 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
                             text = "${homeScore ?: 0}  -  ${awayScore ?: 0}",
                             fontSize = 32.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
+                            color = onPrimary,
                             letterSpacing = 2.sp
                         )
                         if (core?.score?.halfTime != null) {
                             Text(
                                 text = "HT: ${core.score.halfTime.home ?: 0}-${core.score.halfTime.away ?: 0}",
                                 fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.7f)
+                                color = onPrimary.copy(alpha = 0.7f)
                             )
                         }
                     } else {
@@ -221,14 +223,14 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
                             text = "VS",
                             fontSize = 28.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White.copy(alpha = 0.6f)
+                            color = onPrimary.copy(alpha = 0.6f)
                         )
                         val dateStr = formatHeaderDate(core?.utcDate)
                         if (dateStr.isNotEmpty()) {
                             Text(
                                 text = dateStr,
                                 fontSize = 11.sp,
-                                color = Color.White.copy(alpha = 0.75f),
+                                color = onPrimary.copy(alpha = 0.75f),
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -250,7 +252,7 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
                 Text(
                     text = "📍 $venue",
                     fontSize = 11.sp,
-                    color = Color.White.copy(alpha = 0.7f)
+                    color = onPrimary.copy(alpha = 0.7f)
                 )
             }
         }
@@ -281,7 +283,7 @@ private fun TeamHeaderItem(
             text = shortName,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onPrimary,
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
@@ -314,11 +316,11 @@ private fun EventRow(event: MatchEvent) {
     } ?: true
 
     val (emoji, bgColor) = when (event.type.uppercase()) {
-        "GOAL", "REGULAR_SEASON_GOAL" -> "⚽" to Color(0xFF4CAF50).copy(alpha = 0.12f)
-        "YELLOW_CARD" -> "🟨" to Color(0xFFFFC107).copy(alpha = 0.15f)
-        "RED_CARD", "YELLOW_RED_CARD" -> "🟥" to Color(0xFFF44336).copy(alpha = 0.12f)
-        "SUBSTITUTION" -> "🔄" to Color(0xFF2196F3).copy(alpha = 0.10f)
-        "PENALTY_GOAL", "PENALTY_MISSED" -> "🎯" to Color(0xFF9C27B0).copy(alpha = 0.10f)
+        "GOAL", "REGULAR_SEASON_GOAL" -> "⚽" to MaterialTheme.colorScheme.tertiary.copy(alpha = 0.12f)
+        "YELLOW_CARD" -> "🟨" to MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
+        "RED_CARD", "YELLOW_RED_CARD" -> "🟥" to MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
+        "SUBSTITUTION" -> "🔄" to MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+        "PENALTY_GOAL", "PENALTY_MISSED" -> "🎯" to MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.12f)
         else -> "•" to Color.Transparent
     }
 
@@ -336,14 +338,14 @@ private fun EventRow(event: MatchEvent) {
                 text = "${event.minute}'",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1565C0),
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.width(36.dp)
             )
             Text(text = emoji, fontSize = 18.sp, modifier = Modifier.width(28.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = event.description, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 if (!event.team.isNullOrBlank()) {
-                    Text(text = event.team, fontSize = 11.sp, color = Color.Gray)
+                    Text(text = event.team, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
@@ -351,7 +353,7 @@ private fun EventRow(event: MatchEvent) {
             Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
                 Text(text = event.description, fontSize = 13.sp, fontWeight = FontWeight.Medium, textAlign = TextAlign.End)
                 if (!event.team.isNullOrBlank()) {
-                    Text(text = event.team, fontSize = 11.sp, color = Color.Gray, textAlign = TextAlign.End)
+                    Text(text = event.team, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End)
                 }
             }
             Text(text = emoji, fontSize = 18.sp, modifier = Modifier.width(28.dp), textAlign = TextAlign.Center)
@@ -359,7 +361,7 @@ private fun EventRow(event: MatchEvent) {
                 text = "${event.minute}'",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1565C0),
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.width(36.dp),
                 textAlign = TextAlign.End
             )
@@ -400,8 +402,8 @@ private fun StatProgressRow(stat: MatchStatItem) {
         label = "homeBar"
     )
 
-    val primaryBlue = Color(0xFF1565C0)
-    val accentOrange = Color(0xFFFF6D00)
+    val primary = MaterialTheme.colorScheme.primary
+    val secondary = MaterialTheme.colorScheme.secondary
 
     Column(modifier = Modifier.fillMaxWidth()) {
         // Stat name + values
@@ -414,7 +416,7 @@ private fun StatProgressRow(stat: MatchStatItem) {
                 text = stat.homeValue,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = primaryBlue
+                color = primary
             )
             Text(
                 text = stat.name,
@@ -427,7 +429,7 @@ private fun StatProgressRow(stat: MatchStatItem) {
                 text = stat.awayValue,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = accentOrange
+                color = secondary
             )
         }
         Spacer(modifier = Modifier.height(6.dp))
@@ -442,14 +444,14 @@ private fun StatProgressRow(stat: MatchStatItem) {
                 modifier = Modifier
                     .weight(homeAnim.coerceAtLeast(0.02f))
                     .fillMaxHeight()
-                    .background(primaryBlue)
+                    .background(primary)
             )
             Spacer(modifier = Modifier.width(2.dp))
             Box(
                 modifier = Modifier
                     .weight((1f - homeAnim).coerceAtLeast(0.02f))
                     .fillMaxHeight()
-                    .background(accentOrange)
+                    .background(secondary)
             )
         }
     }
@@ -492,7 +494,7 @@ fun LineupsTab(lineups: List<MatchLineupTeam>) {
             Text(
                 "Đội hình chính",
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1565C0),
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
         }
@@ -516,7 +518,7 @@ fun LineupsTab(lineups: List<MatchLineupTeam>) {
             Text(
                 "Dự bị",
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1565C0),
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
         }
@@ -538,17 +540,17 @@ fun LineupsTab(lineups: List<MatchLineupTeam>) {
 @Composable
 private fun FormationBadge(teamName: String, formation: String?, alignEnd: Boolean = false) {
     Column(horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start) {
-        Text(text = teamName, fontSize = 12.sp, color = Color.Gray, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text = teamName, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         if (!formation.isNullOrBlank()) {
             Surface(
-                color = Color(0xFF1565C0).copy(alpha = 0.12f),
+                color = MaterialTheme.colorScheme.primaryContainer,
                 shape = RoundedCornerShape(6.dp)
             ) {
                 Text(
                     text = formation,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1565C0),
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                 )
             }
@@ -582,7 +584,7 @@ private fun PlayerDuelRow(
                 overflow = TextOverflow.Ellipsis
             )
             if (!homePos.isNullOrBlank()) {
-                Text(text = homePos, fontSize = 10.sp, color = Color.Gray)
+                Text(text = homePos, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         // Center divider
@@ -604,7 +606,7 @@ private fun PlayerDuelRow(
                 overflow = TextOverflow.Ellipsis
             )
             if (!awayPos.isNullOrBlank()) {
-                Text(text = awayPos, fontSize = 10.sp, color = Color.Gray, textAlign = TextAlign.End)
+                Text(text = awayPos, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.End)
             }
         }
     }
@@ -626,7 +628,7 @@ fun H2HTab(h2hList: List<Matche>) {
             Text(
                 "Lịch sử đối đầu (${h2hList.size} trận)",
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1565C0),
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
         }
@@ -642,9 +644,9 @@ private fun H2HMatchCard(match: Matche) {
     val homeGoals = match.score?.fullTime?.home ?: 0
     val awayGoals = match.score?.fullTime?.away ?: 0
     val resultColor = when {
-        homeGoals > awayGoals -> Color(0xFF4CAF50)
-        homeGoals < awayGoals -> Color(0xFFF44336)
-        else -> Color(0xFFFF9800)
+        homeGoals > awayGoals -> MaterialTheme.colorScheme.tertiary
+        homeGoals < awayGoals -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.secondary
     }
     val resultLabel = when {
         homeGoals > awayGoals -> "W"
@@ -691,7 +693,7 @@ private fun H2HMatchCard(match: Matche) {
                 Text(
                     text = formatHeaderDate(match.utcDate),
                     fontSize = 11.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Text(

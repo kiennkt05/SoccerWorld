@@ -124,7 +124,7 @@ fun TeamDetailsTab(detailsState: TabState<PlayerResponse>) {
                                     Text(
                                         text = comp.type ?: "",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = Color.Gray
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -220,9 +220,11 @@ fun TeamMatchesTab(matchesState: TabState<List<Matche>>, onLoadMore: () -> Unit)
             val listState = rememberLazyListState()
             
             // Check if we need to load more (reached the end)
-            val isAtBottom by derivedStateOf {
-                val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
-                lastVisibleItem != null && lastVisibleItem.index >= listState.layoutInfo.totalItemsCount - 2
+            val isAtBottom by remember(listState) {
+                derivedStateOf {
+                    val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+                    lastVisibleItem != null && lastVisibleItem.index >= listState.layoutInfo.totalItemsCount - 2
+                }
             }
             
             LaunchedEffect(isAtBottom) {
@@ -273,11 +275,11 @@ fun TeamTransfersTab(transfersState: TabState<List<TransferData>>) {
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                                     Column(Modifier.weight(1f)) {
-                                        Text("From", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                                        Text("From", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text(transfer.fromTeamName ?: "-", style = MaterialTheme.typography.bodyMedium)
                                     }
                                     Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
-                                        Text("To", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+                                        Text("To", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text(transfer.toTeamName ?: "-", style = MaterialTheme.typography.bodyMedium)
                                     }
                                 }
@@ -350,14 +352,14 @@ fun TeamStandingsTab(teamId: String) {
     )
     val state by viewModel.uiState.collectAsState()
 
-    val primaryBlue = Color(0xFF1565C0)
-    val highlightBg  = Color(0xFF1E88E5).copy(alpha = 0.12f)
-    val highlightBorder = Color(0xFF1E88E5)
+    val primary = MaterialTheme.colorScheme.primary
+    val highlightBg = primary.copy(alpha = 0.12f)
+    val highlightBorder = primary
 
     when {
         state.isLoading -> {
             Box(Modifier.fillMaxSize(), Alignment.Center) {
-                CircularProgressIndicator(color = primaryBlue)
+                CircularProgressIndicator(color = primary)
             }
         }
         state.error != null -> {
@@ -396,7 +398,7 @@ fun TeamStandingsTab(teamId: String) {
                             isHighlighted = isHighlighted,
                             highlightBg = highlightBg,
                             highlightBorder = highlightBorder,
-                            primaryBlue = primaryBlue
+                            primaryBlue = primary
                         )
                     }
                 }
@@ -407,11 +409,11 @@ fun TeamStandingsTab(teamId: String) {
 
 @Composable
 private fun StandingsHeaderRow() {
-    val primaryBlue = Color(0xFF1565C0)
+    val primaryBlue = MaterialTheme.colorScheme.primary
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF1565C0).copy(alpha = 0.08f), RoundedCornerShape(8.dp))
+            .background(primaryBlue.copy(alpha = 0.08f), RoundedCornerShape(8.dp))
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -453,9 +455,9 @@ private fun StandingsRow(
     val position = item.position ?: 0
     // Zone color: top 4 = blue (CL), 5th = orange (EL), bottom 3 = red (relegation)
     val zoneColor = when {
-        position <= 4  -> Color(0xFF1E88E5)
-        position == 5  -> Color(0xFFFF6D00)
-        position >= 18 -> Color(0xFFF44336)
+        position <= 4  -> MaterialTheme.colorScheme.primary
+        position == 5  -> MaterialTheme.colorScheme.tertiary
+        position >= 18 -> MaterialTheme.colorScheme.error
         else           -> Color.Transparent
     }
 
@@ -531,7 +533,7 @@ private fun StandingsRow(
                 fontWeight = if (isPoints || isHighlighted) FontWeight.Bold else FontWeight.Normal,
                 color = when {
                     isPoints && isHighlighted -> primaryBlue
-                    isPoints -> Color(0xFF1565C0)
+                    isPoints -> primaryBlue
                     isHighlighted -> primaryBlue
                     else -> MaterialTheme.colorScheme.onSurface
                 },

@@ -1,36 +1,52 @@
 package com.example.soccerworld.ui.home.leaguetable
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import coil.imageLoader
+import coil.request.ImageRequest
 import com.example.soccerworld.R
 import com.example.soccerworld.model.leaguetable.Table
 import com.example.soccerworld.model.leaguetable.Team
+import com.example.soccerworld.ui.theme.*
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 
@@ -38,7 +54,7 @@ import com.example.soccerworld.util.ViewModelFactory
 // 1. HÀM STATEFUL (Dùng để chạy thật trên máy)
 // ==========================================
 @Composable
-fun LeagueTableScreen() {
+fun LeagueTableScreen(onTeamClick: (String) -> Unit = {}) {
     val context = LocalContext.current
 
     val viewModel: LeagueTableViewModel = viewModel(factory = ViewModelFactory(
@@ -50,19 +66,18 @@ fun LeagueTableScreen() {
 
     val state by viewModel.uiState.collectAsState()
 
-    // Chỉ gọi hàm Stateless và truyền cục State vào
-    LeagueTableContent(state = state)
+    LeagueTableContent(state = state, onTeamClick = onTeamClick)
 }
 
 // ==========================================
 // 2. HÀM STATELESS (Dùng để vẽ giao diện và Preview)
 // ==========================================
 @Composable
-fun LeagueTableContent(state: LeagueTableUiState) {
+fun LeagueTableContent(state: LeagueTableUiState, onTeamClick: (String) -> Unit = {}) {
     when {
         state.isLoading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                CircularProgressIndicator(color = SofascoreBlue)
             }
         }
         state.error != null -> {
@@ -71,20 +86,47 @@ fun LeagueTableContent(state: LeagueTableUiState) {
             }
         }
         else -> {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp)
-            ) {
-                // 🌟 AN TOÀN: Dùng ?: emptyList() để lỡ danh sách bị null thì gán thành mảng rỗng
-                val safeList = state.tableList ?: emptyList()
+            val safeList = remember(state.tableList) {
+                (state.tableList ?: emptyList()).filterNotNull()
+            }
+            val context = LocalContext.current
+            val imageSizePx = with(LocalDensity.current) { 28.dp.roundToPx() }
 
-                items(safeList.size) { index ->
-                    val item = safeList[index]
-
-                    // 🌟 AN TOÀN: Kiểm tra lỡ phần tử bị null thì bỏ qua không vẽ
-                    if (item != null) {
-                        TeamRow(item)
+            // Prefetch images
+            LaunchedEffect(safeList, imageSizePx) {
+                val imageLoader = context.imageLoader
+                safeList.forEach { item ->
+                    val crest = item.team?.crest
+                    if (!crest.isNullOrBlank()) {
+                        val request = ImageRequest.Builder(context)
+                            .data(crest)
+                            .size(imageSizePx)
+                            .build()
+                        imageLoader.enqueue(request)
                     }
+                }
+            }
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF5F5F5)),
+                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)
+            ) {
+                // Header row
+                item(key = "header", contentType = "header") {
+                    TableHeaderRow()
+                }
+
+                items(
+                    items = safeList,
+                    key = { item -> item.team?.id ?: item.position ?: item.hashCode() },
+                    contentType = { "team_row" }
+                ) { item ->
+                    TeamRow(
+                        item = item,
+                        onTeamClick = onTeamClick
+                    )
                 }
             }
         }
@@ -92,72 +134,171 @@ fun LeagueTableContent(state: LeagueTableUiState) {
 }
 
 // ==========================================
-// HÀM TEAM ROW (Đã khử sạch !! và thêm bảo vệ)
+// HEADER ROW
 // ==========================================
 @Composable
-fun TeamRow(item: Table) {
-    Card(
+private fun TableHeaderRow() {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+            .background(SofascoreBlue.copy(alpha = 0.08f))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Position
+        Text(
+            text = "#",
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp,
+            color = SofascoreBlue,
+            modifier = Modifier.width(24.dp),
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Team name placeholder
+        Text(
+            text = "Đội",
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp,
+            color = SofascoreBlue,
+            modifier = Modifier.weight(1f)
+        )
+
+        // Stats columns
+        listOf("Trận", "T", "H", "B", "HS", "Đ").forEach { label ->
+            Text(
+                text = label,
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.sp,
+                color = SofascoreBlue,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.width(if (label == "HS") 28.dp else 24.dp)
+            )
+        }
+    }
+}
+
+// ==========================================
+// TEAM ROW — clickable, with zone indicator and contrast
+// ==========================================
+@Composable
+fun TeamRow(
+    item: Table,
+    onTeamClick: (String) -> Unit = {}
+) {
+    val position = item.position ?: 0
+    val teamId = item.team?.id ?: ""
+    val ballPainter = painterResource(id = R.drawable.ic_ball)
+
+    // Zone color for position indicator
+    val zoneColor = when {
+        position <= 4 -> SofascoreBlue                  // Champions League
+        position == 5 -> Color(0xFFFF8C00)              // Europa League
+        position == 6 -> Color(0xFF2ECC71)              // Conference League
+        position >= 18 -> Color(0xFFE74C3C)             // Relegation
+        else -> Color.Transparent
+    }
+
+    // Alternating row background for contrast
+    val rowBg = if (position % 2 == 0) Color(0xFFF8F8F8) else Color.White
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(rowBg)
+            .clickable { if (teamId.isNotEmpty()) onTeamClick(teamId) }
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(horizontal = 12.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 1. Thứ hạng
-            Text(
-                text = "${item.position}",
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.width(28.dp)
-            )
+            // Position number with zone color indicator
+            Box(modifier = Modifier.width(24.dp), contentAlignment = Alignment.Center) {
+                // Zone indicator bar on the left
+                if (zoneColor != Color.Transparent) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterStart)
+                            .size(3.dp, 18.dp)
+                            .clip(RoundedCornerShape(1.5.dp))
+                            .background(zoneColor)
+                    )
+                }
+                Text(
+                    text = "$position",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = if (zoneColor != Color.Transparent) zoneColor else TextDark,
+                    textAlign = TextAlign.Center
+                )
+            }
 
-            // 2. Logo đội bóng (Dùng ?.crest an toàn)
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Team crest — using simple AsyncImage instead of SubcomposeAsyncImage
             AsyncImage(
                 model = item.team?.crest,
-                contentDescription = "Logo of ${item.team?.name ?: "Unknown"}",
-                modifier = Modifier.size(36.dp),
-                placeholder = painterResource(id = R.drawable.ic_ball),
-                error = painterResource(id = R.drawable.ic_ball),
-                fallback = painterResource(id = R.drawable.ic_ball)
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                contentScale = ContentScale.Fit,
+                placeholder = ballPainter,
+                error = ballPainter,
+                fallback = ballPainter
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
-            // 3. Tên đội bóng (Dùng ?: "Unknown" thay vì let cho code phẳng và đẹp hơn)
+            // Team name
             Text(
-                text = item.team?.name ?: "Unknown",
+                text = item.team?.shortName ?: item.team?.name ?: "Unknown",
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f),
-                maxLines = 1
+                color = TextDark,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
             )
 
-            // 4. Số trận
-            Text(
-                text = "${item.playedGames}",
-                modifier = Modifier.width(28.dp),
-                color = Color.DarkGray
+            // Stats: GP, W, D, L, GD, Pts
+            val gd = item.goalDifference ?: 0
+            val stats = listOf(
+                "${item.playedGames ?: 0}",
+                "${item.won ?: 0}",
+                "${item.draw ?: 0}",
+                "${item.lost ?: 0}",
+                if (gd >= 0) "+$gd" else "$gd",
+                "${item.points ?: 0}"
             )
 
-            // 5. Hiệu số
-            Text(
-                text = "${item.goalDifference}",
-                modifier = Modifier.width(32.dp),
-                color = Color.Gray
-            )
-
-            // 6. Điểm số
-            Text(
-                text = "${item.points}",
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1565C0),
-                modifier = Modifier.width(32.dp)
-            )
+            stats.forEachIndexed { index, value ->
+                val isPoints = index == stats.lastIndex
+                val isGD = index == stats.lastIndex - 1
+                Text(
+                    text = value,
+                    fontSize = 12.sp,
+                    fontWeight = if (isPoints) FontWeight.ExtraBold else FontWeight.Normal,
+                    color = when {
+                        isPoints -> SofascoreBlue
+                        isGD && gd > 0 -> Color(0xFF2ECC71)
+                        isGD && gd < 0 -> Color(0xFFE74C3C)
+                        else -> TextSecondary
+                    },
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.width(if (isGD) 28.dp else 24.dp)
+                )
+            }
         }
+
+        // Subtle divider
+        HorizontalDivider(
+            thickness = 0.5.dp,
+            color = DividerColor,
+            modifier = Modifier.padding(horizontal = 12.dp)
+        )
     }
 }
 

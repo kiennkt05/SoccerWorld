@@ -94,7 +94,9 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(BottomNavItem.Home.route) {
-                HomeScreen()
+                HomeScreen(onTeamClick = { teamId ->
+                    rootNavController.navigate(Screen.TeamDetail.createRoute(teamId))
+                })
             }
             composable(BottomNavItem.Fixtures.route) {
                 FixturesScreen(onMatchClick = { matchId ->

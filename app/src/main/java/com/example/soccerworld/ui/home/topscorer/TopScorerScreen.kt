@@ -7,15 +7,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.soccerworld.R
 import com.example.soccerworld.model.topscorer.TopScorerEntity
 import com.example.soccerworld.util.Injection
@@ -36,14 +38,14 @@ fun TopScorersScreen() {
         }
     } else if (state.error != null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = state.error ?: "Unknown error", color = Color.Red)
+            Text(text = state.error ?: "Unknown error", color = MaterialTheme.colorScheme.error)
         }
     } else if (state.topScorerList.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                text = "Chua co du lieu vua pha luoi cho giai dau nay",
+                text = "Chưa có dữ liệu vua phá lưới cho giải đấu này",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     } else {
@@ -51,7 +53,11 @@ fun TopScorersScreen() {
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp)
         ) {
-            itemsIndexed(state.topScorerList) { index, player ->
+            itemsIndexed(
+                state.topScorerList,
+                key = { _, player -> player.playerId },
+                contentType = { _, _ -> "top_scorer_row" }
+            ) { index, player ->
                 TopScorerRow(
                     rank = index + 1,
                     item = player,
@@ -64,6 +70,18 @@ fun TopScorersScreen() {
 
 @Composable
 fun TopScorerRow(rank: Int, item: TopScorerEntity, playerImageUrl: String?) {
+    val context = LocalContext.current
+    val fallbackPainter = painterResource(id = R.drawable.ic_players)
+    
+    val imageRequest = remember(playerImageUrl) {
+        playerImageUrl?.let {
+            ImageRequest.Builder(context)
+                .data(it)
+                .crossfade(false)
+                .build()
+        }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -81,17 +99,18 @@ fun TopScorerRow(rank: Int, item: TopScorerEntity, playerImageUrl: String?) {
             Text(
                 text = "$rank",
                 fontWeight = FontWeight.Bold,
-                color = if (rank <= 3) MaterialTheme.colorScheme.primary else Color.Gray,
+                color = if (rank <= 3) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.width(32.dp)
             )
 
             AsyncImage(
-                model = playerImageUrl,
+                model = imageRequest,
                 contentDescription = item.playerName,
                 modifier = Modifier.size(36.dp),
-                placeholder = painterResource(id = R.drawable.ic_players),
-                error = painterResource(id = R.drawable.ic_players),
-                fallback = painterResource(id = R.drawable.ic_players)
+                contentScale = ContentScale.Crop,
+                placeholder = fallbackPainter,
+                error = fallbackPainter,
+                fallback = fallbackPainter
             )
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -104,7 +123,7 @@ fun TopScorerRow(rank: Int, item: TopScorerEntity, playerImageUrl: String?) {
                 )
                 Text(
                     text = item.teamName,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

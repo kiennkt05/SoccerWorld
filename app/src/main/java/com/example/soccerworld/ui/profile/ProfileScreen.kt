@@ -28,7 +28,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.soccerworld.ui.favorites.FavoritesViewModel
 import com.example.soccerworld.ui.onboarding.popularLeagues
@@ -50,8 +49,9 @@ fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
     val leagueName = leagueInfo?.name ?: leagueId
     val favoriteCount = favState.matches.size
 
-    val primaryBlue = Color(0xFF1E88E5)
-    val darkBlue = Color(0xFF1565C0)
+    val primary = MaterialTheme.colorScheme.primary
+    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
+    val onPrimary = MaterialTheme.colorScheme.onPrimary
 
     Column(
         modifier = Modifier
@@ -65,7 +65,7 @@ fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
                 .height(220.dp)
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(darkBlue, primaryBlue)
+                        colors = listOf(primaryContainer, primary)
                     )
                 ),
             contentAlignment = Alignment.Center
@@ -76,13 +76,13 @@ fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
                     modifier = Modifier
                         .size(88.dp)
                         .clip(CircleShape)
-                        .background(Color.White.copy(alpha = 0.2f)),
+                        .background(onPrimary.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = "Avatar",
-                        tint = Color.White,
+                        tint = onPrimary,
                         modifier = Modifier.size(52.dp)
                     )
                 }
@@ -91,12 +91,12 @@ fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
                     text = "Fan Bóng Đá",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = onPrimary
                 )
                 Text(
                     text = "SoccerWorld Member",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f)
+                    color = onPrimary.copy(alpha = 0.8f)
                 )
             }
         }
@@ -154,13 +154,13 @@ fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
-                        .background(primaryBlue.copy(alpha = 0.12f)),
+                        .background(primary.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Star,
                         contentDescription = null,
-                        tint = primaryBlue,
+                        tint = primary,
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -178,14 +178,14 @@ fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
                     )
                 }
                 Surface(
-                    color = primaryBlue.copy(alpha = 0.12f),
+                    color = primaryContainer,
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
                         text = "ACTIVE",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = primaryBlue,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                 }
@@ -201,7 +201,7 @@ fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
             icon = Icons.Default.Settings,
             title = "Đổi giải đấu",
             subtitle = "Chọn giải đấu khác để theo dõi",
-            iconBg = Color(0xFF1E88E5),
+            iconBg = MaterialTheme.colorScheme.primary,
             onClick = onChangeLeague
         )
 
@@ -209,7 +209,7 @@ fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
             icon = Icons.Default.Notifications,
             title = "Thông báo trận đấu",
             subtitle = "Nhận cảnh báo khi có trận live",
-            iconBg = Color(0xFFFFC107),
+            iconBg = MaterialTheme.colorScheme.tertiary,
             onClick = {}
         )
 
@@ -222,7 +222,7 @@ fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
             icon = Icons.Default.Info,
             title = "Về SoccerWorld",
             subtitle = "Phiên bản 1.0.0",
-            iconBg = Color(0xFF43A047),
+            iconBg = MaterialTheme.colorScheme.secondary,
             onClick = {}
         )
 
@@ -230,7 +230,7 @@ fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
             icon = Icons.Default.Star,
             title = "Nhóm phát triển",
             subtitle = "BTL Mobile – Kì 2 Năm 3",
-            iconBg = Color(0xFF8E24AA),
+            iconBg = MaterialTheme.colorScheme.primaryContainer,
             onClick = {}
         )
 
@@ -257,7 +257,7 @@ private fun StatItem(value: String, label: String, icon: ImageVector) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color(0xFF1E88E5),
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.height(6.dp))
