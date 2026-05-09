@@ -594,17 +594,133 @@ class FootballRepository(
         stats: EventStatsResponse,
         lineups: LineupsResponse
     ): MatchEnrichmentDetail {
-        val events = summary.data.orEmpty().flatMap { stage ->
-            stage.items.orEmpty().flatMap { item ->
-                item.participants.orEmpty().map { participant ->
-                    MatchEvent(
-                        minute = item.time ?: "--",
-                        type = participant.type ?: participant.incidentName ?: "Event",
-                        description = participant.participantName ?: participant.incidentName ?: "Event",
-                        team = null
-                    )
+        val events = summary.data.orEmpty().reversed().flatMap { stage ->
+            val rawItems = stage.items.orEmpty()
+            val stageMappedEvents = mutableListOf<MatchEvent>()
+            
+            rawItems.forEach { item ->
+                val participants = item.participants.orEmpty()
+                val isHome = item.team == 1
+                val teamStr = if (isHome) "home" else "away"
+
+                val hasGoal = participants.any { it.type?.uppercase()?.contains("GOAL") == true }
+                val hasAssist = participants.any { it.type?.uppercase()?.contains("ASSIST") == true }
+                
+                when {
+                    hasGoal && hasAssist -> {
+                        val goalPart = participants.find { it.type?.uppercase()?.contains("GOAL") == true }
+                        val assistPart = participants.find { it.type?.uppercase()?.contains("ASSIST") == true }
+                        
+                        val scorer = goalPart?.participantName ?: ""
+                        val assist = assistPart?.participantName ?: ""
+                        val homeScore = goalPart?.homeScore ?: ""
+                        val awayScore = goalPart?.awayScore ?: ""
+                        
+                        stageMappedEvents.add(
+                            MatchEvent(
+                                minute = item.time ?: "--",
+                                type = goalPart?.type ?: "GOAL",
+                                description = "$scorer | $assist | $homeScore | $awayScore",
+                                team = teamStr
+                            )
+                        )
+                    }
+                    
+                    hasGoal -> {
+                        val goalPart = participants.find { it.type?.uppercase()?.contains("GOAL") == true }
+                        val scorer = goalPart?.participantName ?: ""
+                        val homeScore = goalPart?.homeScore ?: ""
+                        val awayScore = goalPart?.awayScore ?: ""
+                        
+                        stageMappedEvents.add(
+                            MatchEvent(
+                                minute = item.time ?: "--",
+                                type = goalPart?.type ?: "GOAL",
+                                description = "$scorer | | $homeScore | $awayScore",
+                                team = teamStr
+                            )
+                        )
+                    }
+                    
+                    participants.size == 2 && 
+                    participants.any { it.type == "SUBSTITUTION_IN" } && 
+                    participants.any { it.type == "SUBSTITUTION_OUT" } -> {
+                        val subIn = participants.find { it.type == "SUBSTITUTION_IN" }?.participantName ?: ""
+                        val subOut = participants.find { it.type == "SUBSTITUTION_OUT" }?.participantName ?: ""
+                        
+                        stageMappedEvents.add(
+                            MatchEvent(
+                                minute = item.time ?: "--",
+                                type = "SUBSTITUTION",
+                                description = "$subIn | $subOut",
+                                team = teamStr
+                            )
+                        )
+                    }
+                    
+                    else -> {
+                        participants.forEach { participant ->
+                            val pType = participant.type ?: ""
+                            val desc = if (pType.uppercase().contains("CARD")) {
+                                val pName = participant.participantName ?: ""
+                                val incName = participant.incidentName ?: ""
+                                if (incName.isNotBlank() && !incName.contains("Card", ignoreCase = true)) {
+                                    "$pName | $incName"
+                                } else {
+                                    "$pName |"
+                                }
+                            } else {
+                                participant.participantName ?: participant.incidentName ?: "Event"
+                            }
+                            
+                            stageMappedEvents.add(
+                                MatchEvent(
+                                    minute = item.time ?: "--",
+                                    type = participant.type ?: participant.incidentName ?: "Event",
+                                    description = desc,
+                                    team = teamStr
+                                )
+                            )
+                        }
+                    }
                 }
             }
+            
+            stageMappedEvents.reverse()
+            
+            val maxAddedTime = stage.items.orEmpty()
+                .mapNotNull { it.addedTime?.trim()?.removeSuffix("'")?.toIntOrNull() }
+                .maxOrNull()
+                
+            if (maxAddedTime != null && maxAddedTime > 0) {
+                val lastPlusIndex = stageMappedEvents.indexOfLast { it.minute.contains("+") }
+                val insertIndex = if (lastPlusIndex != -1) lastPlusIndex + 1 else 0
+                stageMappedEvents.add(insertIndex, MatchEvent(
+                    minute = "",
+                    type = "ADDITIONAL_TIME",
+                    description = "Additional time $maxAddedTime",
+                    team = null
+                ))
+            }
+            
+            val resultHome = stage.resultHome ?: ""
+            val resultAway = stage.resultAway ?: ""
+            val scoreText = if (resultHome.isNotBlank() && resultAway.isNotBlank()) " $resultHome - $resultAway" else ""
+            val rawName = stage.stageName ?: "Stage"
+            val stageLabel = when {
+                rawName.contains("1st", ignoreCase = true) -> "HT$scoreText"
+                rawName.contains("2nd", ignoreCase = true) -> "FT$scoreText"
+                else -> "$rawName$scoreText"
+            }
+            
+            stageMappedEvents.add(0, MatchEvent(
+                minute = "",
+                type = "STAGE_HEADER",
+                description = stageLabel,
+                team = null
+            ))
+            
+            stageMappedEvents
         }
         val statItems = stats.data.orEmpty().flatMap { stage ->
             stage.groups.orEmpty().flatMap { group ->

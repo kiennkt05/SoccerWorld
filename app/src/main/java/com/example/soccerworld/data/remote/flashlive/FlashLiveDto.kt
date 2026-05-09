@@ -95,11 +95,16 @@ data class SummaryInfo(
 )
 
 data class SummaryStage(
+    @SerializedName("STAGE_NAME") val stageName: String? = null,
+    @SerializedName("RESULT_HOME") val resultHome: String? = null,
+    @SerializedName("RESULT_AWAY") val resultAway: String? = null,
     @SerializedName("ITEMS") val items: List<SummaryIncident>? = null
 )
 
 data class SummaryIncident(
     @SerializedName("INCIDENT_TIME") val time: String? = null,
+    @SerializedName("INCIDENT_TEAM") val team: Int? = null,
+    @SerializedName("ADDED_TIME") val addedTime: String? = null,
     @SerializedName("INCIDENT_PARTICIPANTS") val participants: List<SummaryParticipant>? = null
 )
 

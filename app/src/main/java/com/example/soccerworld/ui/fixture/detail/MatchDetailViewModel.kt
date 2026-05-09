@@ -24,6 +24,13 @@ class MatchDetailViewModel(
     private val _uiState = MutableStateFlow(MatchDetailUiState())
     val uiState = _uiState.asStateFlow()
 
+    private val _selectedTab = MutableStateFlow(0)
+    val selectedTab = _selectedTab.asStateFlow()
+
+    fun selectTab(index: Int) {
+        _selectedTab.value = index
+    }
+
     fun loadMatchDetail(fixtureId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
