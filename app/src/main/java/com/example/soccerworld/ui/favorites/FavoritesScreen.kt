@@ -7,6 +7,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -24,12 +26,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.soccerworld.ui.fixture.FixtureCard
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun FavoritesScreen(onMatchClick: (String) -> Unit = {}) {
-    val context = LocalContext.current
-    val viewModel: FavoritesViewModel = viewModel(factory = ViewModelFactory(Injection.provideFootballRepository(context)))
-    val state by viewModel.uiState.collectAsState()
+fun FavoritesScreen(
+    onMatchClick: (String) -> Unit = {},
+    onNavigateToLogin: () -> Unit = {}
+) {
+    val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
 
     val primary = MaterialTheme.colorScheme.primary
     val primaryContainer = MaterialTheme.colorScheme.primaryContainer
@@ -67,9 +71,9 @@ fun FavoritesScreen(onMatchClick: (String) -> Unit = {}) {
                         fontWeight = FontWeight.Bold,
                         color = onPrimary
                     )
-                    if (!state.isLoading) {
+                    if (!isLoggedIn) {
                         Text(
-                            text = "${state.matches.size} trận đã lưu",
+                            text = "Đăng nhập để sử dụng",
                             style = MaterialTheme.typography.bodySmall,
                             color = onPrimary.copy(alpha = 0.8f)
                         )
@@ -79,29 +83,109 @@ fun FavoritesScreen(onMatchClick: (String) -> Unit = {}) {
         }
 
         // ── Content ──────────────────────────────────────────────────
-        when {
-            state.isLoading -> {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = primary)
+        if (!isLoggedIn) {
+            // Show login prompt
+            LoginRequiredState(onNavigateToLogin = onNavigateToLogin)
+        } else {
+            // Show favorites content
+            FavoritesContent(onMatchClick = onMatchClick)
+        }
+    }
+}
+
+@Composable
+private fun FavoritesContent(onMatchClick: (String) -> Unit) {
+    val context = LocalContext.current
+    val viewModel: FavoritesViewModel = viewModel(factory = ViewModelFactory(Injection.provideFootballRepository(context)))
+    val state by viewModel.uiState.collectAsState()
+
+    val primary = MaterialTheme.colorScheme.primary
+
+    when {
+        state.isLoading -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = primary)
+            }
+        }
+        state.matches.isEmpty() -> {
+            FavoritesEmptyState()
+        }
+        else -> {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                items(state.matches) { match ->
+                    FixtureCard(
+                        match = match,
+                        isFavorite = true,
+                        onToggleFavorite = {},
+                        onClick = { onMatchClick(match.id ?: "") }
+                    )
                 }
             }
-            state.matches.isEmpty() -> {
-                FavoritesEmptyState()
+        }
+    }
+}
+
+@Composable
+private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(32.dp)
+        ) {
+            // Lock icon
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(RoundedCornerShape(50.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(52.dp)
+                )
             }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp)
-                ) {
-                    items(state.matches) { match ->
-                        FixtureCard(
-                            match = match,
-                            isFavorite = true,
-                            onToggleFavorite = {},
-                            onClick = { onMatchClick(match.id ?: "") }
-                        )
-                    }
-                }
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Yêu cầu đăng nhập",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Bạn cần đăng nhập để lưu và xem\ncác trận đấu yêu thích",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(
+                onClick = onNavigateToLogin,
+                modifier = Modifier
+                    .fillMaxWidth(0.6f)
+                    .height(48.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Login,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Đăng nhập",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

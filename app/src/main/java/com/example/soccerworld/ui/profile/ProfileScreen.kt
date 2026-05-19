@@ -8,13 +8,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,21 +31,43 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.soccerworld.ui.auth.AuthViewModel
 import com.example.soccerworld.ui.favorites.FavoritesViewModel
 import com.example.soccerworld.ui.onboarding.popularLeagues
 import com.example.soccerworld.util.CustomSharedPreferences
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
+import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
+fun ProfileScreen(
+    onChangeLeague: () -> Unit = {},
+    onNavigateToLogin: () -> Unit = {},
+    authViewModel: AuthViewModel = viewModel()
+) {
     val context = LocalContext.current
     val sharedPrefs = CustomSharedPreferences.invoke(context)
     val favoritesViewModel: FavoritesViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideFootballRepository(context))
     )
     val favState by favoritesViewModel.uiState.collectAsState()
+
+    // ── BUG FIX: Đọc trực tiếp từ FirebaseAuth thay vì StateFlow ──
+    // (StateFlow của ViewModel khác instance không cập nhật được)
+    val currentUser by remember {
+        derivedStateOf { FirebaseAuth.getInstance().currentUser }
+    }
+    // Theo dõi thay đổi khi login/logout xảy ra
+    var refreshTrigger by remember { mutableStateOf(0) }
+    val firebaseUser = remember(refreshTrigger) { FirebaseAuth.getInstance().currentUser }
+
+    val isLoggedIn = firebaseUser != null
+    val displayName = firebaseUser?.displayName?.ifBlank { null }
+        ?: firebaseUser?.email?.substringBefore("@")
+        ?: "Người dùng"
+    val email = firebaseUser?.email ?: ""
 
     val leagueId = sharedPrefs.getLeagueId() ?: "?"
     val leagueInfo = popularLeagues.find { it.id == leagueId }
@@ -52,96 +77,327 @@ fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
     val primary = MaterialTheme.colorScheme.primary
     val primaryContainer = MaterialTheme.colorScheme.primaryContainer
     val onPrimary = MaterialTheme.colorScheme.onPrimary
+    val surface = MaterialTheme.colorScheme.surface
+
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    // Refresh sau khi quay lại màn hình
+    LaunchedEffect(Unit) {
+        refreshTrigger++
+    }
+
+    // Logout dialog
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            shape = RoundedCornerShape(20.dp),
+            title = {
+                Text("Đăng xuất", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+            },
+            text = {
+                Text(
+                    "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản không?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        authViewModel.logout(context)
+                        refreshTrigger++
+                        showLogoutDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ExitToApp,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Đăng xuất")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showLogoutDialog = false },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Hủy")
+                }
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
-        // ── Header gradient ──────────────────────────────────────────
+        // ── Hero Header ───────────────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(220.dp)
+                .height(260.dp)
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(primaryContainer, primary)
                     )
-                ),
-            contentAlignment = Alignment.Center
+                )
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // Avatar circle
+            // Decorative circles
+            Box(
+                modifier = Modifier
+                    .size(200.dp)
+                    .offset(x = (-60).dp, y = (-60).dp)
+                    .clip(CircleShape)
+                    .background(onPrimary.copy(alpha = 0.06f))
+            )
+            Box(
+                modifier = Modifier
+                    .size(150.dp)
+                    .align(Alignment.TopEnd)
+                    .offset(x = 40.dp, y = (-20).dp)
+                    .clip(CircleShape)
+                    .background(onPrimary.copy(alpha = 0.06f))
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Avatar
                 Box(
                     modifier = Modifier
-                        .size(88.dp)
+                        .size(96.dp)
                         .clip(CircleShape)
                         .background(onPrimary.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Avatar",
-                        tint = onPrimary,
-                        modifier = Modifier.size(52.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(76.dp)
+                            .clip(CircleShape)
+                            .background(onPrimary.copy(alpha = 0.25f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = onPrimary,
+                            modifier = Modifier.size(46.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                if (isLoggedIn) {
+                    Text(
+                        text = displayName,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = onPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFF4CAF50).copy(alpha = 0.9f),
+                            modifier = Modifier.size(8.dp)
+                        ) {}
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = email,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = onPrimary.copy(alpha = 0.85f)
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "Khách",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = onPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Đăng nhập để sử dụng đầy đủ tính năng",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = onPrimary.copy(alpha = 0.8f)
                     )
                 }
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Fan Bóng Đá",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = onPrimary
-                )
-                Text(
-                    text = "SoccerWorld Member",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = onPrimary.copy(alpha = 0.8f)
-                )
             }
         }
 
-        // ── Stats row ────────────────────────────────────────────────
+        // ── Stats Card (floating) ─────────────────────────────────────
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = 20.dp)
                 .offset(y = (-24).dp),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = surface)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 20.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    .padding(vertical = 20.dp, horizontal = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                StatItem(value = "$favoriteCount", label = "Trận yêu thích", icon = Icons.Default.Favorite)
-                VerticalDivider(
-                    modifier = Modifier.height(48.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant
+                StatItem(
+                    value = if (isLoggedIn) "$favoriteCount" else "-",
+                    label = "Yêu thích",
+                    icon = Icons.Default.Favorite,
+                    tint = Color(0xFFE91E63)
                 )
-                StatItem(value = leagueId, label = "Giải đang theo dõi", icon = Icons.Default.Star)
-                VerticalDivider(
-                    modifier = Modifier.height(48.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(44.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant)
                 )
-                StatItem(value = "1", label = "Mùa giải", icon = Icons.Default.DateRange)
+                StatItem(
+                    value = leagueId,
+                    label = "Giải theo dõi",
+                    icon = Icons.Default.SportsSoccer,
+                    tint = primary
+                )
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(44.dp)
+                        .background(MaterialTheme.colorScheme.outlineVariant)
+                )
+                StatItem(
+                    value = "2024",
+                    label = "Mùa giải",
+                    icon = Icons.Default.DateRange,
+                    tint = Color(0xFF2196F3)
+                )
             }
         }
 
         Spacer(modifier = Modifier.height((-8).dp))
 
+        // ── Account section ──────────────────────────────────────────
+        SectionLabel("TÀI KHOẢN")
+
+        if (isLoggedIn) {
+            // User info card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(primaryContainer, primary.copy(alpha = 0.3f))
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = displayName.take(1).uppercase(),
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = displayName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                shape = CircleShape,
+                                color = Color(0xFF4CAF50),
+                                modifier = Modifier.size(7.dp)
+                            ) {}
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = email,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Surface(
+                        color = Color(0xFF4CAF50).copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text(
+                            text = "Google",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2E7D32),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            MenuRow(
+                icon = Icons.Default.ExitToApp,
+                title = "Đăng xuất",
+                subtitle = "Thoát khỏi tài khoản hiện tại",
+                iconBg = MaterialTheme.colorScheme.error,
+                showDivider = false,
+                onClick = { showLogoutDialog = true }
+            )
+        } else {
+            MenuRow(
+                icon = Icons.Default.Login,
+                title = "Đăng nhập với Google",
+                subtitle = "Đăng nhập để lưu trận yêu thích",
+                iconBg = primary,
+                showDivider = false,
+                onClick = onNavigateToLogin
+            )
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         // ── League section ───────────────────────────────────────────
-        SectionHeader(title = "Giải Đấu Đang Theo Dõi")
+        SectionLabel("GIẢI ĐẤU")
 
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Row(
@@ -152,95 +408,114 @@ fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(14.dp))
                         .background(primary.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Star,
+                        imageVector = Icons.Default.SportsSoccer,
                         contentDescription = null,
                         tint = primary,
                         modifier = Modifier.size(28.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = leagueName,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
+                        fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "League Code: $leagueId",
+                        text = "Mã giải: $leagueId",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Surface(
                     color = primaryContainer,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(
                         text = "ACTIVE",
                         style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         // ── Settings section ─────────────────────────────────────────
-        SectionHeader(title = "Cài Đặt")
+        SectionLabel("CÀI ĐẶT")
 
-        ProfileMenuItem(
-            icon = Icons.Default.Settings,
-            title = "Đổi giải đấu",
-            subtitle = "Chọn giải đấu khác để theo dõi",
-            iconBg = MaterialTheme.colorScheme.primary,
-            onClick = onChangeLeague
-        )
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            MenuRow(
+                icon = Icons.Default.Settings,
+                title = "Đổi giải đấu",
+                subtitle = "Chọn giải đấu khác để theo dõi",
+                iconBg = primary,
+                showDivider = true,
+                onClick = onChangeLeague
+            )
+            MenuRow(
+                icon = Icons.Default.Notifications,
+                title = "Thông báo",
+                subtitle = "Nhận cảnh báo khi có trận live",
+                iconBg = Color(0xFFFF9800),
+                showDivider = false,
+                onClick = {}
+            )
+        }
 
-        ProfileMenuItem(
-            icon = Icons.Default.Notifications,
-            title = "Thông báo trận đấu",
-            subtitle = "Nhận cảnh báo khi có trận live",
-            iconBg = MaterialTheme.colorScheme.tertiary,
-            onClick = {}
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         // ── About section ────────────────────────────────────────────
-        SectionHeader(title = "Thông Tin Ứng Dụng")
+        SectionLabel("VỀ ỨNG DỤNG")
 
-        ProfileMenuItem(
-            icon = Icons.Default.Info,
-            title = "Về SoccerWorld",
-            subtitle = "Phiên bản 1.0.0",
-            iconBg = MaterialTheme.colorScheme.secondary,
-            onClick = {}
-        )
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            MenuRow(
+                icon = Icons.Default.Info,
+                title = "Về SoccerWorld",
+                subtitle = "Phiên bản 1.0.0",
+                iconBg = Color(0xFF2196F3),
+                showDivider = true,
+                onClick = {}
+            )
+            MenuRow(
+                icon = Icons.Default.Star,
+                title = "Nhóm phát triển",
+                subtitle = "BTL Mobile – Kì 2 Năm 3",
+                iconBg = Color(0xFFFFB300),
+                showDivider = false,
+                onClick = {}
+            )
+        }
 
-        ProfileMenuItem(
-            icon = Icons.Default.Star,
-            title = "Nhóm phát triển",
-            subtitle = "BTL Mobile – Kì 2 Năm 3",
-            iconBg = MaterialTheme.colorScheme.primaryContainer,
-            onClick = {}
-        )
+        Spacer(modifier = Modifier.height(32.dp))
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // ── Footer ───────────────────────────────────────────────────
         Text(
             text = "SoccerWorld © 2025",
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
@@ -249,79 +524,90 @@ fun ProfileScreen(onChangeLeague: () -> Unit = {}) {
     }
 }
 
-// ── Reusable composables ─────────────────────────────────────────────────────
+// ── Reusable Composables ─────────────────────────────────────────────────────
 
 @Composable
-private fun StatItem(value: String, label: String, icon: ImageVector) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp)
-        )
-        Spacer(modifier = Modifier.height(6.dp))
+private fun StatItem(
+    value: String,
+    label: String,
+    icon: ImageVector,
+    tint: Color
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.width(90.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(tint.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.ExtraBold
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
-            modifier = Modifier.widthIn(max = 80.dp)
+            maxLines = 1
         )
     }
 }
 
 @Composable
-private fun SectionHeader(title: String) {
+private fun SectionLabel(title: String) {
     Text(
         text = title,
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.ExtraBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        letterSpacing = 1.5.sp,
+        modifier = Modifier.padding(horizontal = 24.dp, vertical = 10.dp)
     )
 }
 
 @Composable
-private fun ProfileMenuItem(
+private fun MenuRow(
     icon: ImageVector,
     title: String,
     subtitle: String,
     iconBg: Color,
+    showDivider: Boolean,
     onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
+    Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .clickable { onClick() }
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(iconBg.copy(alpha = 0.15f)),
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(iconBg.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = iconBg,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(22.dp)
                 )
             }
             Spacer(modifier = Modifier.width(14.dp))
@@ -338,10 +624,16 @@ private fun ProfileMenuItem(
                 )
             }
             Icon(
-                imageVector = Icons.Default.ArrowForward,
+                imageVector = Icons.Default.ArrowForwardIos,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.size(16.dp)
+            )
+        }
+        if (showDivider) {
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 74.dp, end = 16.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
             )
         }
     }

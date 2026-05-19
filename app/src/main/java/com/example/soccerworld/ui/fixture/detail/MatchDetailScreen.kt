@@ -63,7 +63,7 @@ import com.example.soccerworld.model.statistic.Score as StatScore
 import com.example.soccerworld.model.statistic.FullTime as StatFullTime
 
 @Composable
-fun MatchDetailScreen(fixtureId: String, onBack: () -> Unit) {
+fun MatchDetailScreen(fixtureId: String, onBack: () -> Unit, onNavigateToLogin: () -> Unit = {}) {
     val context = LocalContext.current
     val factory = ViewModelFactory(Injection.provideFootballRepository(context))
     val matchDetailViewModel: MatchDetailViewModel = viewModel(factory = factory)
@@ -75,20 +75,24 @@ fun MatchDetailScreen(fixtureId: String, onBack: () -> Unit) {
     val selectedTabIndex by matchDetailViewModel.selectedTab.collectAsState()
 
     MatchDetailContent(
+        fixtureId = fixtureId,
         state = state,
         selectedTabIndex = selectedTabIndex,
         onTabSelected = { matchDetailViewModel.selectTab(it) },
-        onBack = onBack
+        onBack = onBack,
+        onNavigateToLogin = onNavigateToLogin
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MatchDetailContent(
+    fixtureId: String = "",
     state: MatchDetailUiState,
     selectedTabIndex: Int,
     onTabSelected: (Int) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToLogin: () -> Unit = {}
 ) {
     val primary = MaterialTheme.colorScheme.primary
     val primaryContainer = MaterialTheme.colorScheme.primaryContainer
@@ -111,7 +115,7 @@ fun MatchDetailContent(
             )
         }
     ) { paddingValues ->
-        val tabs = listOf("Details", "Lineups", "Statistics", "Commentary", "Standings", "Matches", "Media", "Odds")
+        val tabs = listOf("Details", "Lineups", "Statistics", "Bình Luận", "Standings", "Matches", "Media", "Odds")
 
         Column(modifier = Modifier
             .fillMaxSize()
@@ -185,7 +189,10 @@ fun MatchDetailContent(
                         awayTeam = aggregate?.core?.awayTeam
                     )
                     2 -> StatsTab(stats = aggregate?.enrichment?.stats ?: emptyList())
-                    3 -> EmptyState(message = "Chưa có dữ liệu Commentary")
+                    3 -> CommentTab(
+                        fixtureId = fixtureId,
+                        onNavigateToLogin = onNavigateToLogin
+                    )
                     4 -> EmptyState(message = "Chưa có dữ liệu Standings")
                     5 -> H2HTab(h2hList = aggregate?.h2h ?: emptyList())
                     6 -> EmptyState(message = "Chưa có dữ liệu Media")
@@ -228,7 +235,7 @@ private fun formatMatchDateTime(utcDateStr: String?): String {
 private fun groupGoals(goalEvents: List<MatchEvent>): List<Pair<String, String>> {
     val grouped = mutableMapOf<String, MutableList<String>>()
     goalEvents.forEach { event ->
-        val name = event.description.trim()
+        val name = event.description.split(" |")[0].trim()
         val min = event.minute.trim()
         if (name.isNotBlank() && name != "Event") {
             grouped.getOrPut(name) { mutableListOf() }.add(min)
@@ -455,12 +462,11 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
                     horizontalAlignment = Alignment.End
                 ) {
                     homeScorers.forEach { (name, mins) ->
-                        val scorer = name.split(" |")[0]
                         val formattedMins = mins.split(",")
                             .joinToString(separator = ", ") { it.trim().removeSuffix("'") + "'" }
 
                         Text(
-                            text = "$scorer $formattedMins",
+                            text = "$name $formattedMins",
                             style = compactTextStyle.copy(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                 fontWeight = FontWeight.Medium,
@@ -492,12 +498,11 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
                     horizontalAlignment = Alignment.Start
                 ) {
                     awayScorers.forEach { (name, mins) ->
-                        val scorer = name.split(" |")[0]
                         val formattedMins = mins.split(",")
                             .joinToString(separator = ", ") { it.trim().removeSuffix("'") + "'" }
 
                         Text(
-                            text = "$scorer $formattedMins",
+                            text = "$name $formattedMins",
                             style = compactTextStyle.copy(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                 fontWeight = FontWeight.Medium,
@@ -1121,15 +1126,16 @@ private fun TeamLineupHeader(
         
         // Right Side: Formation Label
         if (!formation.isNullOrBlank()) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f))
-                    .padding(horizontal = 5.dp, vertical = 2.dp)
-            ) {
-                (formation.subSequence(2,formation.length) as String?)?.let {
+            val displayFormation = formation.removePrefix("1-")
+            if (displayFormation.isNotBlank()) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f))
+                        .padding(horizontal = 5.dp, vertical = 2.dp)
+                ) {
                     Text(
-                        text = it,
+                        text = displayFormation,
                         fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -1387,11 +1393,11 @@ private fun MatchLineupTeam.toFormation(isHome: Boolean): com.example.soccerworl
     }
 
     val members = this.starters.mapIndexed { index, p ->
-        val safeName = (p.name as String?) ?: "Unknown"
+        val safeName = p.name
         com.example.soccerworld.data.remote.flashlive.dto.LineupPlayer(
             id = index.toString(),
             fullName = safeName + if (p.isCaptain) " (C)" else "",
-            shortName = (p.shortName as String?) ?: safeName.split(" ").lastOrNull() ?: safeName,
+            shortName = p.shortName.takeIf { it.isNotBlank() } ?: safeName.split(" ").lastOrNull() ?: safeName,
             number = p.number,
             rating = p.rating,
             imageId = p.imageUrl,

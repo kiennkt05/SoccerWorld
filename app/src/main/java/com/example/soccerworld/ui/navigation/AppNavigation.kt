@@ -2,11 +2,14 @@ package com.example.soccerworld.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.soccerworld.ui.auth.AuthViewModel
+import com.example.soccerworld.ui.auth.LoginScreen
 import com.example.soccerworld.ui.main.MainScreen
 import com.example.soccerworld.ui.onboarding.LeagueSelectionScreen
 import com.example.soccerworld.ui.fixture.detail.MatchDetailScreen
@@ -18,6 +21,7 @@ fun AppNavigation() {
     val context = LocalContext.current
     val sharedPrefs = CustomSharedPreferences.invoke(context)
     val navController = rememberNavController()
+    val authViewModel: AuthViewModel = viewModel()
 
     val startDestination = if (sharedPrefs.hasSelectedLeague()) {
         Screen.Main.route
@@ -35,6 +39,14 @@ fun AppNavigation() {
                 }
             )
         }
+        composable(Screen.Login.route) {
+            LoginScreen(
+                authViewModel = authViewModel,
+                onLoginSuccess = {
+                    navController.popBackStack()
+                }
+            )
+        }
         composable(Screen.Main.route) {
             MainScreen(rootNavController = navController)
         }
@@ -43,7 +55,11 @@ fun AppNavigation() {
             arguments = listOf(navArgument("fixture_id") { type = NavType.StringType })
         ) { backStackEntry ->
             val fixtureId = backStackEntry.arguments?.getString("fixture_id") ?: return@composable
-            MatchDetailScreen(fixtureId = fixtureId, onBack = { navController.popBackStack() })
+            MatchDetailScreen(
+                fixtureId = fixtureId,
+                onBack = { navController.popBackStack() },
+                onNavigateToLogin = { navController.navigate(Screen.Login.route) }
+            )
         }
         composable(
             route = Screen.TeamDetail.route,

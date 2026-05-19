@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String) {
+    object Login : Screen("login")
     object LeagueSelection : Screen("league_selection")
     object Main : Screen("main")
     object MatchDetail : Screen("match_detail/{fixture_id}") {

@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "506448335207",
+    "project_id": "soccerworld-2b0f3",
+    "storage_bucket": "soccerworld-2b0f3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:506448335207:android:9a43be32513120926e1fc2",
+        "android_client_info": {
+          "package_name": "com.example.soccerworld"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "506448335207-cnk81psjpjv8b0tak9fukm648l5gka83.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.soccerworld",
+            "certificate_hash": "3af6980e9d19bf3cd92dc444635f97fae4a2517c"
+          }
+        },
+        {
+          "client_id": "506448335207-sdfgvhttj5j3dftmdp3e2nevu26ohile.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCjLilXo0qK-mWuBp8mu2wxlIKpcT_-ghk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "506448335207-sdfgvhttj5j3dftmdp3e2nevu26ohile.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

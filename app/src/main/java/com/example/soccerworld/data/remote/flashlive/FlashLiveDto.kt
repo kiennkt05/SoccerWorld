@@ -173,6 +173,7 @@ data class H2HData(
 )
 
 data class H2HGroup(
+    @SerializedName("GROUP_LABEL") val groupLabel: String? = null,
     @SerializedName("ITEMS") val items: List<H2HItem>? = null
 )
 

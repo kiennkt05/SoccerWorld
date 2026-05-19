@@ -391,7 +391,7 @@ class FootballRepository(
             apiService.getTeamTransfers(Constant.LOCALE, Constant.SPORT_ID, teamId).data.orEmpty()
         }
     }
-
+    
     suspend fun getTeamMatches(teamId: String, page: Int, isResults: Boolean): DataResult<List<Matche>> {
         return safeApiCall {
             val response = if (isResults) {
@@ -438,10 +438,18 @@ class FootballRepository(
 
     suspend fun getAllH2hItems(fixtureId: String): DataResult<H2HResponse> {
         return safeApiCall {
-            val items = apiService.getHeadToHead(Constant.LOCALE, fixtureId)
+            val groups = apiService.getHeadToHead(Constant.LOCALE, fixtureId)
                 .data?.firstOrNull()
-                ?.groups?.firstOrNull()
-                ?.items.orEmpty()
+                ?.groups.orEmpty()
+            
+            // Find the Head-to-head group. Usually it's the 3rd group (index 2) or has a specific label.
+            val h2hGroup = groups.firstOrNull { 
+                val label = it.groupLabel.orEmpty()
+                label.contains("Head-to-head", ignoreCase = true) || label.contains("đối đầu", ignoreCase = true)
+            } ?: groups.getOrNull(2) ?: groups.lastOrNull()
+
+            val items = h2hGroup?.items.orEmpty()
+            
             H2HResponse(
                 matches = items.map {
                     val scores = parseScorePair(it.currentResult)

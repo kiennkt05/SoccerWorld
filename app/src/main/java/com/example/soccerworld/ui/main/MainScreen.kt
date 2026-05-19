@@ -5,12 +5,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.soccerworld.ui.auth.AuthViewModel
 import com.example.soccerworld.ui.favorites.FavoritesScreen
 import com.example.soccerworld.ui.home.HomeScreen
 import com.example.soccerworld.ui.fixture.FixturesScreen
@@ -18,13 +19,11 @@ import com.example.soccerworld.ui.navigation.Screen
 import com.example.soccerworld.ui.search.SearchScreen
 import com.example.soccerworld.ui.profile.ProfileScreen
 import com.example.soccerworld.ui.navigation.BottomNavItem
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
     val navController = rememberNavController()
+    val authViewModel: AuthViewModel = viewModel()
     
     val items = listOf(
         BottomNavItem.Home,
@@ -35,28 +34,6 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
     )
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Soccer World", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                actions = {
-                    IconButton(onClick = {
-                        rootNavController.navigate(Screen.LeagueSelection.route) {
-                            popUpTo(Screen.Main.route) { inclusive = true }
-                        }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Chọn giải đấu",
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
-                    }
-                }
-            )
-        },
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -111,16 +88,27 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                 )
             }
             composable(BottomNavItem.Favorites.route) {
-                FavoritesScreen(onMatchClick = { matchId ->
-                    rootNavController.navigate(Screen.MatchDetail.createRoute(matchId))
-                })
+                FavoritesScreen(
+                    onMatchClick = { matchId ->
+                        rootNavController.navigate(Screen.MatchDetail.createRoute(matchId))
+                    },
+                    onNavigateToLogin = {
+                        rootNavController.navigate(Screen.Login.route)
+                    }
+                )
             }
             composable(BottomNavItem.Profile.route) {
-                ProfileScreen(onChangeLeague = {
-                    rootNavController.navigate(Screen.LeagueSelection.route) {
-                        popUpTo(Screen.Main.route) { inclusive = true }
-                    }
-                })
+                ProfileScreen(
+                    onChangeLeague = {
+                        rootNavController.navigate(Screen.LeagueSelection.route) {
+                            popUpTo(Screen.Main.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateToLogin = {
+                        rootNavController.navigate(Screen.Login.route)
+                    },
+                    authViewModel = authViewModel
+                )
             }
         }
     }
