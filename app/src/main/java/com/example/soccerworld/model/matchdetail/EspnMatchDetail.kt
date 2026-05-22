@@ -1,5 +1,7 @@
 package com.example.soccerworld.model.matchdetail
 
+import com.example.soccerworld.data.remote.flashlive.EventStatsStage
+
 data class MatchEvent(
     val minute: String,
     val type: String,
@@ -39,6 +41,7 @@ data class MatchEnrichmentDetail(
     val venue: String?,
     val events: List<MatchEvent>,
     val stats: List<MatchStatItem>,
+    val statStages: List<EventStatsStage> = emptyList(),
     val lineups: List<MatchLineupTeam>,
     val status: String?,
     val lastUpdated: Long

@@ -791,8 +791,8 @@ class FootballRepository(
             }
         }
 
-        fun calculateAverage(starters: List<MatchLineupPlayer>, subs: List<MatchLineupPlayer>): Double? {
-            val ratings = (starters + subs).mapNotNull { it.rating?.toDoubleOrNull() }.filter { it > 0.0 }
+        fun calculateAverage(starters: List<MatchLineupPlayer>, starters2: List<MatchLineupPlayer>): Double? {
+            val ratings = (starters + starters2).mapNotNull { it.rating?.toDoubleOrNull() }.filter { it > 0.0 }
             if (ratings.isEmpty()) return null
             return ratings.average()
         }
@@ -810,6 +810,7 @@ class FootballRepository(
             venue = summary.info?.venue,
             events = events,
             stats = statItems,
+            statStages = stats.data.orEmpty(),
             lineups = lineupTeams,
             status = null,
             lastUpdated = System.currentTimeMillis()

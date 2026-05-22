@@ -1,5 +1,7 @@
 package com.example.soccerworld.ui.team.team_detail.tabs
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,28 +11,30 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.soccerworld.R
 import com.example.soccerworld.data.remote.flashlive.TransferData
+import com.example.soccerworld.data.remote.flashlive.TransferPlayer
+import com.example.soccerworld.data.remote.flashlive.TransferTeam
 import com.example.soccerworld.model.fixture.Matche
 import com.example.soccerworld.model.leaguetable.Table
 import com.example.soccerworld.model.player.PlayerResponse
+import com.example.soccerworld.ui.fixture.FixtureCard
 import com.example.soccerworld.ui.home.leaguetable.LeagueTableViewModel
 import com.example.soccerworld.ui.team.team_detail.TabState
-import com.example.soccerworld.ui.fixture.FixtureCard
+import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 
 
 @Composable
@@ -265,26 +269,7 @@ fun TeamTransfersTab(transfersState: TabState<List<TransferData>>) {
             } else {
                 LazyColumn(contentPadding = PaddingValues(16.dp)) {
                     items(transfers) { transfer ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                        ) {
-                            Column(Modifier.padding(16.dp)) {
-                                Text(text = transfer.playerName ?: "Unknown", fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                                    Column(Modifier.weight(1f)) {
-                                        Text("From", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(transfer.fromTeamName ?: "-", style = MaterialTheme.typography.bodyMedium)
-                                    }
-                                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
-                                        Text("To", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        Text(transfer.toTeamName ?: "-", style = MaterialTheme.typography.bodyMedium)
-                                    }
-                                }
-                            }
-                        }
+                        TransferCard(transfer = transfer)
                     }
                 }
             }
@@ -354,7 +339,6 @@ fun TeamStandingsTab(teamId: String) {
 
     val primary = MaterialTheme.colorScheme.primary
     val highlightBg = primary.copy(alpha = 0.12f)
-    val highlightBorder = primary
 
     when {
         state.isLoading -> {
@@ -397,7 +381,7 @@ fun TeamStandingsTab(teamId: String) {
                             item = item,
                             isHighlighted = isHighlighted,
                             highlightBg = highlightBg,
-                            highlightBorder = highlightBorder,
+                            highlightBorder = primary,
                             primaryBlue = primary
                         )
                     }
@@ -522,7 +506,7 @@ private fun StandingsRow(
             "${item.won ?: 0}",
             "${item.draw ?: 0}",
             "${item.lost ?: 0}",
-            "${if ((item.goalDifference ?: 0) >= 0) "+${item.goalDifference ?: 0}" else "${item.goalDifference ?: 0}"}",
+            if ((item.goalDifference ?: 0) >= 0) "+${item.goalDifference ?: 0}" else (item.goalDifference ?: 0).toString(),
             "${item.points ?: 0}"
         )
         stats.forEachIndexed { index, value ->
@@ -549,5 +533,33 @@ private fun StandingsRow(
             modifier = Modifier.padding(horizontal = 12.dp),
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TeamTransfersTabPreview() {
+    val sampleTransfers = listOf(
+        TransferData(
+            transferDate = 1738454400L,
+            transferTypeStr = "Transfer",
+            transferDirection = "in",
+            fromTeam = TransferTeam(image = null, value = "Old Club"),
+            toTeam = TransferTeam(image = null, value = "Current Club"),
+            player = TransferPlayer(participantId = "1", value = "John Doe", image = "flag-1", countryName = "England")
+        ),
+        TransferData(
+            transferDate = 1738368000L,
+            transferTypeStr = "Free",
+            transferDirection = "out",
+            fromTeam = TransferTeam(image = null, value = "Current Club"),
+            toTeam = TransferTeam(image = null, value = "New Club"),
+            player = TransferPlayer(participantId = "2", value = "Jane Smith", image = "flag-2", countryName = "France")
+        )
+    )
+    SoccerWorldTheme {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            TeamTransfersTab(transfersState = TabState.Success(sampleTransfers))
+        }
     }
 }

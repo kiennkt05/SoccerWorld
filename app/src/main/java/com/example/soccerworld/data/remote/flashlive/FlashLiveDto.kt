@@ -288,5 +288,7 @@ data class TransferTeam(
 
 data class TransferPlayer(
     @SerializedName("PARTICIPANT_ID") val participantId: String?,
-    @SerializedName("VALUE") val value: String?
+    @SerializedName("VALUE") val value: String?,
+    @SerializedName("PARTICIPANT_IMAGE") val image: String?,
+    @SerializedName("CRNA") val countryName: String?
 )

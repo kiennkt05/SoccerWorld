@@ -38,6 +38,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.soccerworld.R
+import com.example.soccerworld.data.remote.flashlive.EventStatsGroup
+import com.example.soccerworld.data.remote.flashlive.EventStatsItem
+import com.example.soccerworld.data.remote.flashlive.EventStatsStage
 import com.example.soccerworld.model.h2h.AwayTeamX
 import com.example.soccerworld.model.h2h.FullTime
 import com.example.soccerworld.model.h2h.HomeTeamX
@@ -59,6 +62,7 @@ import com.example.soccerworld.util.ViewModelFactory
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.math.abs
 import com.example.soccerworld.model.statistic.Score as StatScore
 import com.example.soccerworld.model.statistic.FullTime as StatFullTime
 
@@ -115,7 +119,7 @@ fun MatchDetailContent(
             )
         }
     ) { paddingValues ->
-        val tabs = listOf("Details", "Lineups", "Statistics", "Bình Luận", "Standings", "Matches", "Media", "Odds")
+        val tabs = listOf("Details", "Lineups", "Statistics", "Comments", "Matches")
 
         Column(modifier = Modifier
             .fillMaxSize()
@@ -188,15 +192,12 @@ fun MatchDetailContent(
                         homeTeam = aggregate?.core?.homeTeam,
                         awayTeam = aggregate?.core?.awayTeam
                     )
-                    2 -> StatsTab(stats = aggregate?.enrichment?.stats ?: emptyList())
+                    2 -> StatsTab(stages = aggregate?.enrichment?.statStages ?: emptyList())
                     3 -> CommentTab(
                         fixtureId = fixtureId,
                         onNavigateToLogin = onNavigateToLogin
                     )
-                    4 -> EmptyState(message = "Chưa có dữ liệu Standings")
-                    5 -> H2HTab(h2hList = aggregate?.h2h ?: emptyList())
-                    6 -> EmptyState(message = "Chưa có dữ liệu Media")
-                    7 -> EmptyState(message = "Chưa có dữ liệu Odds")
+                    4 -> H2HTab(h2hList = aggregate?.h2h ?: emptyList())
                 }
             }
         }
@@ -811,88 +812,273 @@ private fun EventDetails(event: MatchEvent, isHome: Boolean) {
 }
 
 // ── Stats Tab ────────────────────────────────────────────────────────────────
+// Sofascore standard colors
+private val HomeColor = Color(0xFF00B050) // Vibrant Green
+private val AwayColor = Color(0xFF2B44FF) // Deep Blue
+private val AppBackground = Color(0xFFF0F1F5) // Light gray-blue app background
+
+fun isHighBetter(statName: String): Boolean {
+    val lowIsBetterStats = listOf(
+        "Fouls", "Errors leading to shot", "Errors leading to goal",
+        "Offsides", "Yellow cards", "Red cards"
+    )
+    return !lowIsBetterStats.any { statName.contains(it, ignoreCase = true) }
+}
 
 @Composable
-fun StatsTab(stats: List<MatchStatItem>) {
-    if (stats.isEmpty()) {
-        EmptyState(message = "Không có thống kê")
+fun StatsTab(stages: List<EventStatsStage>) {
+    if (stages.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Không có thống kê", color = Color.Gray)
+        }
         return
     }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp)
+
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AppBackground)
     ) {
-        items(stats) { stat ->
-            StatProgressRow(stat = stat)
-            Spacer(modifier = Modifier.height(12.dp))
+        // 1. Top Stage Toggle (ALL / 1ST / 2ND)
+        StageToggleBar(
+            stages = stages,
+            selectedIndex = selectedTabIndex,
+            onSelect = { selectedTabIndex = it }
+        )
+
+        val selectedStage = stages.getOrNull(selectedTabIndex)
+
+        // 2. Scrollable List of Stat Groups
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            selectedStage?.groups?.forEach { group ->
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            // Group Header (e.g., "Match overview", "Attack")
+                            Text(
+                                text = group.groupLabel ?: "",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = Color(0xFF111111),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 16.dp),
+                                textAlign = TextAlign.Center
+                            )
+
+                            // Stat Items
+                            group.items?.forEach { stat ->
+                                StatProgressRow(stat = stat)
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun StatProgressRow(stat: MatchStatItem) {
-    val homeVal = stat.homeValue.filter { it.isDigit() }.toIntOrNull() ?: 0
-    val awayVal = stat.awayValue.filter { it.isDigit() }.toIntOrNull() ?: 0
-    val total = homeVal + awayVal
-    val homeFrac = if (total > 0) homeVal.toFloat() / total else 0.5f
+private fun StageToggleBar(
+    stages: List<EventStatsStage>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .background(Color(0xFFEBECEF), RoundedCornerShape(20.dp))
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        stages.forEachIndexed { index, stage ->
+            val isSelected = index == selectedIndex
+            // Map JSON names to Sofascore UI labels
+            val tabName = when (stage.stageName) {
+                "Match" -> "ALL"
+                "1st Half" -> "1ST"
+                "2nd Half" -> "2ND"
+                else -> stage.stageName?.uppercase() ?: ""
+            }
 
-    val homeAnim by animateFloatAsState(
-        targetValue = homeFrac,
-        animationSpec = tween(durationMillis = 600),
-        label = "homeBar"
-    )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(if (isSelected) Color(0xFF222226) else Color.Transparent)
+                    .clickable { onSelect(index) }
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = tabName,
+                    color = if (isSelected) Color.White else Color(0xFF444444),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp
+                )
+            }
+        }
+    }
+}
 
-    val primary = MaterialTheme.colorScheme.primary
-    val secondary = MaterialTheme.colorScheme.secondary
+@Composable
+private fun StatProgressRow(stat: EventStatsItem) {
+    val homeStr = stat.valueHome ?: "0"
+    val awayStr = stat.valueAway ?: "0"
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // Stat name + values
+    // Sofascore differentiates styling between percentages and absolute numbers
+    val isPercentage = homeStr.contains("%") || awayStr.contains("%")
+
+    // Parse floats safely (strip '%' if present)
+    val homeVal = homeStr.replace("%", "").toFloatOrNull() ?: 0f
+    val awayVal = awayStr.replace("%", "").toFloatOrNull() ?: 0f
+
+    val highIsBetter = isHighBetter(stat.incidentName ?: "")
+
+    val isHomeWorse = if (highIsBetter) homeVal < awayVal else homeVal > awayVal
+    val isAwayWorse = if (highIsBetter) awayVal < homeVal else awayVal > homeVal
+
+    val homeBarColor = if (isHomeWorse && homeVal != awayVal) HomeColor.copy(alpha = 0.3f) else HomeColor
+    val awayBarColor = if (isAwayWorse && homeVal != awayVal) AwayColor.copy(alpha = 0.3f) else AwayColor
+
+    // Use absolute values to handle negative stats safely (e.g., "Goals prevented" -> -1.07)
+    val homeAbs = abs(homeVal)
+    val awayAbs = abs(awayVal)
+    val totalAbs = homeAbs + awayAbs
+
+    // Calculate fractions for the bars
+    val homeFrac = if (totalAbs > 0f) homeAbs / totalAbs else 0f
+    val awayFrac = if (totalAbs > 0f) awayAbs / totalAbs else 0f
+
+    val homeAnim by animateFloatAsState(targetValue = homeFrac, animationSpec = tween(600), label = "homeAnim")
+    val awayAnim by animateFloatAsState(targetValue = awayFrac, animationSpec = tween(600), label = "awayAnim")
+
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
+
+        // ─── 1. Header Values & Labels ───
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Home Value
+            if (isPercentage) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(HomeColor)
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(text = homeStr, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            } else {
+                Text(
+                    text = homeStr,
+                    fontSize = 14.sp,
+                    color = Color(0xFF111111),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Stat Title (Center)
             Text(
-                text = stat.homeValue,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = primary
-            )
-            Text(
-                text = stat.name,
+                text = stat.incidentName ?: "",
                 fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color(0xFF555555), // Muted dark gray
                 textAlign = TextAlign.Center,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(if (isPercentage) 1.5f else 2f)
             )
-            Text(
-                text = stat.awayValue,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = secondary
-            )
+
+            // Away Value
+            if (isPercentage) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(AwayColor)
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(text = awayStr, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            } else {
+                Text(
+                    text = awayStr,
+                    fontSize = 14.sp,
+                    color = Color(0xFF111111),
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
-        Spacer(modifier = Modifier.height(6.dp))
-        // Dual progress bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(7.dp)
-                .clip(RoundedCornerShape(4.dp))
-        ) {
-            Box(
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // ─── 2. Progress Bars ───
+        if (isPercentage) {
+            // Continuous connected bar for percentages (e.g., Ball Possession 53% | 47%)
+            Row(
                 modifier = Modifier
-                    .weight(homeAnim.coerceAtLeast(0.02f))
-                    .fillMaxHeight()
-                    .background(primary)
-            )
-            Spacer(modifier = Modifier.width(2.dp))
-            Box(
-                modifier = Modifier
-                    .weight((1f - homeAnim).coerceAtLeast(0.02f))
-                    .fillMaxHeight()
-                    .background(secondary)
-            )
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+            ) {
+                Box(modifier = Modifier.weight(homeAnim.coerceAtLeast(0.01f)).fillMaxHeight().background(HomeColor))
+                Box(modifier = Modifier.weight(awayAnim.coerceAtLeast(0.01f)).fillMaxHeight().background(AwayColor))
+            }
+        } else {
+            // Split, center-anchored bars for absolute counts (e.g., Total Shots 9 vs 14)
+            Row(
+                modifier = Modifier.fillMaxWidth().height(4.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                // Home Bar (Right-aligned inside its left-half bounds)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(topStart = 2.dp, bottomStart = 2.dp)),
+                    contentAlignment = Alignment.CenterEnd // Anchors growth to the center
+                ) {
+                    Box(modifier = Modifier.fillMaxSize().background(HomeColor.copy(alpha = 0.2f)))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(fraction = homeAnim)
+                            .fillMaxHeight()
+                            .background(homeBarColor)
+                    )
+                }
+
+                // Center Gap
+                Spacer(modifier = Modifier.width(4.dp))
+
+                // Away Bar (Left-aligned inside its right-half bounds)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(topEnd = 2.dp, bottomEnd = 2.dp)),
+                    contentAlignment = Alignment.CenterStart // Anchors growth to the center
+                ) {
+                    Box(modifier = Modifier.fillMaxSize().background(AwayColor.copy(alpha = 0.2f)))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(fraction = awayAnim)
+                            .fillMaxHeight()
+                            .background(awayBarColor)
+                    )
+                }
+            }
         }
     }
 }
@@ -1203,7 +1389,7 @@ private fun DetailedSubstituteRow(sub: MatchLineupPlayer, events: List<MatchEven
                     Spacer(modifier = Modifier.width(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                         for (inc in incidents) {
-                            if (inc == 3 || inc == 10) { 
+                            if (inc == 3 || inc == 10) {
                                 com.example.soccerworld.ui.fixture.detail.components.IncidentIcon(inc)
                             }
                         }
@@ -1433,10 +1619,7 @@ fun MatchDetailScreenPreview() {
                 MatchEvent(minute = "15", type = "GOAL", description = "Odegaard", team = "home"),
                 MatchEvent(minute = "30", type = "GOAL", description = "Saka", team = "home")
             ),
-            stats = listOf(
-                MatchStatItem(name = "Possession", homeValue = "60%", awayValue = "40%"),
-                MatchStatItem(name = "Shots", homeValue = "12", awayValue = "5")
-            ),
+            stats = emptyList(),
             lineups = listOf(
                 MatchLineupTeam(
                     teamName = "Arsenal",
@@ -1517,16 +1700,94 @@ fun SummaryTabPreview() {
 @Preview(showBackground = true)
 @Composable
 fun StatsTabPreview() {
-    val mockStats = listOf(
-        MatchStatItem(name = "Ball Possession", homeValue = "55%", awayValue = "45%"),
-        MatchStatItem(name = "Goal Attempts", homeValue = "15", awayValue = "8"),
-        MatchStatItem(name = "Shots on Goal", homeValue = "6", awayValue = "3"),
-        MatchStatItem(name = "Corners", homeValue = "5", awayValue = "2"),
-        MatchStatItem(name = "Offsides", homeValue = "2", awayValue = "1"),
-        MatchStatItem(name = "Fouls", homeValue = "10", awayValue = "12")
+    val mockStages = listOf(
+        EventStatsStage(
+            stageName = "Match",
+            groups = listOf(
+                EventStatsGroup(
+                    groupLabel = "Top stats",
+                    items = listOf(
+                        EventStatsItem(incidentName = "Expected goals (xG)", valueHome = "1.14", valueAway = "2.26"),
+                        EventStatsItem(incidentName = "Ball possession", valueHome = "53%", valueAway = "47%"),
+                        EventStatsItem(incidentName = "Total shots", valueHome = "9", valueAway = "14"),
+                        EventStatsItem(incidentName = "Shots on target", valueHome = "3", valueAway = "7"),
+                        EventStatsItem(incidentName = "Big chances", valueHome = "3", valueAway = "5"),
+                        EventStatsItem(incidentName = "Corner kicks", valueHome = "5", valueAway = "8"),
+                        EventStatsItem(incidentName = "Passes", valueHome = "81% (378/465)", valueAway = "82% (326/400)"),
+                        EventStatsItem(incidentName = "Yellow cards", valueHome = "1", valueAway = "3")
+                    )
+                ),
+                EventStatsGroup(
+                    groupLabel = "Shots",
+                    items = listOf(
+                        EventStatsItem(incidentName = "xG on target (xGOT)", valueHome = "1.93", valueAway = "1.48"),
+                        EventStatsItem(incidentName = "Shots off target", valueHome = "2", valueAway = "6"),
+                        EventStatsItem(incidentName = "Blocked shots", valueHome = "4", valueAway = "1"),
+                        EventStatsItem(incidentName = "Shots inside the box", valueHome = "6", valueAway = "11"),
+                        EventStatsItem(incidentName = "Shots outside the box", valueHome = "3", valueAway = "3"),
+                        EventStatsItem(incidentName = "Hit the woodwork", valueHome = "0", valueAway = "2")
+                    )
+                ),
+                EventStatsGroup(
+                    groupLabel = "Defense",
+                    items = listOf(
+                        EventStatsItem(incidentName = "Tackles", valueHome = "67% (6/9)", valueAway = "77% (10/13)"),
+                        EventStatsItem(incidentName = "Duels won", valueHome = "45", valueAway = "42"),
+                        EventStatsItem(incidentName = "Clearances", valueHome = "36", valueAway = "29"),
+                        EventStatsItem(incidentName = "Errors leading to shot", valueHome = "2", valueAway = "1")
+                    )
+                ),
+                EventStatsGroup(
+                    groupLabel = "Goalkeeping",
+                    items = listOf(
+                        EventStatsItem(incidentName = "Goalkeeper saves", valueHome = "5", valueAway = "0"),
+                        EventStatsItem(incidentName = "Goals prevented", valueHome = "0.48", valueAway = "-1.07")
+                    )
+                )
+            )
+        ),
+        EventStatsStage(
+            stageName = "1st Half",
+            groups = listOf(
+                EventStatsGroup(
+                    groupLabel = "Top stats",
+                    items = listOf(
+                        EventStatsItem(incidentName = "Expected goals (xG)", valueHome = "1.07", valueAway = "1.32"),
+                        EventStatsItem(incidentName = "Ball possession", valueHome = "57%", valueAway = "43%"),
+                        EventStatsItem(incidentName = "Total shots", valueHome = "7", valueAway = "8")
+                    )
+                )
+            )
+        ),
+        EventStatsStage(
+            stageName = "2nd Half",
+            groups = listOf(
+                EventStatsGroup(
+                    groupLabel = "Top stats",
+                    items = listOf(
+                        EventStatsItem(
+                            incidentName = "Expected goals (xG)",
+                            valueHome = "0.07",
+                            valueAway = "0.94"
+                        ),
+                        EventStatsItem(
+                            incidentName = "Ball possession",
+                            valueHome = "49%",
+                            valueAway = "51%"
+                        ),
+                        EventStatsItem(
+                            incidentName = "Total shots",
+                            valueHome = "2",
+                            valueAway = "6"
+                        )
+                    )
+                )
+            )
+        )
     )
+
     SoccerWorldTheme {
-        StatsTab(stats = mockStats)
+        StatsTab(stages = mockStages)
     }
 }
 
