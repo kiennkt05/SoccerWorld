@@ -6,11 +6,16 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SportsSoccer
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import android.widget.Toast
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -58,23 +63,32 @@ fun LoginScreen(
             authViewModel.handleGoogleSignInResult(result.data) { success ->
                 if (success) onLoginSuccess()
             }
+        } else {
+            authViewModel.handleGoogleSignInFailure(result.resultCode, result.data)
         }
     }
+
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val gradientColors = if (isDark) {
+        listOf(
+            Color(0xFF080C14), // Deepest dark navy
+            Color(0xFF0F172A), // Midnight slate
+            Color(0xFF1E293B)  // Dark steel grey
+        )
+    } else {
+        listOf(
+            Color(0xFF1E3A8A), // Deep royal blue (vibrant and dark at the top)
+            Color(0xFF3B82F6), // Strong primary blue
+            Color(0xFFEEF2FF)  // Clean pastel lavender-indigo
+        )
+    }
+
+    val cardBorderColor = if (isDark) Color(0xFF334155) else Color(0xFFE2E8F0)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        primary.copy(alpha = 0.95f),
-                        primaryContainer.copy(alpha = 0.7f),
-                        MaterialTheme.colorScheme.background
-                    ),
-                    startY = 0f,
-                    endY = 1200f
-                )
-            )
+            .background(brush = Brush.verticalGradient(colors = gradientColors))
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -88,21 +102,22 @@ fun LoginScreen(
                     .size(110.dp)
                     .scale(scale)
                     .clip(CircleShape)
-                    .background(onPrimary.copy(alpha = 0.15f)),
+                    .background(Color.White.copy(alpha = 0.12f))
+                    .border(2.dp, Color.White.copy(alpha = 0.35f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(82.dp)
                         .clip(CircleShape)
-                        .background(onPrimary.copy(alpha = 0.25f)),
+                        .background(Color.White.copy(alpha = 0.22f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.SportsSoccer,
                         contentDescription = null,
-                        tint = onPrimary,
-                        modifier = Modifier.size(50.dp)
+                        tint = Color.White,
+                        modifier = Modifier.size(52.dp)
                     )
                 }
             }
@@ -111,16 +126,16 @@ fun LoginScreen(
 
             Text(
                 text = "SoccerWorld",
-                fontSize = 36.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = onPrimary,
+                fontSize = 38.sp,
+                fontWeight = FontWeight.Black,
+                color = Color.White,
                 letterSpacing = (-0.5).sp
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Theo dõi bóng đá chuyên nghiệp",
                 style = MaterialTheme.typography.bodyLarge,
-                color = onPrimary.copy(alpha = 0.8f),
+                color = Color.White.copy(alpha = 0.85f),
                 textAlign = TextAlign.Center
             )
 
@@ -135,6 +150,10 @@ fun LoginScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 16.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    width = 1.dp,
+                    color = cardBorderColor
                 )
             ) {
                 Column(
@@ -159,20 +178,68 @@ fun LoginScreen(
 
                     // Error message
                     AnimatedVisibility(visible = state.errorMessage != null) {
+                        val errorMessage = state.errorMessage ?: ""
+                        val isSha1Error = errorMessage.contains("SHA-1 của máy bạn")
+                        val clipboardManager = LocalClipboardManager.current
+                        val localContext = LocalContext.current
+
                         Card(
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.errorContainer
                             ),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = state.errorMessage ?: "",
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(12.dp),
-                                textAlign = TextAlign.Center
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            border = androidx.compose.foundation.BorderStroke(
+                                width = 1.dp,
+                                color = MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
                             )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = errorMessage,
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                if (isSha1Error) {
+                                    Button(
+                                        onClick = {
+                                            clipboardManager.setText(
+                                                AnnotatedString("F6:68:32:30:D5:60:EB:A1:75:2B:8D:C6:3B:4C:96:24:DB:0C:1A:35")
+                                            )
+                                            Toast.makeText(
+                                                localContext,
+                                                "Đã sao chép SHA-1 vào bộ nhớ tạm!",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.error,
+                                            contentColor = MaterialTheme.colorScheme.onError
+                                        ),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                        modifier = Modifier.height(36.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.ContentCopy,
+                                            contentDescription = "Copy SHA-1",
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "Sao chép SHA-1",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -192,6 +259,10 @@ fun LoginScreen(
                             containerColor = Color.White,
                             contentColor = Color(0xFF1F1F1F),
                             disabledContainerColor = Color.White.copy(alpha = 0.7f)
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            width = 1.dp,
+                            color = if (isDark) Color.Transparent else Color(0xFFE2E8F0)
                         ),
                         elevation = ButtonDefaults.buttonElevation(
                             defaultElevation = 3.dp,
@@ -230,7 +301,7 @@ fun LoginScreen(
             Text(
                 text = "Bằng việc đăng nhập, bạn đồng ý với\nĐiều khoản dịch vụ của SoccerWorld",
                 style = MaterialTheme.typography.bodySmall,
-                color = onPrimary.copy(alpha = 0.6f),
+                color = if (isDark) Color(0xFF64748B) else Color(0xFF475569),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(bottom = 32.dp)
             )

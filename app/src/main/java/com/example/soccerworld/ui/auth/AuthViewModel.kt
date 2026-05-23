@@ -52,15 +52,56 @@ class AuthViewModel : ViewModel() {
                 val task = GoogleSignIn.getSignedInAccountFromIntent(data)
                 val account = task.getResult(ApiException::class.java)!!
                 firebaseAuthWithGoogle(account.idToken!!, onResult)
+            } catch (e: ApiException) {
+                parseApiException(e)
+                onResult(false)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "Đăng nhập Google thất bại: ${e.message}"
+                    errorMessage = "Đăng nhập thất bại: ${e.localizedMessage}"
                 )
                 onResult(false)
             }
         }
     }
+
+    fun handleGoogleSignInFailure(resultCode: Int, data: Intent?) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            try {
+                if (data != null) {
+                    val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+                    task.getResult(ApiException::class.java)
+                }
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Đăng nhập thất bại hoặc bị hủy (Mã kết quả: $resultCode)"
+                )
+            } catch (e: ApiException) {
+                parseApiException(e)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    errorMessage = "Đăng nhập thất bại: ${e.localizedMessage}"
+                )
+            }
+        }
+    }
+
+    private fun parseApiException(e: ApiException) {
+        val errorMsg = when (e.statusCode) {
+            10 -> "Lỗi Developer (10): SHA-1 chưa được đăng ký trong Firebase/Google Console.\n\nSHA-1 của máy bạn:\nF6:68:32:30:D5:60:EB:A1:75:2B:8D:C6:3B:4C:96:24:DB:0C:1A:35"
+            7 -> "Lỗi Mạng (7): Không thể kết nối Internet. Vui lòng kiểm tra lại kết nối mạng."
+            12500 -> "Lỗi cấu hình Google Sign-In (Mã lỗi 12500). Vui lòng cập nhật google-services.json."
+            12501 -> "Đăng nhập đã bị hủy bởi người dùng (12501)."
+            else -> "Đăng nhập Google thất bại (Mã lỗi ${e.statusCode}): ${e.localizedMessage}"
+        }
+        _uiState.value = _uiState.value.copy(
+            isLoading = false,
+            errorMessage = errorMsg
+        )
+    }
+
 
     private suspend fun firebaseAuthWithGoogle(idToken: String, onResult: (Boolean) -> Unit) {
         try {

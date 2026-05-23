@@ -307,3 +307,21 @@ data class TransferPlayer(
     @SerializedName("PARTICIPANT_IMAGE") val image: String?,
     @SerializedName("CRNA") val countryName: String?
 )
+
+data class EventNewsResponse(
+    @SerializedName("DATA") val data: List<NewsItem>? = null
+)
+
+data class NewsItem(
+    @SerializedName("ID") val id: String? = null,
+    @SerializedName("TITLE") val title: String? = null,
+    @SerializedName("LINK") val link: String? = null,
+    @SerializedName("PUBLISHED") val published: Long? = null,
+    @SerializedName("PROVIDER_NAME") val providerName: String? = null,
+    @SerializedName("LINKS") val links: List<NewsImageLink>? = null
+)
+
+data class NewsImageLink(
+    @SerializedName("IMAGE_VARIANT_ID") val variantId: Int? = null,
+    @SerializedName("IMAGE_VARIANT_URL") val url: String? = null
+)

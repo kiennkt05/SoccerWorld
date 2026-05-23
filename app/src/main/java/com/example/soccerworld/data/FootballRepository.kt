@@ -13,6 +13,7 @@ import com.example.soccerworld.data.model.DataResult
 import com.example.soccerworld.data.model.ErrorType
 import com.example.soccerworld.data.remote.ApiService
 import com.example.soccerworld.data.remote.flashlive.EventHighlightResponse
+import com.example.soccerworld.data.remote.flashlive.EventNewsResponse
 import com.example.soccerworld.data.remote.flashlive.EventStatsResponse
 import com.example.soccerworld.data.remote.flashlive.EventSummaryResponse
 import com.example.soccerworld.data.remote.flashlive.FlashLiveEvent
@@ -42,6 +43,7 @@ import com.example.soccerworld.model.leaguetable.Team
 import com.example.soccerworld.model.matchdetail.MatchLineupPlayer
 import com.example.soccerworld.model.matchdetail.MatchLineupTeam
 import com.example.soccerworld.model.matchdetail.MatchEnrichmentDetail
+import com.example.soccerworld.model.matchdetail.MatchNews
 import com.example.soccerworld.model.matchdetail.MatchEvent
 import com.example.soccerworld.model.matchdetail.MatchStatItem
 import com.example.soccerworld.model.matchdetail.MatchDetailAggregate
@@ -564,7 +566,12 @@ class FootballRepository(
             } catch (e: Exception) {
                 LineupsResponse()
             }
-            mapFlashLiveDetail(fixtureId, summary, stats, highlights, lineups)
+            val news = try {
+                apiService.getEventNews(Constant.LOCALE, fixtureId)
+            } catch (e: Exception) {
+                EventNewsResponse()
+            }
+            mapFlashLiveDetail(fixtureId, summary, stats, highlights, lineups, news)
         }
         val enrichment = (enrichmentResult as? DataResult.Success)?.data
         val aggregate = MatchDetailAggregate(core = coreResult.data, h2h = h2hList, enrichment = enrichment)
@@ -616,7 +623,8 @@ class FootballRepository(
         summary: EventSummaryResponse,
         stats: EventStatsResponse,
         highlights: EventHighlightResponse,
-        lineups: LineupsResponse
+        lineups: LineupsResponse,
+        news: EventNewsResponse = EventNewsResponse()
     ): MatchEnrichmentDetail {
         val events = summary.data.orEmpty().reversed().flatMap { stage ->
             val rawItems = stage.items.orEmpty()
@@ -828,6 +836,19 @@ class FootballRepository(
                 add(MatchLineupTeam("Away", awayFormationStr, calculateAverage(awayStarters, awaySubs), awayStarters, awaySubs, awayCoach))
             }
         }
+        val newsItems = news.data.orEmpty().map { item ->
+            val imageUrl = item.links?.firstOrNull { it.variantId == 38 }?.url 
+                ?: item.links?.firstOrNull()?.url
+            MatchNews(
+                id = item.id,
+                title = item.title,
+                link = item.link,
+                published = item.published,
+                providerName = item.providerName,
+                imageUrl = imageUrl
+            )
+        }
+
         return MatchEnrichmentDetail(
             eventId = eventId,
             venue = summary.info?.venue,
@@ -836,6 +857,7 @@ class FootballRepository(
             statStages = stats.data.orEmpty(),
             highlights = highlightItems,
             lineups = lineupTeams,
+            news = newsItems,
             status = null,
             lastUpdated = System.currentTimeMillis()
         )

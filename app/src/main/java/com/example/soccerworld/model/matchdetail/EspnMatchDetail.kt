@@ -43,6 +43,15 @@ data class MatchLineupTeam(
     val coach: MatchLineupPlayer? = null
 )
 
+data class MatchNews(
+    val id: String?,
+    val title: String?,
+    val link: String?,
+    val published: Long?,
+    val providerName: String?,
+    val imageUrl: String?
+)
+
 data class MatchEnrichmentDetail(
     val eventId: String,
     val venue: String?,
@@ -51,6 +60,7 @@ data class MatchEnrichmentDetail(
     val statStages: List<EventStatsStage> = emptyList(),
     val highlights: List<MatchHighlight>,
     val lineups: List<MatchLineupTeam>,
+    val news: List<MatchNews> = emptyList(),
     val status: String?,
     val lastUpdated: Long
 )

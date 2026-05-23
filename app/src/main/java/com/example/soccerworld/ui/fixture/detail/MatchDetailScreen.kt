@@ -1,5 +1,7 @@
 package com.example.soccerworld.ui.fixture.detail
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -50,6 +52,7 @@ import com.example.soccerworld.model.matchdetail.MatchEvent
 import com.example.soccerworld.model.matchdetail.MatchHighlight
 import com.example.soccerworld.model.matchdetail.MatchLineupPlayer
 import com.example.soccerworld.model.matchdetail.MatchLineupTeam
+import com.example.soccerworld.model.matchdetail.MatchNews
 import com.example.soccerworld.model.statistic.AwayTeam
 import com.example.soccerworld.model.statistic.HomeTeam
 import com.example.soccerworld.model.statistic.StatisticsResponse
@@ -122,7 +125,7 @@ fun MatchDetailContent(
             )
         }
     ) { paddingValues ->
-        val tabs = listOf("Details", "Lineups", "Statistics", "Comments", "Matches")
+        val tabs = listOf("Details", "Lineups", "Statistics", "News", "Comments", "Matches")
 
         Column(modifier = Modifier
             .fillMaxSize()
@@ -196,11 +199,12 @@ fun MatchDetailContent(
                         awayTeam = aggregate?.core?.awayTeam
                     )
                     2 -> StatsTab(stages = aggregate?.enrichment?.statStages ?: emptyList())
-                    3 -> CommentTab(
+                    3 -> NewsTab(newsList = aggregate?.enrichment?.news ?: emptyList())
+                    4 -> CommentTab(
                         fixtureId = fixtureId,
                         onNavigateToLogin = onNavigateToLogin
                     )
-                    4 -> H2HTab(
+                    5 -> H2HTab(
                         h2hList = aggregate?.h2h ?: emptyList(),
                         homeTeam = aggregate?.core?.homeTeam,
                         awayTeam = aggregate?.core?.awayTeam
@@ -2045,4 +2049,125 @@ fun H2HTabPreview() {
     SoccerWorldTheme {
         H2HTab(h2hList = mockH2H)
     }
+}
+
+@Composable
+fun NewsTab(newsList: List<MatchNews>) {
+    if (newsList.isEmpty()) {
+        EmptyState(message = "Không có tin tức liên quan")
+        return
+    }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(newsList) { item ->
+            NewsCard(item = item)
+        }
+    }
+}
+
+@Composable
+fun NewsCard(item: MatchNews) {
+    val context = LocalContext.current
+    val imageUrl = remember(item.imageUrl) { item.imageUrl }
+    val formattedTime = remember(item.published) { formatPublishedTime(item.published) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                if (!item.link.isNullOrBlank()) {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.link))
+                    context.startActivity(intent)
+                }
+            },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 12.dp)
+            ) {
+                // Provider badge & Time
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                ) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = item.providerName ?: "News",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = formattedTime,
+                        fontSize = 10.sp,
+                        color = TextSecondary
+                    )
+                }
+                
+                // News Title
+                Text(
+                    text = item.title ?: "",
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextDark,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 18.sp
+                )
+            }
+            
+            // Thumbnail image
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = item.title,
+                    modifier = Modifier
+                        .size(width = 96.dp, height = 72.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentScale = ContentScale.Crop,
+                    error = painterResource(id = R.drawable.ic_ball)
+                )
+            }
+        }
+    }
+}
+
+private fun formatPublishedTime(publishedSeconds: Long?): String {
+    publishedSeconds ?: return ""
+    val now = System.currentTimeMillis()
+    val diffMs = now - (publishedSeconds * 1000L)
+    if (diffMs < 0) return "Just now"
+    
+    val diffMinutes = diffMs / 60000L
+    if (diffMinutes < 60) return "${diffMinutes.coerceAtLeast(1)}m ago"
+    
+    val diffHours = diffMinutes / 60
+    if (diffHours < 24) return "${diffHours}h ago"
+    
+    val diffDays = diffHours / 24
+    if (diffDays == 1L) return "Yesterday"
+    if (diffDays < 7) return "${diffDays}d ago"
+    
+    val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    return formatter.format(java.util.Date(publishedSeconds * 1000L))
 }
