@@ -1,9 +1,7 @@
 package com.example.soccerworld.ui.fixture.detail
 
-import android.util.Log
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,12 +15,12 @@ import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.*
-import java.util.Date
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -49,14 +47,19 @@ import com.example.soccerworld.model.h2h.Score
 import com.example.soccerworld.model.matchdetail.MatchDetailAggregate
 import com.example.soccerworld.model.matchdetail.MatchEnrichmentDetail
 import com.example.soccerworld.model.matchdetail.MatchEvent
+import com.example.soccerworld.model.matchdetail.MatchHighlight
 import com.example.soccerworld.model.matchdetail.MatchLineupPlayer
 import com.example.soccerworld.model.matchdetail.MatchLineupTeam
-import com.example.soccerworld.model.matchdetail.MatchStatItem
 import com.example.soccerworld.model.statistic.AwayTeam
 import com.example.soccerworld.model.statistic.HomeTeam
 import com.example.soccerworld.model.statistic.StatisticsResponse
+import com.example.soccerworld.ui.fixture.detail.components.HighlightList
 import com.example.soccerworld.ui.fixture.detail.components.getRatingColor
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
+import com.example.soccerworld.ui.theme.TextDark
+import com.example.soccerworld.ui.theme.TextSecondary
+import com.example.soccerworld.ui.theme.DividerColor
+import com.example.soccerworld.ui.theme.LoserText
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import java.text.SimpleDateFormat
@@ -185,7 +188,7 @@ fun MatchDetailContent(
             } else if (!state.isLoading) {
                 val aggregate = state.data
                 when (selectedTabIndex) {
-                    0 -> SummaryTab(events = aggregate?.enrichment?.events ?: emptyList())
+                    0 -> SummaryTab(events = aggregate?.enrichment?.events ?: emptyList(), highlights = aggregate?.enrichment?.highlights ?: emptyList())
                     1 -> LineupsTab(
                         lineups = aggregate?.enrichment?.lineups ?: emptyList(),
                         events = aggregate?.enrichment?.events ?: emptyList(),
@@ -197,7 +200,11 @@ fun MatchDetailContent(
                         fixtureId = fixtureId,
                         onNavigateToLogin = onNavigateToLogin
                     )
-                    4 -> H2HTab(h2hList = aggregate?.h2h ?: emptyList())
+                    4 -> H2HTab(
+                        h2hList = aggregate?.h2h ?: emptyList(),
+                        homeTeam = aggregate?.core?.homeTeam,
+                        awayTeam = aggregate?.core?.awayTeam
+                    )
                 }
             }
         }
@@ -521,7 +528,7 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
 // ── Summary Tab ─────────────────────────────────────────────────────────────
 
 @Composable
-fun SummaryTab(events: List<MatchEvent>) {
+fun SummaryTab(events: List<MatchEvent>, highlights: List<MatchHighlight>) {
     if (events.isEmpty()) {
         EmptyState(message = "Không có sự kiện trận đấu")
         return
@@ -530,6 +537,30 @@ fun SummaryTab(events: List<MatchEvent>) {
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 12.dp)
     ) {
+        if (highlights.isNotEmpty()) {
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    Text(
+                        text = "Match Highlights",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                    )
+                    HighlightList(highlights)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(
+                        thickness = 8.dp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
+        }
         items(events) { event ->
             EventRow(event = event)
         }
@@ -1449,9 +1480,13 @@ private fun getSwapHorizIcon() = Icons.Default.SwapHoriz
 // ── H2H Tab ──────────────────────────────────────────────────────────────────
 
 @Composable
-fun H2HTab(h2hList: List<Matche>) {
+fun H2HTab(
+    h2hList: List<Matche>,
+    homeTeam: HomeTeam? = null,
+    awayTeam: AwayTeam? = null
+) {
     if (h2hList.isEmpty()) {
-        EmptyState(message = "Không có lịch sử đối đầu")
+        EmptyState(message = "No Match found")
         return
     }
     LazyColumn(
@@ -1460,82 +1495,209 @@ fun H2HTab(h2hList: List<Matche>) {
     ) {
         item {
             Text(
-                "Lịch sử đối đầu (${h2hList.size} trận)",
+                "Previous Matches",
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
         }
-        items(h2hList) { match ->
-            H2HMatchCard(match = match)
-            Spacer(modifier = Modifier.height(8.dp))
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    h2hList.forEachIndexed { index, match ->
+                        H2HMatchRow(match = match, homeTeam = homeTeam, awayTeam = awayTeam)
+                        if (index < h2hList.size - 1) {
+                            HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun H2HMatchCard(match: Matche) {
-    val homeGoals = match.score?.fullTime?.home ?: 0
-    val awayGoals = match.score?.fullTime?.away ?: 0
-    val resultColor = when {
-        homeGoals > awayGoals -> MaterialTheme.colorScheme.tertiary
-        homeGoals < awayGoals -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.secondary
+private fun H2HMatchRow(
+    match: Matche,
+    homeTeam: HomeTeam?,
+    awayTeam: AwayTeam?
+) {
+    val homeGoals = match.score?.fullTime?.home
+    val awayGoals = match.score?.fullTime?.away
+    val homeWins = (homeGoals ?: 0) > (awayGoals ?: 0)
+    val awayWins = (awayGoals ?: 0) > (homeGoals ?: 0)
+    val ballPainter = painterResource(id = R.drawable.ic_ball)
+
+    // Remove any prepended '*' from team names
+    val rawHomeName = match.homeTeam?.shortName ?: match.homeTeam?.name ?: "TBD"
+    val rawAwayName = match.awayTeam?.shortName ?: match.awayTeam?.name ?: "TBD"
+    val cleanHomeName = remember(rawHomeName) { rawHomeName.removePrefix("*").trim() }
+    val cleanAwayName = remember(rawAwayName) { rawAwayName.removePrefix("*").trim() }
+
+    // Retrieve clean current match team names for mapping the crests
+    val currentHomeName = remember(homeTeam?.name) { homeTeam?.name?.removePrefix("*")?.trim() ?: "" }
+    val currentAwayName = remember(awayTeam?.name) { awayTeam?.name?.removePrefix("*")?.trim() ?: "" }
+
+    // Resolve the crest URLs based on name matches with the current Home/Away teams
+    val resolvedHomeCrest = remember(cleanHomeName, currentHomeName, currentAwayName, homeTeam?.crest, awayTeam?.crest) {
+        when {
+            currentHomeName.isNotEmpty() && (cleanHomeName.contains(currentHomeName, ignoreCase = true) || currentHomeName.contains(cleanHomeName, ignoreCase = true)) -> homeTeam?.crest
+            currentAwayName.isNotEmpty() && (cleanHomeName.contains(currentAwayName, ignoreCase = true) || currentAwayName.contains(cleanHomeName, ignoreCase = true)) -> awayTeam?.crest
+            else -> match.homeTeam?.crest
+        }
     }
-    val resultLabel = when {
-        homeGoals > awayGoals -> "W"
-        homeGoals < awayGoals -> "L"
-        else -> "D"
+    val resolvedAwayCrest = remember(cleanAwayName, currentHomeName, currentAwayName, homeTeam?.crest, awayTeam?.crest) {
+        when {
+            currentHomeName.isNotEmpty() && (cleanAwayName.contains(currentHomeName, ignoreCase = true) || currentHomeName.contains(cleanAwayName, ignoreCase = true)) -> homeTeam?.crest
+            currentAwayName.isNotEmpty() && (cleanAwayName.contains(currentAwayName, ignoreCase = true) || currentAwayName.contains(cleanAwayName, ignoreCase = true)) -> awayTeam?.crest
+            else -> match.awayTeam?.crest
+        }
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    val formattedDate = remember(match.utcDate) {
+        if (match.utcDate.isNullOrEmpty()) ""
+        else {
+            try {
+                val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).apply {
+                    timeZone = TimeZone.getTimeZone("UTC")
+                }
+                val date = parser.parse(match.utcDate)
+                val formatter = SimpleDateFormat("dd/MM", Locale.getDefault())
+                date?.let { formatter.format(it) } ?: ""
+            } catch (_: Exception) {
+                ""
+            }
+        }
+    }
+    val formattedYear = remember(match.utcDate) {
+        if (match.utcDate.isNullOrEmpty()) ""
+        else {
+            try {
+                val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).apply {
+                    timeZone = TimeZone.getTimeZone("UTC")
+                }
+                val date = parser.parse(match.utcDate)
+                val formatter = SimpleDateFormat("yyyy", Locale.getDefault())
+                date?.let { formatter.format(it) } ?: ""
+            } catch (_: Exception) {
+                ""
+            }
+        }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        // Date / Year column — fixed width
+        Column(
+            modifier = Modifier.width(44.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Result badge
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(resultColor.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = resultLabel,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = resultColor
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "${match.homeTeam?.name} vs ${match.awayTeam?.name}",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    text = formatHeaderDate(match.utcDate),
-                    fontSize = 11.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
             Text(
-                text = "$homeGoals - $awayGoals",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = resultColor
+                text = formattedDate,
+                fontSize = 11.sp,
+                color = TextSecondary,
+                fontWeight = FontWeight.Medium
             )
+            Text(
+                text = formattedYear,
+                fontSize = 10.sp,
+                color = TextSecondary
+            )
+        }
+
+        // Vertical divider
+        Box(
+            modifier = Modifier
+                .width(0.5.dp)
+                .height(36.dp)
+                .background(DividerColor)
+        )
+
+        Spacer(modifier = Modifier.width(10.dp))
+
+        // Teams column — 2 rows (home on top, away on bottom)
+        Column(modifier = Modifier.weight(1f)) {
+            // Home team row
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                AsyncImage(
+                    model = resolvedHomeCrest,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    contentScale = ContentScale.Fit,
+                    placeholder = ballPainter,
+                    error = ballPainter,
+                    fallback = ballPainter
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = cleanHomeName,
+                    fontSize = 13.sp,
+                    fontWeight = if (homeWins) FontWeight.Bold else FontWeight.Normal,
+                    color = if (awayWins) LoserText else TextDark,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                // Home score
+                Text(
+                    text = "${homeGoals ?: 0}",
+                    fontSize = 13.sp,
+                    fontWeight = if (homeWins) FontWeight.Bold else FontWeight.Normal,
+                    color = if (awayWins) LoserText else TextDark,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.width(24.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Away team row
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                AsyncImage(
+                    model = resolvedAwayCrest,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    contentScale = ContentScale.Fit,
+                    placeholder = ballPainter,
+                    error = ballPainter,
+                    fallback = ballPainter
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = cleanAwayName,
+                    fontSize = 13.sp,
+                    fontWeight = if (awayWins) FontWeight.Bold else FontWeight.Normal,
+                    color = if (homeWins) LoserText else TextDark,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                // Away score
+                Text(
+                    text = "${awayGoals ?: 0}",
+                    fontSize = 13.sp,
+                    fontWeight = if (awayWins) FontWeight.Bold else FontWeight.Normal,
+                    color = if (homeWins) LoserText else TextDark,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.width(24.dp)
+                )
+            }
         }
     }
 }
@@ -1620,6 +1782,7 @@ fun MatchDetailScreenPreview() {
                 MatchEvent(minute = "30", type = "GOAL", description = "Saka", team = "home")
             ),
             stats = emptyList(),
+            highlights = emptyList(),
             lineups = listOf(
                 MatchLineupTeam(
                     teamName = "Arsenal",
@@ -1674,6 +1837,7 @@ fun MatchHeaderPreview() {
         lastUpdated = 0L,
         events = events,
         stats = emptyList(),
+        highlights = emptyList(),
         lineups = emptyList()
     )
 
@@ -1693,7 +1857,7 @@ fun SummaryTabPreview() {
         MatchEvent(minute = "75", type = "RED_CARD", description = "Red card for Cucurella", team = "away")
     )
     SoccerWorldTheme {
-        SummaryTab(events = mockEvents)
+        SummaryTab(events = mockEvents, highlights = emptyList())
     }
 }
 

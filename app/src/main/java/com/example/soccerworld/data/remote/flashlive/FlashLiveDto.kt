@@ -136,6 +136,21 @@ data class EventStatsItem(
     @SerializedName("VALUE_AWAY") val valueAway: String? = null
 )
 
+data class EventHighlightResponse(
+    @SerializedName("DATA") val data: List<HighlightItem>? = null,
+)
+
+data class HighlightItem(
+    @SerializedName("PROPERTY_LINK") val link: String? = null,
+    @SerializedName("PROPERTY_TITLE") val title: String? = null,
+    @SerializedName("PROPERTY_SOURCE") val source: String? = null,
+    @SerializedName("IMAGES") val images: List<HighlightImage>? = null
+)
+
+data class HighlightImage(
+    @SerializedName("PROPERTY_IMAGE_URL") val url: String? = null
+)
+
 data class LineupsResponse(
     @SerializedName("DATA") val data: List<LineupGroup>? = null
 )

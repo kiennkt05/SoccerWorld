@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.soccerworld.data.FootballRepository
 import com.example.soccerworld.data.model.DataResult
+import com.example.soccerworld.data.remote.flashlive.HighlightItem
 import com.example.soccerworld.model.matchdetail.MatchDetailAggregate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class MatchDetailUiState(
+    val highlights: List<HighlightItem> = emptyList(),
     val isLoading: Boolean = true,
     val data: MatchDetailAggregate? = null,
     val error: String? = null
@@ -29,6 +31,15 @@ class MatchDetailViewModel(
 
     fun selectTab(index: Int) {
         _selectedTab.value = index
+    }
+
+    fun loadHighlights(fixtureId: String) {
+        viewModelScope.launch {
+            val result = repository.getEventHighlights(fixtureId)
+            if (result is DataResult.Success) {
+                _uiState.update { it.copy(highlights = result.data ?: emptyList()) }
+            }
+        }
     }
 
     fun loadMatchDetail(fixtureId: String) {

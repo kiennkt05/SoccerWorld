@@ -1,6 +1,7 @@
 package com.example.soccerworld.data.remote
 
 import com.example.soccerworld.data.remote.flashlive.EventDataResponse
+import com.example.soccerworld.data.remote.flashlive.EventHighlightResponse
 import com.example.soccerworld.data.remote.flashlive.EventStatsResponse
 import com.example.soccerworld.data.remote.flashlive.EventSummaryResponse
 import com.example.soccerworld.data.remote.flashlive.EventsListResponse
@@ -71,6 +72,12 @@ interface ApiService {
         @Query("locale") locale: String,
         @Query("event_id") eventId: String
     ): EventSummaryResponse
+
+    @GET("v1/events/highlights")
+    suspend fun getEventHighlights(
+        @Query("locale") locale: String,
+        @Query("event_id") eventId: String
+    ): EventHighlightResponse
 
     @GET("/v1/events/statistics")
     suspend fun getEventStats(

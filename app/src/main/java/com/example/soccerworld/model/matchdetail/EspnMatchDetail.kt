@@ -1,6 +1,7 @@
 package com.example.soccerworld.model.matchdetail
 
 import com.example.soccerworld.data.remote.flashlive.EventStatsStage
+import com.example.soccerworld.data.remote.flashlive.HighlightImage
 
 data class MatchEvent(
     val minute: String,
@@ -13,6 +14,12 @@ data class MatchStatItem(
     val name: String,
     val homeValue: String,
     val awayValue: String
+)
+
+data class MatchHighlight(
+    val title: String,
+    val link: String,
+    val images: List<HighlightImage>? = null,
 )
 
 data class MatchLineupPlayer(
@@ -42,6 +49,7 @@ data class MatchEnrichmentDetail(
     val events: List<MatchEvent>,
     val stats: List<MatchStatItem>,
     val statStages: List<EventStatsStage> = emptyList(),
+    val highlights: List<MatchHighlight>,
     val lineups: List<MatchLineupTeam>,
     val status: String?,
     val lastUpdated: Long

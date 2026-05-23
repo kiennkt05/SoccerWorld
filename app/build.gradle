@@ -62,7 +62,7 @@ android {
 }
 
 dependencies {
-    // 1. CÁC THƯ VIỆN LÕI ANDROID
+    // 1. ANDROID CORE
     implementation 'androidx.core:core-ktx:1.13.1'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.5'
     implementation 'androidx.activity:activity-compose:1.9.2'
@@ -73,8 +73,10 @@ dependencies {
     implementation 'com.google.firebase:firebase-auth'
     implementation 'com.google.firebase:firebase-firestore'
     implementation 'com.google.android.gms:play-services-auth:21.1.1'
+
     // 2. JETPACK COMPOSE
-    def composeBom = platform('androidx.compose:compose-bom:2024.06.00')
+    // Updated BOM to 2024.12.01 to ensure Material 3 (1.3+) and Foundation (1.7+) are aligned
+    def composeBom = platform('androidx.compose:compose-bom:2024.12.01')
     implementation composeBom
     androidTestImplementation composeBom
     implementation 'androidx.compose.ui:ui'
@@ -86,27 +88,30 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5' 
     implementation 'androidx.navigation:navigation-compose:2.8.2'
 
-    // 3. THƯ VIỆN TẢI ẢNH
+    // 3. IMAGE & VIDEO
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("androidx.preference:preference-ktx:1.2.1")
-    
-    // 4. GỌI MẠNG
+    implementation "androidx.media3:media3-exoplayer:1.3.1"
+    implementation "androidx.media3:media3-ui:1.3.1"
+    implementation "androidx.media3:media3-common:1.3.1"
+
+    // 4. NETWORK
     def retrofitVersion = '2.9.0'
     implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
     implementation "com.squareup.retrofit2:converter-gson:$retrofitVersion"
 
-    // 5. CHẠY NGẦM
+    // 5. COROUTINES & WORK
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1"
     implementation "androidx.work:work-runtime-ktx:2.9.1"
 
-    // 6. LƯU TRỮ Ổ CỨNG
+    // 6. ROOM DATABASE
     def roomVersion = '2.7.0-alpha11'
     implementation "androidx.room:room-runtime:$roomVersion"
     ksp "androidx.room:room-compiler:$roomVersion"
     implementation "androidx.room:room-ktx:$roomVersion" 
 
-    // 7. CÔNG CỤ DEBUG VÀ KIỂM THỬ
+    // 7. DEBUG & TEST
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
     

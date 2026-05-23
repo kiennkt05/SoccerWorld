@@ -12,9 +12,12 @@ import com.example.soccerworld.data.local.entity.TeamsCacheEntity
 import com.example.soccerworld.data.model.DataResult
 import com.example.soccerworld.data.model.ErrorType
 import com.example.soccerworld.data.remote.ApiService
+import com.example.soccerworld.data.remote.flashlive.EventHighlightResponse
 import com.example.soccerworld.data.remote.flashlive.EventStatsResponse
 import com.example.soccerworld.data.remote.flashlive.EventSummaryResponse
 import com.example.soccerworld.data.remote.flashlive.FlashLiveEvent
+import com.example.soccerworld.data.remote.flashlive.HighlightImage
+import com.example.soccerworld.data.remote.flashlive.HighlightItem
 import com.example.soccerworld.data.remote.flashlive.LineupsResponse
 import com.example.soccerworld.model.fixture.AwayTeam
 import com.example.soccerworld.model.fixture.Competition
@@ -42,6 +45,7 @@ import com.example.soccerworld.model.matchdetail.MatchEnrichmentDetail
 import com.example.soccerworld.model.matchdetail.MatchEvent
 import com.example.soccerworld.model.matchdetail.MatchStatItem
 import com.example.soccerworld.model.matchdetail.MatchDetailAggregate
+import com.example.soccerworld.model.matchdetail.MatchHighlight
 import com.example.soccerworld.model.player.PlayerResponse
 import com.example.soccerworld.model.player.Squad
 import com.example.soccerworld.model.statistic.AwayTeam as StatsAwayTeam
@@ -494,6 +498,12 @@ class FootballRepository(
         }
     }
 
+    suspend fun getEventHighlights(fixtureId: String): DataResult<List<HighlightItem>> {
+        return safeApiCall {
+            apiService.getEventHighlights(Constant.LOCALE, fixtureId).data.orEmpty()
+        }
+    }
+
     suspend fun getMatchDetailAggregate(fixtureId: String): DataResult<MatchDetailAggregate> {
         val updateTime = customPreferences.getMatchDetailTime(fixtureId) ?: 0L
         val now = System.currentTimeMillis()
@@ -544,12 +554,17 @@ class FootballRepository(
             } catch (e: Exception) {
                 EventStatsResponse()
             }
+            val highlights = try {
+                apiService.getEventHighlights(Constant.LOCALE, fixtureId)
+            } catch (e: Exception) {
+                EventHighlightResponse()
+            }
             val lineups = try {
                 apiService.getEventLineups(Constant.LOCALE, fixtureId)
             } catch (e: Exception) {
                 LineupsResponse()
             }
-            mapFlashLiveDetail(fixtureId, summary, stats, lineups)
+            mapFlashLiveDetail(fixtureId, summary, stats, highlights, lineups)
         }
         val enrichment = (enrichmentResult as? DataResult.Success)?.data
         val aggregate = MatchDetailAggregate(core = coreResult.data, h2h = h2hList, enrichment = enrichment)
@@ -600,6 +615,7 @@ class FootballRepository(
         eventId: String,
         summary: EventSummaryResponse,
         stats: EventStatsResponse,
+        highlights: EventHighlightResponse,
         lineups: LineupsResponse
     ): MatchEnrichmentDetail {
         val events = summary.data.orEmpty().reversed().flatMap { stage ->
@@ -741,6 +757,13 @@ class FootballRepository(
                 }
             }
         }
+        val highlightItems = highlights.data.orEmpty().map { item ->
+            MatchHighlight(
+                title = item.title ?: "Match Highlights",
+                link = item.link ?: "",
+                images = item.images
+            )
+        }
         val homeStarters = mutableListOf<MatchLineupPlayer>()
         val awayStarters = mutableListOf<MatchLineupPlayer>()
         val homeSubs = mutableListOf<MatchLineupPlayer>()
@@ -811,6 +834,7 @@ class FootballRepository(
             events = events,
             stats = statItems,
             statStages = stats.data.orEmpty(),
+            highlights = highlightItems,
             lineups = lineupTeams,
             status = null,
             lastUpdated = System.currentTimeMillis()
