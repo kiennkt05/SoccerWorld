@@ -1493,30 +1493,92 @@ fun H2HTab(
         EmptyState(message = "No Match found")
         return
     }
+
+    // Group H2H matches by competition to replicate SofaScore layout
+    val groupedMatches = remember(h2hList) {
+        val groups = linkedMapOf<String, MutableList<Matche>>()
+        h2hList.forEach { match ->
+            val compName = match.competition?.name ?: "Tournament"
+            val list = groups.getOrPut(compName) { mutableListOf() }
+            list.add(match)
+        }
+        groups
+    }
+
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp)
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(start = 14.dp, end = 14.dp, bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         item {
             Text(
-                "Previous Matches",
+                text = "Previous Matches",
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(bottom = 12.dp)
+                modifier = Modifier.padding(top = 12.dp, bottom = 2.dp)
             )
         }
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    h2hList.forEachIndexed { index, match ->
-                        H2HMatchRow(match = match, homeTeam = homeTeam, awayTeam = awayTeam)
-                        if (index < h2hList.size - 1) {
-                            HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
+
+        groupedMatches.forEach { (compName, matchesList) ->
+            item(key = compName) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        // Tournament Header
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // Dynamic Tournament Emblem (No simple emoji fallback unless unavailable)
+                            val emblemUrl = matchesList.firstOrNull()?.competition?.emblem
+                            val ballPainter = painterResource(id = R.drawable.ic_ball)
+                            AsyncImage(
+                                model = emblemUrl ?: R.drawable.ic_ball,
+                                contentDescription = compName,
+                                modifier = Modifier
+                                    .size(22.dp)
+                                    .clip(CircleShape),
+                                placeholder = ballPainter,
+                                error = ballPainter,
+                                fallback = ballPainter,
+                                contentScale = ContentScale.Fit
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = compName,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextDark,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        // Divider between header and first match row
+                        HorizontalDivider(
+                            thickness = 0.5.dp,
+                            color = DividerColor
+                        )
+
+                        // Matches List inside tournament card
+                        matchesList.forEachIndexed { index, match ->
+                            if (index > 0) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 14.dp),
+                                    thickness = 0.5.dp,
+                                    color = DividerColor
+                                )
+                            }
+                            H2HMatchRow(
+                                match = match,
+                                homeTeam = homeTeam,
+                                awayTeam = awayTeam
+                            )
                         }
                     }
                 }
@@ -1531,21 +1593,18 @@ private fun H2HMatchRow(
     homeTeam: HomeTeam?,
     awayTeam: AwayTeam?
 ) {
-    val homeGoals = match.score?.fullTime?.home
-    val awayGoals = match.score?.fullTime?.away
-    val homeWins = (homeGoals ?: 0) > (awayGoals ?: 0)
-    val awayWins = (awayGoals ?: 0) > (homeGoals ?: 0)
-    val ballPainter = painterResource(id = R.drawable.ic_ball)
-
-    // Remove any prepended '*' from team names
+    val homeGoals = match.score?.fullTime?.home ?: 0
+    val awayGoals = match.score?.fullTime?.away ?: 0
+    
+    // Remove any prepended/appended '*' from team names
     val rawHomeName = match.homeTeam?.shortName ?: match.homeTeam?.name ?: "TBD"
     val rawAwayName = match.awayTeam?.shortName ?: match.awayTeam?.name ?: "TBD"
-    val cleanHomeName = remember(rawHomeName) { rawHomeName.removePrefix("*").trim() }
-    val cleanAwayName = remember(rawAwayName) { rawAwayName.removePrefix("*").trim() }
+    val cleanHomeName = remember(rawHomeName) { rawHomeName.replace("*", "").trim() }
+    val cleanAwayName = remember(rawAwayName) { rawAwayName.replace("*", "").trim() }
 
     // Retrieve clean current match team names for mapping the crests
-    val currentHomeName = remember(homeTeam?.name) { homeTeam?.name?.removePrefix("*")?.trim() ?: "" }
-    val currentAwayName = remember(awayTeam?.name) { awayTeam?.name?.removePrefix("*")?.trim() ?: "" }
+    val currentHomeName = remember(homeTeam?.name) { homeTeam?.name?.replace("*", "")?.trim() ?: "" }
+    val currentAwayName = remember(awayTeam?.name) { awayTeam?.name?.replace("*", "")?.trim() ?: "" }
 
     // Resolve the crest URLs based on name matches with the current Home/Away teams
     val resolvedHomeCrest = remember(cleanHomeName, currentHomeName, currentAwayName, homeTeam?.crest, awayTeam?.crest) {
@@ -1563,7 +1622,7 @@ private fun H2HMatchRow(
         }
     }
 
-    val formattedDate = remember(match.utcDate) {
+    val sofaDate = remember(match.utcDate) {
         if (match.utcDate.isNullOrEmpty()) ""
         else {
             try {
@@ -1571,73 +1630,68 @@ private fun H2HMatchRow(
                     timeZone = TimeZone.getTimeZone("UTC")
                 }
                 val date = parser.parse(match.utcDate)
-                val formatter = SimpleDateFormat("dd/MM", Locale.getDefault())
+                val formatter = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
                 date?.let { formatter.format(it) } ?: ""
             } catch (_: Exception) {
                 ""
             }
         }
     }
-    val formattedYear = remember(match.utcDate) {
-        if (match.utcDate.isNullOrEmpty()) ""
-        else {
-            try {
-                val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault()).apply {
-                    timeZone = TimeZone.getTimeZone("UTC")
-                }
-                val date = parser.parse(match.utcDate)
-                val formatter = SimpleDateFormat("yyyy", Locale.getDefault())
-                date?.let { formatter.format(it) } ?: ""
-            } catch (_: Exception) {
-                ""
-            }
-        }
-    }
+
+    val ballPainter = painterResource(id = R.drawable.ic_ball)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .clickable { /* Handle click if needed */ }
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Date / Year column — fixed width
+        // Left Column: Date & FT
         Column(
-            modifier = Modifier.width(44.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.width(60.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = formattedDate,
+                text = sofaDate,
                 fontSize = 11.sp,
-                color = TextSecondary,
-                fontWeight = FontWeight.Medium
-            )
-            Text(
-                text = formattedYear,
-                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium,
                 color = TextSecondary
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = "FT",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextSecondary.copy(alpha = 0.8f)
             )
         }
 
-        // Vertical divider
+        // Vertical Line Divider
         Box(
             modifier = Modifier
-                .width(0.5.dp)
-                .height(36.dp)
+                .padding(horizontal = 10.dp)
+                .width(0.7.dp)
+                .height(38.dp)
                 .background(DividerColor)
         )
 
-        Spacer(modifier = Modifier.width(10.dp))
-
-        // Teams column — 2 rows (home on top, away on bottom)
-        Column(modifier = Modifier.weight(1f)) {
-            // Home team row
+        // Center Column: Team Stack (Crests & Names)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 8.dp)
+        ) {
+            // Home Team Row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp)
             ) {
                 AsyncImage(
-                    model = resolvedHomeCrest,
+                    model = resolvedHomeCrest ?: R.drawable.ic_ball,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
                     contentScale = ContentScale.Fit,
@@ -1646,35 +1700,34 @@ private fun H2HMatchRow(
                     fallback = ballPainter
                 )
                 Spacer(modifier = Modifier.width(8.dp))
+                val isHomeCurrent = remember(match.homeTeam, currentHomeName) {
+                    val name = match.homeTeam?.name ?: ""
+                    val id = match.homeTeam?.id ?: ""
+                    val currId = homeTeam?.id ?: ""
+                    (id.isNotEmpty() && currId.isNotEmpty() && id == currId) || 
+                    (name.isNotEmpty() && currentHomeName.isNotEmpty() && 
+                     (name.contains(currentHomeName, ignoreCase = true) || currentHomeName.contains(name, ignoreCase = true)))
+                }
                 Text(
                     text = cleanHomeName,
                     fontSize = 13.sp,
-                    fontWeight = if (homeWins) FontWeight.Bold else FontWeight.Normal,
-                    color = if (awayWins) LoserText else TextDark,
+                    fontWeight = if (isHomeCurrent) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isHomeCurrent) TextDark else TextSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                // Home score
-                Text(
-                    text = "${homeGoals ?: 0}",
-                    fontSize = 13.sp,
-                    fontWeight = if (homeWins) FontWeight.Bold else FontWeight.Normal,
-                    color = if (awayWins) LoserText else TextDark,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.width(24.dp)
-                )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Away team row
+            // Away Team Row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 2.dp)
             ) {
                 AsyncImage(
-                    model = resolvedAwayCrest,
+                    model = resolvedAwayCrest ?: R.drawable.ic_ball,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
                     contentScale = ContentScale.Fit,
@@ -1683,25 +1736,86 @@ private fun H2HMatchRow(
                     fallback = ballPainter
                 )
                 Spacer(modifier = Modifier.width(8.dp))
+                val isAwayCurrent = remember(match.awayTeam, currentHomeName) {
+                    val name = match.awayTeam?.name ?: ""
+                    val id = match.awayTeam?.id ?: ""
+                    val currId = homeTeam?.id ?: ""
+                    (id.isNotEmpty() && currId.isNotEmpty() && id == currId) || 
+                    (name.isNotEmpty() && currentHomeName.isNotEmpty() && 
+                     (name.contains(currentHomeName, ignoreCase = true) || currentHomeName.contains(name, ignoreCase = true)))
+                }
                 Text(
                     text = cleanAwayName,
                     fontSize = 13.sp,
-                    fontWeight = if (awayWins) FontWeight.Bold else FontWeight.Normal,
-                    color = if (homeWins) LoserText else TextDark,
+                    fontWeight = if (isAwayCurrent) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isAwayCurrent) TextDark else TextSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                // Away score
-                Text(
-                    text = "${awayGoals ?: 0}",
-                    fontSize = 13.sp,
-                    fontWeight = if (awayWins) FontWeight.Bold else FontWeight.Normal,
-                    color = if (homeWins) LoserText else TextDark,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.width(24.dp)
-                )
             }
+        }
+
+        // Scores Column
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "$homeGoals",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextDark,
+                modifier = Modifier.padding(vertical = 2.dp)
+            )
+            Text(
+                text = "$awayGoals",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextDark,
+                modifier = Modifier.padding(vertical = 2.dp)
+            )
+        }
+
+        // Right Outcome Indicator Column (relative to the Home Team reference)
+        val isHomeCurrent = remember(match.homeTeam, currentHomeName) {
+            val name = match.homeTeam?.name ?: ""
+            val id = match.homeTeam?.id ?: ""
+            val currId = homeTeam?.id ?: ""
+            (id.isNotEmpty() && currId.isNotEmpty() && id == currId) || 
+            (name.isNotEmpty() && currentHomeName.isNotEmpty() && 
+             (name.contains(currentHomeName, ignoreCase = true) || currentHomeName.contains(name, ignoreCase = true)))
+        }
+
+        val outcome = remember(homeGoals, awayGoals, isHomeCurrent) {
+            when {
+                homeGoals == awayGoals -> "D"
+                homeGoals > awayGoals -> if (isHomeCurrent) "W" else "L"
+                else -> if (isHomeCurrent) "L" else "W"
+            }
+        }
+
+        val badgeColor = when (outcome) {
+            "W" -> Color(0xFF2EA64F) // SofaScore Green
+            "L" -> Color(0xFFE53935) // Red
+            else -> Color(0xFF9E9E9E) // Grey
+        }
+
+        Box(
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .size(24.dp)
+                .background(badgeColor, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = outcome,
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
         }
     }
 }

@@ -53,11 +53,10 @@ class TeamDetailViewModel(private val repository: FootballRepository) : ViewMode
         if (teamId.isEmpty()) return
 
         when (index) {
-            0 -> loadSquad(teamId, isDetails = true)
+            0 -> loadSquad(teamId, isDetails = false)
             1 -> loadMatches(teamId)
             2 -> { /* Standings handled by existing LeagueTableScreen or similar */ }
-            3 -> loadSquad(teamId, isDetails = false)
-            4 -> loadTransfers(teamId)
+            3 -> loadTransfers(teamId)
         }
     }
 
@@ -72,16 +71,17 @@ class TeamDetailViewModel(private val repository: FootballRepository) : ViewMode
             when (val result = repository.getAllPlayersOfTeam(teamId)) {
                 is DataResult.Success -> {
                     _uiState.update { 
+                        val cleanedName = (result.data.name ?: it.teamName).replace("*", "").trim()
                         if (isDetails) {
                             it.copy(
                                 detailsState = TabState.Success(result.data),
-                                teamName = result.data.name ?: it.teamName,
+                                teamName = cleanedName,
                                 teamCrest = result.data.crest ?: it.teamCrest
                             )
                         } else {
                             it.copy(
                                 squadState = TabState.Success(result.data),
-                                teamName = result.data.name ?: it.teamName,
+                                teamName = cleanedName,
                                 teamCrest = result.data.crest ?: it.teamCrest
                             )
                         }
@@ -138,18 +138,38 @@ class TeamDetailViewModel(private val repository: FootballRepository) : ViewMode
         if (_uiState.value.matchesState is TabState.Success) return
         viewModelScope.launch {
             _uiState.update { it.copy(matchesState = TabState.Loading) }
-            when (val result = repository.getTeamMatches(teamId, 1, isResults = true)) {
-                is DataResult.Success -> {
-                    _uiState.update { 
-                        it.copy(
-                            matchesState = TabState.Success(result.data),
-                            matchesPage = 1,
-                            hasMoreMatches = result.data.isNotEmpty()
-                        ) 
-                    }
+            
+            val resultsResult = repository.getTeamMatches(teamId, 1, isResults = true)
+            val fixturesResult = repository.getTeamMatches(teamId, 1, isResults = false)
+            
+            val mergedMatches = mutableListOf<Matche>()
+            var hasSuccess = false
+            var errorMsg = "Error loading matches"
+
+            if (resultsResult is DataResult.Success) {
+                mergedMatches.addAll(resultsResult.data)
+                hasSuccess = true
+            } else if (resultsResult is DataResult.Error) {
+                errorMsg = resultsResult.message ?: errorMsg
+            }
+
+            if (fixturesResult is DataResult.Success) {
+                mergedMatches.addAll(fixturesResult.data)
+                hasSuccess = true
+            } else if (fixturesResult is DataResult.Error) {
+                errorMsg = fixturesResult.message ?: errorMsg
+            }
+
+            if (hasSuccess) {
+                _uiState.update { 
+                    it.copy(
+                        matchesState = TabState.Success(mergedMatches.distinctBy { match -> match.id }),
+                        matchesPage = 1,
+                        hasMoreMatches = false
+                    ) 
                 }
-                is DataResult.Error -> _uiState.update { it.copy(matchesState = TabState.Error(result.message ?: "Error")) }
-                else -> {}
+            } else {
+                _uiState.update { it.copy(matchesState = TabState.Error(errorMsg)) }
             }
         }
     }

@@ -250,13 +250,14 @@ class FootballRepository(
             
             val players = squadResponse
                 .flatMap { it.items.orEmpty() }
-                .filter { it.playerTypeId != "COACH" }
                 .map {
                     Squad(
                         id = it.playerId,
                         name = it.playerName,
                         position = mapPlayerType(it.playerTypeId),
-                        imageUrl = it.playerImagePath
+                        imageUrl = it.playerImagePath,
+                        jerseyNumber = it.jerseyNumber,
+                        flagId = it.flagId
                     )
                 }
             
@@ -408,8 +409,10 @@ class FootballRepository(
             val matches = mutableListOf<Matche>()
             response.data.orEmpty().forEach { tournamentData ->
                 val stageId = tournamentData.tournamentStageId ?: "Unknown"
+                val tournamentName = tournamentData.name ?: "Tournament"
+                val tournamentImage = tournamentData.tournamentImage
                 tournamentData.events.orEmpty().forEach { event ->
-                    matches.add(event.toFixtureMatch("Tournament", stageId))
+                    matches.add(event.toFixtureMatch(tournamentName, stageId, tournamentImage))
                 }
             }
             matches
@@ -462,6 +465,7 @@ class FootballRepository(
                     H2HMatch(
                         id = it.eventId,
                         utcDate = toIsoDateTime(it.startTime),
+                        competition = com.example.soccerworld.model.h2h.Competition(name = it.eventName),
                         homeTeam = HomeTeamX(name = it.homeParticipant),
                         awayTeam = AwayTeamX(name = it.awayParticipant),
                         score = H2HScore(fullTime = H2HFullTime(home = scores.first, away = scores.second))
@@ -863,7 +867,11 @@ class FootballRepository(
         )
     }
 
-    private fun FlashLiveEvent.toFixtureMatch(leagueName: String, leagueCode: String): Matche {
+    private fun FlashLiveEvent.toFixtureMatch(
+        leagueName: String,
+        leagueCode: String,
+        leagueEmblem: String? = null
+    ): Matche {
         val homeCrest = homeImagePath ?: homeImages?.firstOrNull()
         val awayCrest = awayImagePath ?: awayImages?.firstOrNull()
         return Matche(
@@ -873,7 +881,7 @@ class FootballRepository(
             matchday = round?.toIntOrNull(),
             stage = stageType,
             group = round ?: "Unknown Round",
-            competition = Competition(code = leagueCode, name = leagueName),
+            competition = Competition(code = leagueCode, name = leagueName, emblem = leagueEmblem),
             homeTeam = HomeTeam(id = homeId, name = homeName, shortName = homeName, crest = homeCrest),
             awayTeam = AwayTeam(id = awayId, name = awayName, shortName = awayName, crest = awayCrest),
             score = Score(fullTime = FullTime(home = homeScore?.toIntOrNull(), away = awayScore?.toIntOrNull()))
@@ -949,6 +957,7 @@ class FootballRepository(
             "2", "DEFENDER", "DF" -> "Defender"
             "3", "MIDFIELDER", "MF" -> "Midfielder"
             "4", "FORWARD", "ATTACKER", "FW", "ST" -> "Forward"
+            "COACH" -> "Coach"
             else -> "Player"
         }
     }

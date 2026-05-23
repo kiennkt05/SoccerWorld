@@ -35,7 +35,8 @@ fun TeamDetailScreen(teamId: String, onBack: () -> Unit) {
     }
 
     val state by viewModel.uiState.collectAsState()
-    val tabs = listOf("Details", "Matches", "Standings", "Squad", "Transfers")
+    // val tabs = listOf("Details", "Matches", "Standings", "Squad", "Transfers")
+    val tabs = listOf("Squad", "Matches", "Standings", "Transfers")
 
     val fallbackPainter = painterResource(id = R.drawable.ic_ball)
     
@@ -111,11 +112,16 @@ fun TeamDetailScreen(teamId: String, onBack: () -> Unit) {
 
             Box(modifier = Modifier.fillMaxSize()) {
                 when (state.selectedTab) {
-                    0 -> TeamDetailsTab(state.detailsState)
-                    1 -> TeamMatchesTab(state.matchesState, onLoadMore = { viewModel.loadMoreMatches() })
+                    // 0 -> TeamDetailsTab(state.detailsState)
+                    0 -> TeamSquadTab(state.squadState)
+                    1 -> TeamMatchesTab(
+                        matchesState = state.matchesState,
+                        teamId = state.teamId,
+                        teamName = state.teamName,
+                        onLoadMore = { viewModel.loadMoreMatches() }
+                    )
                     2 -> TeamStandingsTab(teamId = state.teamId)
-                    3 -> TeamSquadTab(state.squadState)
-                    4 -> TeamTransfersTab(state.transfersState)
+                    3 -> TeamTransfersTab(state.transfersState)
                 }
             }
         }

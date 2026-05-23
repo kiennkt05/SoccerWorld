@@ -52,7 +52,9 @@ data class EventsListResponse(
 )
 
 data class EventsByTournament(
+    @SerializedName("NAME") val name: String? = null,
     @SerializedName("TOURNAMENT_STAGE_ID") val tournamentStageId: String? = null,
+    @SerializedName("TOURNAMENT_IMAGE") val tournamentImage: String? = null,
     @SerializedName("EVENTS") val events: List<FlashLiveEvent>? = null
 )
 
@@ -197,7 +199,8 @@ data class H2HItem(
     @SerializedName("HOME_PARTICIPANT") val homeParticipant: String? = null,
     @SerializedName("AWAY_PARTICIPANT") val awayParticipant: String? = null,
     @SerializedName("CURRENT_RESULT") val currentResult: String? = null,
-    @SerializedName("START_TIME") val startTime: Long? = null
+    @SerializedName("START_TIME") val startTime: Long? = null,
+    @SerializedName("EVENT_NAME") val eventName: String? = null
 )
 
 data class TeamDataResponse(
@@ -223,7 +226,9 @@ data class SquadPlayer(
     @SerializedName("PLAYER_ID") val playerId: String? = null,
     @SerializedName("PLAYER_NAME") val playerName: String? = null,
     @SerializedName("PLAYER_TYPE_ID") val playerTypeId: String? = null,
-    @SerializedName("PLAYER_IMAGE_PATH") val playerImagePath: String? = null
+    @SerializedName("PLAYER_IMAGE_PATH") val playerImagePath: String? = null,
+    @SerializedName("PLAYER_JERSEY_NUMBER") val jerseyNumber: Int? = null,
+    @SerializedName("PLAYER_FLAG_ID") val flagId: Int? = null
 )
 
 data class PlayerDataResponse(

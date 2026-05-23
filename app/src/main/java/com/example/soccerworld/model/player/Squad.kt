@@ -14,5 +14,9 @@ data class Squad(
     val dateOfBirth: String? = null,
     @SerializedName("nationality")
     val nationality: String? = null,
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+    @SerializedName("jerseyNumber")
+    val jerseyNumber: Int? = null,
+    @SerializedName("flagId")
+    val flagId: Int? = null
 )
