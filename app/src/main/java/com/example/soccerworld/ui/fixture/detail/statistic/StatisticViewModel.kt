@@ -35,7 +35,7 @@ class StatisticViewModel(private val repository: FootballRepository) : ViewModel
                     _uiState.update { it.copy(isLoading = false, statistics = result.data) }
                 }
                 is DataResult.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Lỗi tải thống kê trận đấu") }
+                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Error loading match statistics") }
                 }
                 DataResult.Loading -> {
                     _uiState.update { it.copy(isLoading = true) }

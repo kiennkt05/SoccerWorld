@@ -66,7 +66,7 @@ fun ProfileScreen(
     val isLoggedIn = firebaseUser != null
     val displayName = firebaseUser?.displayName?.ifBlank { null }
         ?: firebaseUser?.email?.substringBefore("@")
-        ?: "Người dùng"
+        ?: "User"
     val email = firebaseUser?.email ?: ""
 
     val leagueId = sharedPrefs.getLeagueId() ?: "?"
@@ -92,11 +92,11 @@ fun ProfileScreen(
             onDismissRequest = { showLogoutDialog = false },
             shape = RoundedCornerShape(20.dp),
             title = {
-                Text("Đăng xuất", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                Text("Sign Out", fontWeight = FontWeight.Bold, fontSize = 20.sp)
             },
             text = {
                 Text(
-                    "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản không?",
+                    "Are you sure you want to sign out?",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -119,7 +119,7 @@ fun ProfileScreen(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Đăng xuất")
+                    Text("Sign Out")
                 }
             },
             dismissButton = {
@@ -127,7 +127,7 @@ fun ProfileScreen(
                     onClick = { showLogoutDialog = false },
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Hủy")
+                    Text("Cancel")
                 }
             }
         )
@@ -226,14 +226,14 @@ fun ProfileScreen(
                     }
                 } else {
                     Text(
-                        text = "Khách",
+                        text = "Guest",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = onPrimary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Đăng nhập để sử dụng đầy đủ tính năng",
+                        text = "Sign in to unlock all features",
                         style = MaterialTheme.typography.bodyMedium,
                         color = onPrimary.copy(alpha = 0.8f)
                     )
@@ -260,7 +260,7 @@ fun ProfileScreen(
             ) {
                 StatItem(
                     value = if (isLoggedIn) "$favoriteCount" else "-",
-                    label = "Yêu thích",
+                    label = "Favorites",
                     icon = Icons.Default.Favorite,
                     tint = Color(0xFFE91E63)
                 )
@@ -272,7 +272,7 @@ fun ProfileScreen(
                 )
                 StatItem(
                     value = leagueId,
-                    label = "Giải theo dõi",
+                    label = "Followed League",
                     icon = Icons.Default.SportsSoccer,
                     tint = primary
                 )
@@ -284,7 +284,7 @@ fun ProfileScreen(
                 )
                 StatItem(
                     value = "2024",
-                    label = "Mùa giải",
+                    label = "Season",
                     icon = Icons.Default.DateRange,
                     tint = Color(0xFF2196F3)
                 )
@@ -294,7 +294,7 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height((-8).dp))
 
         // ── Account section ──────────────────────────────────────────
-        SectionLabel("TÀI KHOẢN")
+        SectionLabel("ACCOUNT")
 
         if (isLoggedIn) {
             // User info card
@@ -370,8 +370,8 @@ fun ProfileScreen(
 
             MenuRow(
                 icon = Icons.Default.ExitToApp,
-                title = "Đăng xuất",
-                subtitle = "Thoát khỏi tài khoản hiện tại",
+                title = "Sign Out",
+                subtitle = "Sign out of your current account",
                 iconBg = MaterialTheme.colorScheme.error,
                 showDivider = false,
                 onClick = { showLogoutDialog = true }
@@ -379,8 +379,8 @@ fun ProfileScreen(
         } else {
             MenuRow(
                 icon = Icons.Default.Login,
-                title = "Đăng nhập với Google",
-                subtitle = "Đăng nhập để lưu trận yêu thích",
+                title = "Sign in with Google",
+                subtitle = "Sign in to save favorite matches",
                 iconBg = primary,
                 showDivider = false,
                 onClick = onNavigateToLogin
@@ -390,7 +390,7 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // ── League section ───────────────────────────────────────────
-        SectionLabel("GIẢI ĐẤU")
+        SectionLabel("LEAGUE")
 
         Card(
             modifier = Modifier
@@ -451,7 +451,7 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // ── Settings section ─────────────────────────────────────────
-        SectionLabel("CÀI ĐẶT")
+        SectionLabel("SETTINGS")
 
         Card(
             modifier = Modifier
@@ -463,16 +463,16 @@ fun ProfileScreen(
         ) {
             MenuRow(
                 icon = Icons.Default.Settings,
-                title = "Đổi giải đấu",
-                subtitle = "Chọn giải đấu khác để theo dõi",
+                title = "Change League",
+                subtitle = "Choose another league to follow",
                 iconBg = primary,
                 showDivider = true,
                 onClick = onChangeLeague
             )
             MenuRow(
                 icon = Icons.Default.Notifications,
-                title = "Thông báo",
-                subtitle = "Nhận cảnh báo khi có trận live",
+                title = "Notifications",
+                subtitle = "Get alerts when matches are live",
                 iconBg = Color(0xFFFF9800),
                 showDivider = false,
                 onClick = {}
@@ -482,7 +482,7 @@ fun ProfileScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // ── About section ────────────────────────────────────────────
-        SectionLabel("VỀ ỨNG DỤNG")
+        SectionLabel("ABOUT")
 
         Card(
             modifier = Modifier
@@ -494,16 +494,16 @@ fun ProfileScreen(
         ) {
             MenuRow(
                 icon = Icons.Default.Info,
-                title = "Về SoccerWorld",
-                subtitle = "Phiên bản 1.0.0",
+                title = "About SoccerWorld",
+                subtitle = "Version 1.0.0",
                 iconBg = Color(0xFF2196F3),
                 showDivider = true,
                 onClick = {}
             )
             MenuRow(
                 icon = Icons.Default.Star,
-                title = "Nhóm phát triển",
-                subtitle = "BTL Mobile – Kì 2 Năm 3",
+                title = "Developer Team",
+                subtitle = "Mobile Assignment - Year 3 Semester 2",
                 iconBg = Color(0xFFFFB300),
                 showDivider = false,
                 onClick = {}

@@ -66,14 +66,14 @@ fun FavoritesScreen(
                 Spacer(modifier = Modifier.width(14.dp))
                 Column {
                     Text(
-                        text = "Trận Yêu Thích",
+                        text = "Favorite Matches",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = onPrimary
                     )
                     if (!isLoggedIn) {
                         Text(
-                            text = "Đăng nhập để sử dụng",
+                            text = "Sign in to use",
                             style = MaterialTheme.typography.bodySmall,
                             color = onPrimary.copy(alpha = 0.8f)
                         )
@@ -152,14 +152,14 @@ private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Yêu cầu đăng nhập",
+                text = "Login required",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Bạn cần đăng nhập để lưu và xem\ncác trận đấu yêu thích",
+                text = "You need to sign in to save and view\nyour favorite matches",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -182,7 +182,7 @@ private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Đăng nhập",
+                    text = "Sign In",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -215,14 +215,14 @@ private fun FavoritesEmptyState() {
             }
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Chưa có trận yêu thích",
+                text = "No favorite matches",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Nhấn vào icon ♡ ở mỗi trận đấu\ntrong tab Lịch Thi Đấu để lưu lại",
+                text = "Tap the ☆ icon on any match\nto save it here",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center

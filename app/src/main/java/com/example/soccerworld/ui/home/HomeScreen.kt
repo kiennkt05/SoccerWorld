@@ -11,7 +11,7 @@ import com.example.soccerworld.ui.home.topscorer.TopScorersScreen
 @Composable
 fun HomeScreen(onTeamClick: (String) -> Unit = {}) {
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Bảng xếp hạng", "Vua phá lưới")
+    val tabs = listOf("Standings", "Top Scorers")
 
     Column(modifier = Modifier.fillMaxSize()) {
         TabRow(

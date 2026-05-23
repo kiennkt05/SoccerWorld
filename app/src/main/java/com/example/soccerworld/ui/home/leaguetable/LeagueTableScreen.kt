@@ -159,7 +159,7 @@ private fun TableHeaderRow() {
 
         // Team name placeholder
         Text(
-            text = "Đội",
+            text = "Team",
             fontWeight = FontWeight.Bold,
             fontSize = 11.sp,
             color = SofascoreBlue,
@@ -167,14 +167,14 @@ private fun TableHeaderRow() {
         )
 
         // Stats columns
-        listOf("Trận", "T", "H", "B", "HS", "Đ").forEach { label ->
+        listOf("P", "W", "D", "L", "GD", "PTS").forEach { label ->
             Text(
                 text = label,
                 fontWeight = FontWeight.Bold,
                 fontSize = 10.sp,
                 color = SofascoreBlue,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.width(if (label == "HS") 28.dp else 24.dp)
+                modifier = Modifier.width(if (label == "GD") 28.dp else 24.dp)
             )
         }
     }
@@ -305,7 +305,7 @@ fun TeamRow(
 // ==========================================
 // 3. KHU VỰC PREVIEW (Chỉ chạy trong Android Studio)
 // ==========================================
-@Preview(showBackground = true, name = "Thành công - Có dữ liệu")
+@Preview(showBackground = true, name = "Success - With Data")
 @Composable
 fun PreviewLeagueTableSuccess() {
     val fakeData = listOf(
@@ -337,7 +337,7 @@ fun PreviewLeagueTableSuccess() {
     }
 }
 
-@Preview(showBackground = true, name = "Đang tải dữ liệu")
+@Preview(showBackground = true, name = "Loading Data")
 @Composable
 fun PreviewLeagueTableLoading() {
     MaterialTheme {
@@ -345,10 +345,10 @@ fun PreviewLeagueTableLoading() {
     }
 }
 
-@Preview(showBackground = true, name = "Lỗi mạng")
+@Preview(showBackground = true, name = "Network Error")
 @Composable
 fun PreviewLeagueTableError() {
     MaterialTheme {
-        LeagueTableContent(state = LeagueTableUiState(isLoading = false, error = "Không có kết nối Internet!"))
+        LeagueTableContent(state = LeagueTableUiState(isLoading = false, error = "No Internet connection!"))
     }
 }

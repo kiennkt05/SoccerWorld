@@ -43,7 +43,7 @@ fun TopScorersScreen() {
     } else if (state.topScorerList.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                text = "Chưa có dữ liệu vua phá lưới cho giải đấu này",
+                text = "No top scorers data available for this league",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

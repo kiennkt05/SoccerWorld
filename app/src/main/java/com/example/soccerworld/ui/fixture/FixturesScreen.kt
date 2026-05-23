@@ -74,7 +74,7 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
         }
     } else if (state.error != null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = state.error ?: "Lỗi tải lịch thi đấu", color = MaterialTheme.colorScheme.error)
+            Text(text = state.error ?: "Error loading fixtures", color = MaterialTheme.colorScheme.error)
         }
     } else {
         val groupedForSelected = remember(state.tournamentGroups, state.selectedTab) {

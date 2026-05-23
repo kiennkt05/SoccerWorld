@@ -79,7 +79,7 @@ fun SearchScreen(
                     .padding(horizontal = 16.dp, vertical = 10.dp),
                 placeholder = {
                     Text(
-                        "Tìm kiếm đội bóng, cầu thủ, giải đấu...",
+                        "Search teams, players, tournaments...",
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 },
@@ -89,7 +89,7 @@ fun SearchScreen(
                 trailingIcon = {
                     if (state.query.isNotEmpty()) {
                         TextButton(onClick = { viewModel.onSearchQueryChanged("") }) {
-                            Text("Xóa", color = primary, fontSize = 13.sp)
+                            Text("Clear", color = primary, fontSize = 13.sp)
                         }
                     }
                 },
@@ -110,7 +110,7 @@ fun SearchScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = primary)
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text("Đang tìm kiếm...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Searching...", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -121,7 +121,7 @@ fun SearchScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("⚠️", fontSize = 40.sp)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Lỗi: ${state.error}", color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
+                        Text("Error: ${state.error}", color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
                     }
                 }
             }
@@ -133,7 +133,7 @@ fun SearchScreen(
                         Text("🔍", fontSize = 48.sp)
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            "Không tìm thấy kết quả cho\n\"${state.query}\"",
+                            "No results found for\n\"${state.query}\"",
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -172,7 +172,7 @@ private fun SearchSuggestions(onSuggestionClick: (String) -> Unit) {
     ) {
         item {
             Text(
-                text = "Tìm kiếm phổ biến",
+                text = "Popular Searches",
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -229,7 +229,7 @@ private fun SearchSuggestions(onSuggestionClick: (String) -> Unit) {
         item {
             Spacer(modifier = Modifier.height(20.dp))
             Text(
-                text = "Nhập tên đội bóng, cầu thủ hoặc giải đấu\nđể bắt đầu tìm kiếm",
+                text = "Enter a team, player, or tournament name\nto start searching",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -257,7 +257,7 @@ private fun SearchResultList(
     ) {
         // Teams section
         if (teams.isNotEmpty()) {
-            item { GroupHeader(title = "Câu lạc bộ", icon = Icons.Default.AccountBox, count = teams.size) }
+            item { GroupHeader(title = "Clubs", icon = Icons.Default.AccountBox, count = teams.size) }
             items(teams) { item ->
                 SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick)
             }
@@ -265,7 +265,7 @@ private fun SearchResultList(
 
         // Players section
         if (players.isNotEmpty()) {
-            item { GroupHeader(title = "Cầu thủ", icon = Icons.Default.Person, count = players.size) }
+            item { GroupHeader(title = "Players", icon = Icons.Default.Person, count = players.size) }
             items(players) { item ->
                 SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick)
             }
@@ -273,7 +273,7 @@ private fun SearchResultList(
 
         // Tournaments section
         if (tournaments.isNotEmpty()) {
-            item { GroupHeader(title = "Giải đấu", icon = Icons.Default.Star, count = tournaments.size) }
+            item { GroupHeader(title = "Tournaments", icon = Icons.Default.Star, count = tournaments.size) }
             items(tournaments) { item ->
                 SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick)
             }
@@ -334,10 +334,10 @@ fun SearchItemCard(
         is UnknownSearchItemDto -> "Unknown"
     }
     val subtitle = when (item) {
-        is TeamSearchItemDto -> "CLB • ${item.countryName ?: "—"}"
-        is PlayerSearchItemDto -> "Cầu thủ • ${item.countryName ?: "—"}"
-        is TournamentSearchItemDto -> "Giải đấu • ${item.countryName ?: "—"}"
-        is UnknownSearchItemDto -> "Không rõ"
+        is TeamSearchItemDto -> "Club • ${item.countryName ?: "—"}"
+        is PlayerSearchItemDto -> "Player • ${item.countryName ?: "—"}"
+        is TournamentSearchItemDto -> "Tournament • ${item.countryName ?: "—"}"
+        is UnknownSearchItemDto -> "Unknown"
     }
     val typeIcon = when (item) {
         is TeamSearchItemDto -> Icons.Default.AccountBox

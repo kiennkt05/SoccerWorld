@@ -2,7 +2,11 @@ package com.example.soccerworld.ui.auth
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.lifecycle.ViewModel
+import java.security.MessageDigest
+import java.util.Locale
 import androidx.lifecycle.viewModelScope
 import com.example.soccerworld.R
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -45,7 +49,7 @@ class AuthViewModel : ViewModel() {
         return GoogleSignIn.getClient(context, gso)
     }
 
-    fun handleGoogleSignInResult(data: Intent?, onResult: (Boolean) -> Unit) {
+    fun handleGoogleSignInResult(context: Context, data: Intent?, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             try {
@@ -53,19 +57,19 @@ class AuthViewModel : ViewModel() {
                 val account = task.getResult(ApiException::class.java)!!
                 firebaseAuthWithGoogle(account.idToken!!, onResult)
             } catch (e: ApiException) {
-                parseApiException(e)
+                parseApiException(context, e)
                 onResult(false)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "Đăng nhập thất bại: ${e.localizedMessage}"
+                    errorMessage = "Sign in failed: ${e.localizedMessage}"
                 )
                 onResult(false)
             }
         }
     }
 
-    fun handleGoogleSignInFailure(resultCode: Int, data: Intent?) {
+    fun handleGoogleSignInFailure(context: Context, resultCode: Int, data: Intent?) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
             try {
@@ -75,33 +79,35 @@ class AuthViewModel : ViewModel() {
                 }
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "Đăng nhập thất bại hoặc bị hủy (Mã kết quả: $resultCode)"
+                    errorMessage = "Sign in failed or cancelled (Result code: $resultCode)"
                 )
             } catch (e: ApiException) {
-                parseApiException(e)
+                parseApiException(context, e)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = "Đăng nhập thất bại: ${e.localizedMessage}"
+                    errorMessage = "Sign in failed: ${e.localizedMessage}"
                 )
             }
         }
     }
 
-    private fun parseApiException(e: ApiException) {
+    private fun parseApiException(context: Context, e: ApiException) {
         val errorMsg = when (e.statusCode) {
-            10 -> "Lỗi Developer (10): SHA-1 chưa được đăng ký trong Firebase/Google Console.\n\nSHA-1 của máy bạn:\nF6:68:32:30:D5:60:EB:A1:75:2B:8D:C6:3B:4C:96:24:DB:0C:1A:35"
-            7 -> "Lỗi Mạng (7): Không thể kết nối Internet. Vui lòng kiểm tra lại kết nối mạng."
-            12500 -> "Lỗi cấu hình Google Sign-In (Mã lỗi 12500). Vui lòng cập nhật google-services.json."
-            12501 -> "Đăng nhập đã bị hủy bởi người dùng (12501)."
-            else -> "Đăng nhập Google thất bại (Mã lỗi ${e.statusCode}): ${e.localizedMessage}"
+            10 -> {
+                val sha1 = getAppSignaturesSHA1(context)
+                "Developer Error (10): SHA-1 is not registered in Firebase/Google Console.\n\nYour SHA-1:\n$sha1"
+            }
+            7 -> "Network Error (7): Cannot connect to the Internet. Please check your network connection."
+            12500 -> "Google Sign-In configuration error (Error code 12500). Please update google-services.json."
+            12501 -> "Sign-in was cancelled by the user (12501)."
+            else -> "Google sign-in failed (Error code ${e.statusCode}): ${e.localizedMessage}"
         }
         _uiState.value = _uiState.value.copy(
             isLoading = false,
             errorMessage = errorMsg
         )
     }
-
 
     private suspend fun firebaseAuthWithGoogle(idToken: String, onResult: (Boolean) -> Unit) {
         try {
@@ -115,7 +121,7 @@ class AuthViewModel : ViewModel() {
         } catch (e: Exception) {
             _uiState.value = _uiState.value.copy(
                 isLoading = false,
-                errorMessage = "Xác thực Firebase thất bại: ${e.message}"
+                errorMessage = "Firebase authentication failed: ${e.message}"
             )
             onResult(false)
         }
@@ -130,4 +136,40 @@ class AuthViewModel : ViewModel() {
     fun clearError() {
         _uiState.value = _uiState.value.copy(errorMessage = null)
     }
+}
+
+fun getAppSignaturesSHA1(context: Context): String {
+    try {
+        val packageName = context.packageName
+        val packageManager = context.packageManager
+        val signatures = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+            packageInfo.signingInfo?.apkContentsSigners
+        } else {
+            @Suppress("DEPRECATION")
+            val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNATURES)
+            packageInfo.signatures
+        }
+
+        if (signatures != null && signatures.isNotEmpty()) {
+            val cert = signatures[0].toByteArray()
+            val md = MessageDigest.getInstance("SHA-1")
+            val publicKey = md.digest(cert)
+            val hexString = StringBuilder()
+            for (i in publicKey.indices) {
+                val appendString = Integer.toHexString(0xFF and publicKey[i].toInt()).uppercase(Locale.US)
+                if (appendString.length == 1) {
+                    hexString.append("0")
+                }
+                hexString.append(appendString)
+                if (i < publicKey.size - 1) {
+                    hexString.append(":")
+                }
+            }
+            return hexString.toString()
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+    return "Unknown SHA-1"
 }

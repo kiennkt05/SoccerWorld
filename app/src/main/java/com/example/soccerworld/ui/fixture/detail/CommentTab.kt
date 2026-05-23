@@ -115,7 +115,7 @@ fun CommentTab(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Đăng nhập để bình luận",
+                    text = "Sign in to comment",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
@@ -131,7 +131,7 @@ fun CommentTab(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Đăng nhập", style = MaterialTheme.typography.labelLarge)
+                    Text("Sign In", style = MaterialTheme.typography.labelLarge)
                 }
             }
         } else {
@@ -172,7 +172,7 @@ fun CommentTab(
                     onValueChange = { inputText = it },
                     placeholder = {
                         Text(
-                            text = "Thêm bình luận...",
+                            text = "Add a comment...",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )
@@ -212,7 +212,7 @@ fun CommentTab(
                     } else {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Gửi",
+                            contentDescription = "Send",
                             modifier = Modifier.size(18.dp),
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
@@ -279,7 +279,7 @@ private fun CommentItem(
                         shape = RoundedCornerShape(6.dp)
                     ) {
                         Text(
-                            text = "Bạn",
+                            text = "You",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -328,7 +328,7 @@ private fun CommentItem(
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "Xóa bình luận",
+                    contentDescription = "Delete comment",
                     tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f),
                     modifier = Modifier.size(16.dp)
                 )
@@ -349,13 +349,13 @@ private fun EmptyCommentState() {
             Text(text = "💬", fontSize = 52.sp)
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Chưa có bình luận nào",
+                text = "No comments yet",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Hãy là người đầu tiên bình luận về trận đấu này!",
+                text = "Be the first to comment on this match!",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -371,9 +371,9 @@ private fun formatCommentTime(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
     return when {
-        diff < 60_000L -> "Vừa xong"
-        diff < 3_600_000L -> "${diff / 60_000L} phút trước"
-        diff < 86_400_000L -> "${diff / 3_600_000L} giờ trước"
+        diff < 60_000L -> "Just now"
+        diff < 3_600_000L -> "${diff / 60_000L}m ago"
+        diff < 86_400_000L -> "${diff / 3_600_000L}h ago"
         else -> SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(timestamp))
     }
 }

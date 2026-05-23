@@ -39,7 +39,7 @@ fun LeagueSelectionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chọn Giải Đấu", fontWeight = FontWeight.Bold) },
+                title = { Text("Select League", fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -55,7 +55,7 @@ fun LeagueSelectionScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Vui lòng chọn giải đấu bạn muốn theo dõi:",
+                text = "Please select a league you want to follow:",
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 24.dp),
                 textAlign = TextAlign.Center,

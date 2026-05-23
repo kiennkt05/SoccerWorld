@@ -52,36 +52,36 @@ fun TeamDetailsTab(detailsState: TabState<PlayerResponse>) {
             ) {
                 // ── Club Info ────────────────────────────────────────
                 item {
-                    SectionTitle("Thông Tin Câu Lạc Bộ")
+                    SectionTitle("Club Information")
                 }
                 item {
                     InfoCard {
                         InfoRow(
                             icon = "👔",
-                            label = "Huấn luyện viên",
-                            value = team.coach?.name ?: "Chưa có thông tin"
+                            label = "Coach",
+                            value = team.coach?.name ?: "No info"
                         )
                         HorizontalDivider(modifier = Modifier.padding(start = 44.dp))
                         InfoRow(
                             icon = "🏟️",
-                            label = "Sân vận động",
-                            value = team.venue ?: "Chưa có thông tin"
+                            label = "Stadium",
+                            value = team.venue ?: "No info"
                         )
                         HorizontalDivider(modifier = Modifier.padding(start = 44.dp))
                         InfoRow(
                             icon = "📅",
-                            label = "Năm thành lập",
-                            value = team.founded?.toString() ?: "Chưa có thông tin"
+                            label = "Founded year",
+                            value = team.founded?.toString() ?: "No info"
                         )
                         HorizontalDivider(modifier = Modifier.padding(start = 44.dp))
                         InfoRow(
                             icon = "🎨",
-                            label = "Màu áo",
-                            value = team.clubColors ?: "Chưa có thông tin"
+                            label = "Club colors",
+                            value = team.clubColors ?: "No info"
                         )
                         if (!team.address.isNullOrBlank()) {
                             HorizontalDivider(modifier = Modifier.padding(start = 44.dp))
-                            InfoRow(icon = "📍", label = "Địa chỉ", value = team.address)
+                            InfoRow(icon = "📍", label = "Address", value = team.address)
                         }
                         if (!team.website.isNullOrBlank()) {
                             HorizontalDivider(modifier = Modifier.padding(start = 44.dp))
@@ -94,7 +94,7 @@ fun TeamDetailsTab(detailsState: TabState<PlayerResponse>) {
                 val comps = team.runningCompetitions?.filterNotNull() ?: emptyList()
                 if (comps.isNotEmpty()) {
                     item { Spacer(modifier = Modifier.height(16.dp)) }
-                    item { SectionTitle("Đang Tham Gia") }
+                    item { SectionTitle("Current Competitions") }
                     items(comps) { comp ->
                         Card(
                             modifier = Modifier
@@ -140,20 +140,20 @@ fun TeamDetailsTab(detailsState: TabState<PlayerResponse>) {
                 val coach = team.coach
                 if (coach != null) {
                     item { Spacer(modifier = Modifier.height(16.dp)) }
-                    item { SectionTitle("Huấn Luyện Viên") }
+                    item { SectionTitle("Coach") }
                     item {
                         InfoCard {
                             if (!coach.nationality.isNullOrBlank()) {
-                                InfoRow(icon = "🌍", label = "Quốc tịch", value = coach.nationality)
+                                InfoRow(icon = "🌍", label = "Nationality", value = coach.nationality)
                                 HorizontalDivider(modifier = Modifier.padding(start = 44.dp))
                             }
                             if (!coach.dateOfBirth.isNullOrBlank()) {
-                                InfoRow(icon = "🎂", label = "Ngày sinh", value = coach.dateOfBirth.take(10))
+                                InfoRow(icon = "🎂", label = "Birthdate", value = coach.dateOfBirth.take(10))
                             }
                             val contractEnd = coach.contract?.until
                             if (!contractEnd.isNullOrBlank()) {
                                 HorizontalDivider(modifier = Modifier.padding(start = 44.dp))
-                                InfoRow(icon = "📋", label = "Hợp đồng đến", value = contractEnd.take(10))
+                                InfoRow(icon = "📋", label = "Contract until", value = contractEnd.take(10))
                             }
                         }
                     }
@@ -352,7 +352,7 @@ fun TeamStandingsTab(teamId: String) {
                     Text("⚠️", fontSize = 36.sp)
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = state.error ?: "Lỗi tải bảng xếp hạng",
+                        text = state.error ?: "Error loading standings",
                         color = MaterialTheme.colorScheme.error,
                         textAlign = TextAlign.Center
                     )
@@ -363,7 +363,7 @@ fun TeamStandingsTab(teamId: String) {
             val list = state.tableList?.filterNotNull() ?: emptyList()
             if (list.isEmpty()) {
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
-                    Text("Chưa có bảng xếp hạng", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("No standings found", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(
@@ -409,13 +409,13 @@ private fun StandingsHeaderRow() {
             modifier = Modifier.width(28.dp)
         )
         Text(
-            text = "CLB",
+            text = "Club",
             fontWeight = FontWeight.Bold,
             fontSize = 12.sp,
             color = primaryBlue,
             modifier = Modifier.weight(1f)
         )
-        listOf("Trận", "T", "H", "B", "HS", "Điểm").forEach { label ->
+        listOf("P", "W", "D", "L", "GD", "PTS").forEach { label ->
             Text(
                 text = label,
                 fontWeight = FontWeight.Bold,

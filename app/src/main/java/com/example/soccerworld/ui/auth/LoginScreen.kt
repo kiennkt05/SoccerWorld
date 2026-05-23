@@ -60,11 +60,11 @@ fun LoginScreen(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            authViewModel.handleGoogleSignInResult(result.data) { success ->
+            authViewModel.handleGoogleSignInResult(context, result.data) { success ->
                 if (success) onLoginSuccess()
             }
         } else {
-            authViewModel.handleGoogleSignInFailure(result.resultCode, result.data)
+            authViewModel.handleGoogleSignInFailure(context, result.resultCode, result.data)
         }
     }
 
@@ -133,7 +133,7 @@ fun LoginScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Theo dõi bóng đá chuyên nghiệp",
+                text = "Follow professional football",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White.copy(alpha = 0.85f),
                 textAlign = TextAlign.Center
@@ -162,13 +162,13 @@ fun LoginScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
-                        text = "Chào mừng bạn! 👋",
+                        text = "Welcome! 👋",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Đăng nhập để lưu trận yêu thích\nvà theo dõi đội bóng của bạn",
+                        text = "Sign in to save favorite matches\nand follow your favorite teams",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
@@ -179,7 +179,7 @@ fun LoginScreen(
                     // Error message
                     AnimatedVisibility(visible = state.errorMessage != null) {
                         val errorMessage = state.errorMessage ?: ""
-                        val isSha1Error = errorMessage.contains("SHA-1 của máy bạn")
+                        val isSha1Error = errorMessage.contains("SHA-1")
                         val clipboardManager = LocalClipboardManager.current
                         val localContext = LocalContext.current
 
@@ -207,14 +207,13 @@ fun LoginScreen(
                                 )
 
                                 if (isSha1Error) {
+                                    val dynamicSha1 = remember(localContext) { getAppSignaturesSHA1(localContext) }
                                     Button(
                                         onClick = {
-                                            clipboardManager.setText(
-                                                AnnotatedString("F6:68:32:30:D5:60:EB:A1:75:2B:8D:C6:3B:4C:96:24:DB:0C:1A:35")
-                                            )
+                                            clipboardManager.setText(AnnotatedString(dynamicSha1))
                                             Toast.makeText(
                                                 localContext,
-                                                "Đã sao chép SHA-1 vào bộ nhớ tạm!",
+                                                "Copied SHA-1 to clipboard!",
                                                 Toast.LENGTH_SHORT
                                             ).show()
                                         },
@@ -233,7 +232,7 @@ fun LoginScreen(
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
                                         Text(
-                                            text = "Sao chép SHA-1",
+                                            text = "Copy SHA-1",
                                             style = MaterialTheme.typography.bodySmall,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -285,7 +284,7 @@ fun LoginScreen(
                             )
                             Spacer(modifier = Modifier.width(14.dp))
                             Text(
-                                text = "Tiếp tục với Google",
+                                text = "Continue with Google",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color(0xFF1F1F1F)
@@ -299,7 +298,7 @@ fun LoginScreen(
 
             // ── Footer ────────────────────────────────────────────────
             Text(
-                text = "Bằng việc đăng nhập, bạn đồng ý với\nĐiều khoản dịch vụ của SoccerWorld",
+                text = "By signing in, you agree to the\nTerms of Service of SoccerWorld",
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isDark) Color(0xFF64748B) else Color(0xFF475569),
                 textAlign = TextAlign.Center,

@@ -111,10 +111,10 @@ fun MatchDetailContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chi Tiết Trận Đấu") },
+                title = { Text("Match Detail") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -534,7 +534,7 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
 @Composable
 fun SummaryTab(events: List<MatchEvent>, highlights: List<MatchHighlight>) {
     if (events.isEmpty()) {
-        EmptyState(message = "Không có sự kiện trận đấu")
+        EmptyState(message = "No match events available")
         return
     }
     LazyColumn(

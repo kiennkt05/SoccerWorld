@@ -42,7 +42,7 @@ class TransferViewModel(private val repository: FootballRepository) : ViewModel(
 
             } catch (e: Exception) {
                 // Thất bại: Xử lý lỗi đàng hoàng thay vì để trống
-                _uiState.update { it.copy(isLoading = false, error = "Lỗi tải dữ liệu chuyển nhượng: ${e.message}") }
+                _uiState.update { it.copy(isLoading = false, error = "Error loading transfer data: ${e.message}") }
             }
         }
     }

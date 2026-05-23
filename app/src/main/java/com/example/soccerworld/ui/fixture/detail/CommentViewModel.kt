@@ -40,7 +40,7 @@ class CommentViewModel : ViewModel() {
                 if (error != null) {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = "Không thể tải bình luận: ${error.message}"
+                        error = "Cannot load comments: ${error.message}"
                     )
                     return@addSnapshotListener
                 }
@@ -64,7 +64,7 @@ class CommentViewModel : ViewModel() {
             try {
                 val displayName = user.displayName?.ifBlank { null }
                     ?: user.email?.substringBefore("@")
-                    ?: "Ẩn danh"
+                    ?: "Anonymous"
 
                 val comment = hashMapOf(
                     "fixtureId" to fixtureId,
@@ -79,7 +79,7 @@ class CommentViewModel : ViewModel() {
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isSending = false,
-                    error = "Gửi thất bại: ${e.message}"
+                    error = "Failed to send: ${e.message}"
                 )
                 onResult(false)
             }

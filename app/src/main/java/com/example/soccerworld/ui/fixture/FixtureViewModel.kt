@@ -84,7 +84,7 @@ class FixtureViewModel(private val repository: FootballRepository) : ViewModel()
                     }
                 }
                 is DataResult.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Lỗi tải lịch thi đấu") }
+                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Error loading fixtures") }
                 }
                 DataResult.Loading -> {
                     _uiState.update { it.copy(isLoading = true) }

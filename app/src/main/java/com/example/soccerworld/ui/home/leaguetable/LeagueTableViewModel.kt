@@ -41,7 +41,7 @@ class LeagueTableViewModel(private val repository: FootballRepository) : ViewMod
                     _uiState.update { it.copy(isLoading = false, tableList = data) }
                 }
                 is DataResult.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Lỗi tải bảng xếp hạng") }
+                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Error loading standings") }
                 }
                 DataResult.Loading -> {
                     _uiState.update { it.copy(isLoading = true) }

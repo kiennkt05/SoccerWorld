@@ -49,7 +49,7 @@
                         }
                     }
                     is DataResult.Error -> {
-                        _uiState.update { it.copy(isLoading = false, error = result.message ?: "Lỗi tải vua phá lưới") }
+                        _uiState.update { it.copy(isLoading = false, error = result.message ?: "Error loading top scorers") }
                     }
                     DataResult.Loading -> {
                         _uiState.update { it.copy(isLoading = true) }

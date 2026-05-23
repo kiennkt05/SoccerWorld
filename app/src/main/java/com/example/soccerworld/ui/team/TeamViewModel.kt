@@ -40,7 +40,7 @@ class TeamViewModel(private val repository: FootballRepository) : ViewModel() {
                     _uiState.update { it.copy(isLoading = false, teamsList = data) }
                 }
                 is DataResult.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Lỗi tải danh sách đội bóng") }
+                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Error loading team list") }
                 }
                 DataResult.Loading -> {
                     _uiState.update { it.copy(isLoading = true) }

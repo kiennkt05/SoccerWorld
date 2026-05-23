@@ -42,7 +42,7 @@ fun TeamsScreen(onTeamClick: (String) -> Unit = {}) {
         }
     } else if (state.error != null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = state.error ?: "Lỗi tải danh sách đội bóng", color = Color.Red)
+            Text(text = state.error ?: "Error loading team list", color = Color.Red)
         }
     } else {
         val teams = state.teamsList.filterNotNull()

@@ -35,7 +35,7 @@ class PlayerViewModel(private val repository: FootballRepository) : ViewModel() 
                     _uiState.update { it.copy(isLoading = false, playerList = data) }
                 }
                 is DataResult.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Lỗi tải cầu thủ") }
+                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Error loading player data") }
                 }
                 DataResult.Loading -> {
                     _uiState.update { it.copy(isLoading = true) }

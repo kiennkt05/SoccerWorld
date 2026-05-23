@@ -35,7 +35,7 @@ class H2HViewModel(private val repository: FootballRepository) : ViewModel() {
                     _uiState.update { it.copy(isLoading = false, h2hList = data) }
                 }
                 is DataResult.Error -> {
-                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Lỗi tải lịch sử đối đầu") }
+                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Error loading head-to-head history") }
                 }
                 DataResult.Loading -> {
                     _uiState.update { it.copy(isLoading = true) }
