@@ -20,11 +20,12 @@ import com.example.soccerworld.R
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import com.example.soccerworld.ui.team.team_detail.tabs.*
+import com.example.soccerworld.ui.player.PlayerDetailInfo
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TeamDetailScreen(teamId: String, onBack: () -> Unit) {
+fun TeamDetailScreen(teamId: String, onBack: () -> Unit, onNavigateToPlayer: (PlayerDetailInfo) -> Unit = {}) {
     val context = LocalContext.current
     val factory = ViewModelFactory(Injection.provideFootballRepository(context))
 
@@ -113,7 +114,7 @@ fun TeamDetailScreen(teamId: String, onBack: () -> Unit) {
             Box(modifier = Modifier.fillMaxSize()) {
                 when (state.selectedTab) {
                     // 0 -> TeamDetailsTab(state.detailsState)
-                    0 -> TeamSquadTab(state.squadState)
+                    0 -> TeamSquadTab(state.squadState, teamId = state.teamId, onNavigateToPlayer = onNavigateToPlayer)
                     1 -> TeamMatchesTab(
                         matchesState = state.matchesState,
                         teamId = state.teamId,

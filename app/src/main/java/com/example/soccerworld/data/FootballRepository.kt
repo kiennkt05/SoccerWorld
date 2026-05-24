@@ -63,7 +63,9 @@ import com.example.soccerworld.util.CustomSharedPreferences
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import com.example.soccerworld.data.remote.RetryPolicy
 import retrofit2.HttpException
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -316,7 +318,7 @@ class FootballRepository(
         }
 
         return safeApiCall {
-            val events = fetchTournamentEvents(league.stageId, status)
+            val events = fetchTournamentEvents(league.allStageIds, status)
             val mappedMatches = events
                 .map { it.toFixtureMatch(league.name, leagueId) }
                 .filter { match ->
@@ -359,26 +361,34 @@ class FootballRepository(
         return safeApiCall {
             val events = mutableListOf<FlashLiveEvent>()
             
-            // Load fixtures từ page hiện tại
-            try {
-                val fixtures = apiService
-                    .getTournamentFixtures(Constant.LOCALE, league.stageId, currentPage)
-                    .data.orEmpty()
-                    .flatMap { it.events.orEmpty() }
-                if (fixtures.isNotEmpty()) events += fixtures
-            } catch (e: HttpException) {
-                if (e.code() != 404) throw e
-            }
-            
-            // Load results từ page hiện tại
-            try {
-                val results = apiService
-                    .getTournamentResults(Constant.LOCALE, league.stageId, currentPage)
-                    .data.orEmpty()
-                    .flatMap { it.events.orEmpty() }
-                if (results.isNotEmpty()) events += results
-            } catch (e: HttpException) {
-                if (e.code() != 404) throw e
+            for ((index, stageId) in league.allStageIds.withIndex()) {
+                if (index > 0) {
+                    delay(400L) // Throttling giữa các stages
+                }
+                // Load fixtures từ page hiện tại
+                try {
+                    val fixtures = RetryPolicy.executeWithBackoff {
+                        apiService.getTournamentFixtures(Constant.LOCALE, stageId, currentPage)
+                            .data.orEmpty()
+                            .flatMap { it.events.orEmpty() }
+                    }
+                    if (fixtures.isNotEmpty()) events += fixtures
+                } catch (e: HttpException) {
+                    if (e.code() != 404) throw e
+                }
+                
+                // Load results từ page hiện tại
+                try {
+                    delay(200L) // Throttling giữa fixtures và results của cùng stage
+                    val results = RetryPolicy.executeWithBackoff {
+                        apiService.getTournamentResults(Constant.LOCALE, stageId, currentPage)
+                            .data.orEmpty()
+                            .flatMap { it.events.orEmpty() }
+                    }
+                    if (results.isNotEmpty()) events += results
+                } catch (e: HttpException) {
+                    if (e.code() != 404) throw e
+                }
             }
             
             events
@@ -888,24 +898,32 @@ class FootballRepository(
         )
     }
 
-    private suspend fun fetchTournamentEvents(stageId: String, status: String?): List<FlashLiveEvent> {
+    private suspend fun fetchTournamentEvents(stageIds: List<String>, status: String?): List<FlashLiveEvent> {
         val useResultsOnly = status == "FINISHED"
         val useFixturesOnly = status == "SCHEDULED" || status == "IN_PLAY" || status == "LIVE" || status == "PAUSED"
         val events = mutableListOf<FlashLiveEvent>()
 
-        if (!useResultsOnly) {
-            events += fetchPagedEvents({ page ->
-                apiService.getTournamentFixtures(Constant.LOCALE, stageId, page)
-                    .data.orEmpty()
-                    .flatMap { it.events.orEmpty() }
-            }, maxPages = 1)
-        }
-        if (!useFixturesOnly) {
-            events += fetchPagedEvents({ page ->
-                apiService.getTournamentResults(Constant.LOCALE, stageId, page)
-                    .data.orEmpty()
-                    .flatMap { it.events.orEmpty() }
-            }, maxPages = 1)
+        for ((index, stageId) in stageIds.withIndex()) {
+            if (index > 0) {
+                delay(400L) // Throttling giữa các stages
+            }
+            if (!useResultsOnly) {
+                events += fetchPagedEvents({ page ->
+                    apiService.getTournamentFixtures(Constant.LOCALE, stageId, page)
+                        .data.orEmpty()
+                        .flatMap { it.events.orEmpty() }
+                }, maxPages = 1)
+            }
+            if (!useFixturesOnly) {
+                if (!useResultsOnly) {
+                    delay(200L) // Throttling giữa fixtures và results của cùng stage
+                }
+                events += fetchPagedEvents({ page ->
+                    apiService.getTournamentResults(Constant.LOCALE, stageId, page)
+                        .data.orEmpty()
+                        .flatMap { it.events.orEmpty() }
+                }, maxPages = 1)
+            }
         }
         return events.distinctBy { it.eventId }
     }
@@ -917,7 +935,7 @@ class FootballRepository(
         val merged = mutableListOf<FlashLiveEvent>()
         for (page in 1..maxPages) {
             val pageItems = try {
-                fetchPage(page)
+                RetryPolicy.executeWithBackoff { fetchPage(page) }
             } catch (http: HttpException) {
                 if (http.code() == 404) break
                 throw http

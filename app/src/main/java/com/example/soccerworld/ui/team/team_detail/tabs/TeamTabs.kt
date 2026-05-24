@@ -45,6 +45,7 @@ import com.example.soccerworld.model.player.PlayerResponse
 import com.example.soccerworld.model.player.RunningCompetition
 import com.example.soccerworld.ui.fixture.FixtureCard
 import com.example.soccerworld.ui.home.leaguetable.LeagueTableViewModel
+import com.example.soccerworld.ui.player.PlayerDetailInfo
 import com.example.soccerworld.ui.team.team_detail.TabState
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.util.Injection
@@ -688,7 +689,7 @@ fun TeamTransfersTab(transfersState: TabState<List<TransferData>>) {
 }
 
 @Composable
-fun TeamSquadTab(squadState: TabState<PlayerResponse>) {
+fun TeamSquadTab(squadState: TabState<PlayerResponse>, teamId: String = "", onNavigateToPlayer: (PlayerDetailInfo) -> Unit = {}) {
     val context = LocalContext.current
     when (squadState) {
         is TabState.Loading -> Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
@@ -760,7 +761,23 @@ fun TeamSquadTab(squadState: TabState<PlayerResponse>) {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .clickable {
+                                    val pid = player.id ?: return@clickable
+                                    onNavigateToPlayer(
+                                        PlayerDetailInfo(
+                                            id = pid,
+                                            name = player.name ?: "Unknown",
+                                            position = player.position,
+                                            dateOfBirth = player.dateOfBirth,
+                                            nationality = player.nationality,
+                                            jerseyNumber = player.jerseyNumber,
+                                            imageUrl = player.imageUrl,
+                                            flagId = player.flagId,
+                                            teamId = teamId.ifBlank { null }
+                                        )
+                                    )
+                                },
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                             shape = RoundedCornerShape(12.dp)

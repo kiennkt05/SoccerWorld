@@ -19,6 +19,9 @@ sealed class Screen(val route: String) {
     object TeamDetail : Screen("team_detail/{team_id}") {
         fun createRoute(teamId: String) = "team_detail/$teamId"
     }
+    object PlayerDetail : Screen("player_detail/{player_id}") {
+        fun createRoute(playerId: String) = "player_detail/$playerId"
+    }
 }
 
 sealed class BottomNavItem(val route: String, val title: String, val icon: ImageVector) {

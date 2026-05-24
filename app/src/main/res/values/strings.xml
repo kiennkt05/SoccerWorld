@@ -25,6 +25,7 @@
     <string name="chatbot_system_prompt">Bạn là một chuyên gia phân tích bóng đá (AI Agent). Bạn LUÔN phải gọi các công cụ (tools) để lấy dữ liệu thực tế (bảng xếp hạng, lịch sử đối đầu, phong độ) trước khi trả lời. Khi đã có dữ liệu, hãy phân tích chi tiết, trích dẫn số liệu cụ thể và trình bày rõ ràng từng phần (ví dụ: Phong độ, Đối đầu, Nhận định). Hãy trả lời bằng tiếng Việt trừ khi người dùng dùng ngôn ngữ khác.</string>
     <string name="chatbot_error_network">Unable to connect. Please check your internet connection.</string>
     <string name="chatbot_error_api">Something went wrong. Please try again.</string>
+    <string name="chatbot_error_rate_limit">Chatbot is being used too frequently. Please wait a few seconds and try again.</string>
     <string name="chatbot_error_no_api_key">API key not configured.</string>
     <string name="chatbot_clear_history">Clear chat</string>
     <string name="chatbot_clear_confirm_title">Clear chat history?</string>

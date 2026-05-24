@@ -3,8 +3,12 @@ package com.example.soccerworld.util
 data class FlashLiveLeague(
     val stageId: String,
     val seasonId: String,
-    val name: String
-)
+    val name: String,
+    val additionalStageIds: List<String> = emptyList()
+) {
+    val allStageIds: List<String>
+        get() = listOf(stageId) + additionalStageIds
+}
 
 object Constant {
     const val LOCALE = "en_INT"
@@ -18,7 +22,7 @@ object Constant {
         "BL1" to FlashLiveLeague("8UYeqfiD", "QwzghtID", "Bundesliga"),
         "SA" to FlashLiveLeague("6PWwAsA7", "04lKZTBr", "Serie A"),
         "FL1" to FlashLiveLeague("j9QeTLPP", "hnFBS5hK", "Ligue 1"),
-        "CL" to FlashLiveLeague("AVQmlDZu", "bLJeeS2d", "Champions League")
+        "CL" to FlashLiveLeague("UiRZST3U", "bLJeeS2d", "Champions League", listOf("lMPimXln", "AVQmlDZu"))
     )
 
     fun league(leagueCode: String): FlashLiveLeague? = FLASHLIVE_LEAGUES[leagueCode]

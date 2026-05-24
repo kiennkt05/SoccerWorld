@@ -17,6 +17,7 @@ import com.example.soccerworld.ui.team.team_detail.player.PlayerViewModel
 import com.example.soccerworld.ui.team.team_detail.transfer.TransferViewModel
 import com.example.soccerworld.ui.search.SearchViewModel
 import com.example.soccerworld.ui.team.team_detail.TeamDetailViewModel
+import com.example.soccerworld.ui.player.PlayerDetailViewModel
 
 
 class ViewModelFactory(
@@ -80,6 +81,10 @@ class ViewModelFactory(
         if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return ChatViewModel(chatRepository!!) as T
+        }
+        if (modelClass.isAssignableFrom(PlayerDetailViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return PlayerDetailViewModel(repository!!) as T
         }
 
         throw IllegalArgumentException("Unknown ViewModel class")

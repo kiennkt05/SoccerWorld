@@ -59,7 +59,25 @@ class ChatRepository(
                     tool_choice = if (round == maxRounds) "none" else "auto"
                 )
 
-                val response = groqApi.createChatCompletion(request)
+                val response = try {
+                    groqApi.createChatCompletion(request)
+                } catch (http: retrofit2.HttpException) {
+                    if (http.code() == 429) {
+                        // Rate limited — wait 5s then retry once
+                        kotlinx.coroutines.delay(5000L)
+                        try {
+                            groqApi.createChatCompletion(request)
+                        } catch (retry: retrofit2.HttpException) {
+                            if (retry.code() == 429) {
+                                return@withContext Result.failure(
+                                    Exception(context.getString(R.string.chatbot_error_rate_limit))
+                                )
+                            }
+                            throw retry
+                        }
+                    } else throw http
+                }
+
                 val choice = response.choices.firstOrNull() ?: return@withContext Result.failure(Exception("Empty choice"))
                 
                 val responseMsg = choice.message
@@ -81,7 +99,11 @@ class ChatRepository(
                     continue
                 }
 
-                val assistantReply = responseMsg.content ?: return@withContext Result.failure(Exception(context.getString(R.string.chatbot_error_api)))
+                val rawReply = responseMsg.content ?: return@withContext Result.failure(Exception(context.getString(R.string.chatbot_error_api)))
+                val assistantReply = sanitizeReply(rawReply)
+
+                // Nếu sau khi lọc không còn nội dung hữu ích → bỏ qua, cho LLM thử vòng tiếp theo
+                if (assistantReply.isBlank()) continue
 
                 val assistantEntity = ChatMessageEntity(
                     role = "assistant",
@@ -93,6 +115,13 @@ class ChatRepository(
                 return@withContext Result.success(assistantReply)
             }
             Result.failure(Exception("Exceeded maximum tool rounds"))
+        } catch (http: retrofit2.HttpException) {
+            if (http.code() == 429) {
+                Result.failure(Exception(context.getString(R.string.chatbot_error_rate_limit)))
+            } else {
+                http.printStackTrace()
+                Result.failure(Exception(context.getString(R.string.chatbot_error_network)))
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             Result.failure(Exception(context.getString(R.string.chatbot_error_network)))
@@ -116,5 +145,23 @@ class ChatRepository(
             "get_team_transfers" -> "🔀 Đang xem chuyển nhượng..."
             else -> "⚙️ Đang thực thi dữ liệu..."
         }
+    }
+
+    /**
+     * Removes leaked tool-call markup that some smaller models incorrectly embed
+     * directly into the content field instead of using structured tool_calls.
+     * Examples cleaned up:
+     *   /function= search_team_or_player({'query': 'X'})<function>
+     *   <function>...</function>
+     */
+    private fun sanitizeReply(raw: String): String {
+        return raw
+            // Remove /function= ... <function> blocks (llama-3.1-8b style leakage)
+            .replace(Regex("/function=\\s*[\\w_]+\\([^)]*\\)<function>"), "")
+            // Remove any remaining <function> or </function> tags
+            .replace(Regex("</?function>"), "")
+            // Remove lines that are only whitespace
+            .lines().filter { it.isNotBlank() }.joinToString("\n")
+            .trim()
     }
 }

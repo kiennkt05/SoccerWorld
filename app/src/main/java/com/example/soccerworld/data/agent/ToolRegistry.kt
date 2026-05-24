@@ -66,7 +66,7 @@ object ToolRegistry {
                 description = "Lấy các trận đấu gần đây của đội bóng",
                 properties = mapOf(
                     "team_id" to GroqPropertySchema("string", "ID của đội bóng"),
-                    "is_results" to GroqPropertySchema("boolean", "True: Lấy kết quả cũ, False: Lịch sắp tới (Mặc định True)")
+                    "is_results" to GroqPropertySchema("string", "Loại dữ liệu cần lấy", enum = listOf("results", "fixtures"))
                 ),
                 required = listOf("team_id")
             )

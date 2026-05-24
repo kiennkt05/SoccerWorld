@@ -1,6 +1,11 @@
 package com.example.soccerworld.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
@@ -14,6 +19,8 @@ import com.example.soccerworld.ui.main.MainScreen
 import com.example.soccerworld.ui.onboarding.LeagueSelectionScreen
 import com.example.soccerworld.ui.fixture.detail.MatchDetailScreen
 import com.example.soccerworld.ui.team.team_detail.TeamDetailScreen
+import com.example.soccerworld.ui.player.PlayerDetailScreen
+import com.example.soccerworld.ui.player.PlayerDetailInfo
 import com.example.soccerworld.util.CustomSharedPreferences
 
 @Composable
@@ -66,7 +73,37 @@ fun AppNavigation() {
             arguments = listOf(navArgument("team_id") { type = NavType.StringType })
         ) { backStackEntry ->
             val teamId = backStackEntry.arguments?.getString("team_id") ?: return@composable
-            TeamDetailScreen(teamId = teamId, onBack = { navController.popBackStack() })
+            TeamDetailScreen(
+                teamId = teamId,
+                onBack = { navController.popBackStack() },
+                onNavigateToPlayer = { playerInfo ->
+                    navController.currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("player_info", playerInfo)
+                    navController.navigate(Screen.PlayerDetail.createRoute(playerInfo.id))
+                }
+            )
+        }
+        composable(
+            route = Screen.PlayerDetail.route,
+            arguments = listOf(navArgument("player_id") { type = NavType.StringType })
+        ) {
+            val playerInfo = remember {
+                navController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<PlayerDetailInfo>("player_info")
+            }
+            if (playerInfo != null) {
+                PlayerDetailScreen(
+                    playerInfo = playerInfo,
+                    onBack = { navController.popBackStack() }
+                )
+            } else {
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+                Box(modifier = Modifier.fillMaxSize())
+            }
         }
     }
 }

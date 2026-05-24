@@ -48,7 +48,9 @@ class ToolExecutor(private val repository: FootballRepository) {
                 }
                 "get_team_matches" -> {
                     val teamId = args.get("team_id")?.asString ?: return errorStr("Missing team_id")
-                    val isResults = args.get("is_results")?.asBoolean ?: true
+                    // is_results is now a string enum: "results" (default) | "fixtures"
+                    val isResultsStr = args.get("is_results")?.asString ?: "results"
+                    val isResults = isResultsStr != "fixtures"
                     formatResult(repository.getTeamMatches(teamId, 1, isResults))
                 }
                 else -> errorStr("Unknown tool: ${toolCall.function.name}")
