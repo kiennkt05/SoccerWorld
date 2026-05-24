@@ -19,11 +19,24 @@ import com.example.soccerworld.ui.navigation.Screen
 import com.example.soccerworld.ui.search.SearchScreen
 import com.example.soccerworld.ui.profile.ProfileScreen
 import com.example.soccerworld.ui.navigation.BottomNavItem
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.example.soccerworld.data.ChatRepository
+import com.example.soccerworld.data.local.FootballDatabase
+import com.example.soccerworld.data.remote.groq.GroqApiClient
+import com.example.soccerworld.ui.chatbot.ChatBottomSheet
+import com.example.soccerworld.ui.chatbot.ChatFab
+import com.example.soccerworld.ui.chatbot.ChatViewModel
+import com.example.soccerworld.util.ViewModelFactory
 
 @Composable
 fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = viewModel()
+    
+    var showChat by remember { mutableStateOf(false) }
     
     val items = listOf(
         BottomNavItem.Home,
@@ -34,6 +47,9 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
     )
 
     Scaffold(
+        floatingActionButton = {
+            ChatFab(onClick = { showChat = true })
+        },
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -111,5 +127,17 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                 )
             }
         }
+    }
+
+    if (showChat) {
+        val context = LocalContext.current
+        val db = FootballDatabase.invoke(context)
+        val chatRepo = remember { ChatRepository(db.chatDao(), GroqApiClient.api, context) }
+        val chatViewModel: ChatViewModel = viewModel(factory = ViewModelFactory(chatRepository = chatRepo))
+
+        ChatBottomSheet(
+            viewModel = chatViewModel,
+            onDismiss = { showChat = false }
+        )
     }
 }

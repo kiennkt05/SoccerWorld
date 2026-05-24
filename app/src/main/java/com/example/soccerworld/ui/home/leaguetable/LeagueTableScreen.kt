@@ -93,24 +93,24 @@ fun LeagueTableContent(state: LeagueTableUiState, onTeamClick: (String) -> Unit 
             val imageSizePx = with(LocalDensity.current) { 28.dp.roundToPx() }
 
             // Prefetch images
-            LaunchedEffect(safeList, imageSizePx) {
+            LaunchedEffect(safeList) {
                 val imageLoader = context.imageLoader
-                safeList.forEach { item ->
-                    val crest = item.team?.crest
-                    if (!crest.isNullOrBlank()) {
-                        val request = ImageRequest.Builder(context)
-                            .data(crest)
-                            .size(imageSizePx)
-                            .build()
-                        imageLoader.enqueue(request)
+                androidx.compose.runtime.snapshotFlow { safeList }
+                    .collect { items ->
+                        items.forEach { item ->
+                            val crest = item.team?.crest
+                            if (!crest.isNullOrBlank()) {
+                                val request = ImageRequest.Builder(context).data(crest).build()
+                                imageLoader.enqueue(request)
+                            }
+                        }
                     }
-                }
             }
 
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFF5F5F5)),
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)
             ) {
                 // Header row
@@ -193,16 +193,19 @@ fun TeamRow(
     val ballPainter = painterResource(id = R.drawable.ic_ball)
 
     // Zone color for position indicator
-    val zoneColor = when {
-        position <= 4 -> SofascoreBlue                  // Champions League
-        position == 5 -> Color(0xFFFF8C00)              // Europa League
-        position == 6 -> Color(0xFF2ECC71)              // Conference League
-        position >= 18 -> Color(0xFFE74C3C)             // Relegation
-        else -> Color.Transparent
+    val soccerColors = LocalSoccerColors.current
+    val zoneColor = remember(position) {
+        when {
+            position <= 4 -> soccerColors.zoneChampionsLeague
+            position == 5 -> soccerColors.zoneEuropaLeague
+            position == 6 -> soccerColors.zoneConferenceLeague
+            position >= 18 -> soccerColors.zoneRelegation
+            else -> Color.Transparent
+        }
     }
 
     // Alternating row background for contrast
-    val rowBg = if (position % 2 == 0) Color(0xFFF8F8F8) else Color.White
+    val rowBg = if (position % 2 == 0) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
 
     Column(
         modifier = Modifier
@@ -240,14 +243,10 @@ fun TeamRow(
             Spacer(modifier = Modifier.width(8.dp))
 
             // Team crest — using simple AsyncImage instead of SubcomposeAsyncImage
-            AsyncImage(
+            com.example.soccerworld.ui.components.TeamCrestImage(
                 model = item.team?.crest,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                contentScale = ContentScale.Fit,
-                placeholder = ballPainter,
-                error = ballPainter,
-                fallback = ballPainter
+                size = 24.dp
+
             )
 
             Spacer(modifier = Modifier.width(8.dp))

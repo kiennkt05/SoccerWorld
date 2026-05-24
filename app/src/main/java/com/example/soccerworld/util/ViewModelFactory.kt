@@ -3,6 +3,8 @@ package com.example.soccerworld.util
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.soccerworld.data.FootballRepository
+import com.example.soccerworld.data.ChatRepository
+import com.example.soccerworld.ui.chatbot.ChatViewModel
 import com.example.soccerworld.ui.fixture.FixtureViewModel
 import com.example.soccerworld.ui.fixture.detail.MatchDetailViewModel
 import com.example.soccerworld.ui.fixture.detail.h2h.H2HViewModel
@@ -17,60 +19,67 @@ import com.example.soccerworld.ui.search.SearchViewModel
 import com.example.soccerworld.ui.team.team_detail.TeamDetailViewModel
 
 
-class ViewModelFactory(private val repository: FootballRepository) : ViewModelProvider.Factory {
+class ViewModelFactory(
+    private val repository: FootballRepository? = null,
+    private val chatRepository: ChatRepository? = null
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
 
         // 1. Nếu hệ thống đòi LeagueTableViewModel, nhét repository vào và trả về
         if (modelClass.isAssignableFrom(LeagueTableViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return LeagueTableViewModel(repository) as T
+            return LeagueTableViewModel(repository!!) as T
         }
 
         // 2. Nếu hệ thống đòi TopScorerViewModel, nhét repository vào và trả về
         if (modelClass.isAssignableFrom(TeamViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return TeamViewModel(repository) as T
+            return TeamViewModel(repository!!) as T
         }
 
         if (modelClass.isAssignableFrom(TransferViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return TransferViewModel(repository) as T
+            return TransferViewModel(repository!!) as T
         }
         if (modelClass.isAssignableFrom(PlayerViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return PlayerViewModel(repository) as T
+            return PlayerViewModel(repository!!) as T
         }
         if (modelClass.isAssignableFrom(TopScorerViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return TopScorerViewModel(repository) as T
+            return TopScorerViewModel(repository!!) as T
         }
         if (modelClass.isAssignableFrom(FixtureViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return FixtureViewModel(repository) as T
+            return FixtureViewModel(repository!!) as T
         }
         if (modelClass.isAssignableFrom(StatisticViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return StatisticViewModel(repository) as T
+            return StatisticViewModel(repository!!) as T
         }
         if (modelClass.isAssignableFrom(H2HViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return H2HViewModel(repository) as T
+            return H2HViewModel(repository!!) as T
         }
         if (modelClass.isAssignableFrom(MatchDetailViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return MatchDetailViewModel(repository) as T
+            return MatchDetailViewModel(repository!!) as T
         }
         if (modelClass.isAssignableFrom(FavoritesViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return FavoritesViewModel(repository) as T
+            return FavoritesViewModel(repository!!) as T
         }
         if (modelClass.isAssignableFrom(SearchViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return SearchViewModel(repository) as T
+            return SearchViewModel(repository!!) as T
         }
         if (modelClass.isAssignableFrom(TeamDetailViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return TeamDetailViewModel(repository) as T
+            return TeamDetailViewModel(repository!!) as T
+        }
+        if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ChatViewModel(chatRepository!!) as T
         }
 
         throw IllegalArgumentException("Unknown ViewModel class")

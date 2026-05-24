@@ -115,11 +115,15 @@ private fun FavoritesContent(onMatchClick: (String) -> Unit) {
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp)
             ) {
-                items(state.matches) { match ->
+                items(
+                    items = state.matches,
+                    key = { it.id ?: it.hashCode() },
+                    contentType = { "favorite_match" }
+                ) { match ->
                     FixtureCard(
                         match = match,
                         isFavorite = true,
-                        onToggleFavorite = {},
+                        onToggleFavorite = { },
                         onClick = { onMatchClick(match.id ?: "") }
                     )
                 }

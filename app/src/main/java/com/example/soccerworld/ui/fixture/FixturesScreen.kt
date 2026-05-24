@@ -38,6 +38,9 @@ import coil.compose.AsyncImage
 import com.example.soccerworld.R
 import com.example.soccerworld.model.fixture.Matche
 import com.example.soccerworld.ui.theme.*
+import com.example.soccerworld.ui.components.MatchDisplayModel
+import com.example.soccerworld.ui.components.MatchScoreRow
+import com.example.soccerworld.ui.components.SectionHeader
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import com.example.soccerworld.work.LivePollingScheduler
@@ -158,14 +161,15 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
             }
 
             LazyColumn(
-                modifier = Modifier.fillMaxSize().background(Color(0xFFF5F5F5)),
+                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
                 state = listState
             ) {
                 groupedForSelected.forEach { (tournament, matches) ->
                     val isExpanded = state.expandedTournaments.contains(tournament)
                     item(key = "header-${tournament.id}", contentType = "header") {
-                        LeagueSectionHeader(
-                            tournament = tournament,
+                        SectionHeader(
+                            title = tournament.name ?: "Unknown League",
+                            flagUrl = tournament.emblemUrl,
                             isExpanded = isExpanded,
                             onToggle = { viewModel.toggleTournamentExpanded(tournament) }
                         )
@@ -176,7 +180,7 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
                             key = { match -> match.id ?: "${tournament.id}-${match.utcDate ?: match.hashCode()}" },
                             contentType = { "match_row" }
                         ) { match ->
-                            MatchRow(
+                            FixtureCard(
                                 match = match,
                                 isFavorite = state.favoriteIds.contains(match.id ?: ""),
                                 onToggleFavorite = { viewModel.toggleFavorite(match) },
@@ -208,94 +212,6 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
     }
 }
 
-/**
- * League section header — Sofascore style
- * [Emblem] [League Name]        [▼]
- *          [Country]
- */
-@Composable
-private fun LeagueSectionHeader(
-    tournament: TournamentInfo,
-    isExpanded: Boolean,
-    onToggle: () -> Unit
-) {
-    val ballPainter = painterResource(id = R.drawable.ic_ball)
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .clickable { onToggle() }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // League emblem
-            AsyncImage(
-                model = tournament.emblemUrl,
-                contentDescription = tournament.name,
-                modifier = Modifier.size(20.dp),
-                contentScale = ContentScale.Fit,
-                placeholder = ballPainter,
-                error = ballPainter,
-                fallback = ballPainter
-            )
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            // League name + country
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = tournament.name,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextDark,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (tournament.areaName != null) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Country flag
-                        if (tournament.areaFlag != null) {
-                            AsyncImage(
-                                model = tournament.areaFlag,
-                                contentDescription = tournament.areaName,
-                                modifier = Modifier.size(14.dp),
-                                contentScale = ContentScale.Fit
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                        }
-                        Text(
-                            text = tournament.areaName,
-                            fontSize = 11.sp,
-                            color = TextSecondary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-
-            // Expand/collapse arrow
-            Icon(
-                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = if (isExpanded) "Collapse" else "Expand",
-                tint = TextSecondary,
-                modifier = Modifier.size(20.dp)
-            )
-        }
-
-        // Bottom divider
-        HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
-    }
-}
-
-/**
- * Backward-compatible alias for MatchRow — used by FavoritesScreen and TeamTabs.
- */
 @Composable
 fun FixtureCard(
     match: Matche,
@@ -303,180 +219,47 @@ fun FixtureCard(
     onToggleFavorite: () -> Unit,
     onClick: () -> Unit = {}
 ) {
-    MatchRow(match = match, isFavorite = isFavorite, onToggleFavorite = onToggleFavorite, onClick = onClick)
+    val displayModel = remember(match) { mapToDisplayModel(match) }
+    
+    MatchScoreRow(
+        match = displayModel,
+        onClick = onClick,
+        actionIcon = {
+            IconButton(
+                onClick = onToggleFavorite,
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "Toggle favorite",
+                    tint = if (isFavorite) Color(0xFFFFC107) else MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    )
 }
 
-/**
- * Match row — Sofascore style (flat, no Card)
- * [Time]  [🏠 Home Team]     [score]  [☆]
- * [FT  ]  [🏟️ Away Team]     [score]
- */
-@Composable
-fun MatchRow(
-    match: Matche,
-    isFavorite: Boolean,
-    onToggleFavorite: () -> Unit,
-    onClick: () -> Unit
-) {
-    val formattedTime = remember(match.utcDate) { formatTime(match.utcDate) }
-    val homeScore = match.score?.fullTime?.home
-    val awayScore = match.score?.fullTime?.away
+private fun mapToDisplayModel(match: Matche): MatchDisplayModel {
     val isLive = match.status == "IN_PLAY" || match.status == "PAUSED"
-    val isFinishedOrLive = match.status == "FINISHED" || isLive
-    val homeWins = isFinishedOrLive && (homeScore ?: 0) > (awayScore ?: 0)
-    val awayWins = isFinishedOrLive && (awayScore ?: 0) > (homeScore ?: 0)
-    val ballPainter = painterResource(id = R.drawable.ic_ball)
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .clickable { onClick() }
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Time / Status column — fixed width
-            Column(
-                modifier = Modifier.width(44.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                if (isLive) {
-                    Text(
-                        text = formattedTime,
-                        fontSize = 11.sp,
-                        color = LiveRed,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = if (match.status == "PAUSED") "HT" else "Live",
-                        fontSize = 10.sp,
-                        color = LiveRed,
-                        fontWeight = FontWeight.Bold
-                    )
-                } else {
-                    Text(
-                        text = formattedTime,
-                        fontSize = 11.sp,
-                        color = TextSecondary,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = if (match.status == "FINISHED") "FT" else "",
-                        fontSize = 10.sp,
-                        color = TextSecondary
-                    )
-                }
-            }
-
-            // Vertical divider
-            Box(
-                modifier = Modifier
-                    .width(0.5.dp)
-                    .height(36.dp)
-                    .background(DividerColor)
-            )
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            // Teams column — 2 rows (home on top, away on bottom)
-            Column(modifier = Modifier.weight(1f)) {
-                // Home team row
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    AsyncImage(
-                        model = match.homeTeam?.crest,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        contentScale = ContentScale.Fit,
-                        placeholder = ballPainter,
-                        error = ballPainter,
-                        fallback = ballPainter
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = match.homeTeam?.shortName ?: match.homeTeam?.name ?: "TBD",
-                        fontSize = 13.sp,
-                        fontWeight = if (homeWins) FontWeight.Bold else FontWeight.Normal,
-                        color = if (awayWins) LoserText else TextDark,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    // Home score
-                    if (isFinishedOrLive) {
-                        Text(
-                            text = "${homeScore ?: 0}",
-                            fontSize = 13.sp,
-                            fontWeight = if (homeWins) FontWeight.Bold else FontWeight.Normal,
-                            color = if (awayWins) LoserText else TextDark,
-                            textAlign = TextAlign.End,
-                            modifier = Modifier.width(24.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Away team row
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    AsyncImage(
-                        model = match.awayTeam?.crest,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        contentScale = ContentScale.Fit,
-                        placeholder = ballPainter,
-                        error = ballPainter,
-                        fallback = ballPainter
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = match.awayTeam?.shortName ?: match.awayTeam?.name ?: "TBD",
-                        fontSize = 13.sp,
-                        fontWeight = if (awayWins) FontWeight.Bold else FontWeight.Normal,
-                        color = if (homeWins) LoserText else TextDark,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                    // Away score
-                    if (isFinishedOrLive) {
-                        Text(
-                            text = "${awayScore ?: 0}",
-                            fontSize = 13.sp,
-                            fontWeight = if (awayWins) FontWeight.Bold else FontWeight.Normal,
-                            color = if (homeWins) LoserText else TextDark,
-                            textAlign = TextAlign.End,
-                            modifier = Modifier.width(24.dp)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Favorite star icon — simple clickable, no IconButton wrapper
-            Icon(
-                imageVector = Icons.Default.Star,
-                contentDescription = "Toggle favorite",
-                tint = if (isFavorite) Color(0xFFFFC107) else Color(0xFFD0D0D0),
-                modifier = Modifier
-                    .size(20.dp)
-                    .clickable { onToggleFavorite() }
-            )
-        }
-
-        // Bottom divider
-        HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
-    }
+    return MatchDisplayModel(
+        id = match.id ?: "",
+        timeText = formatTime(match.utcDate),
+        statusText = when (match.status) {
+            "PAUSED" -> "HT"
+            "IN_PLAY" -> "Live"
+            "FINISHED" -> "FT"
+            else -> ""
+        },
+        isLive = isLive,
+        homeTeamName = match.homeTeam?.shortName ?: match.homeTeam?.name ?: "TBD",
+        homeTeamCrest = match.homeTeam?.crest,
+        awayTeamName = match.awayTeam?.shortName ?: match.awayTeam?.name ?: "TBD",
+        awayTeamCrest = match.awayTeam?.crest,
+        homeScore = match.score?.fullTime?.home,
+        awayScore = match.score?.fullTime?.away,
+        isFinishedOrLive = match.status == "FINISHED" || isLive
+    )
 }
 
 private fun formatTime(utcString: String?): String {

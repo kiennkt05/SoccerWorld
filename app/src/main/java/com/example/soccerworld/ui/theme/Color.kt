@@ -19,3 +19,17 @@ val AccentColor = Color(0xFF22D3EE)
 val BackgroundColor = Color(0xFFF4F6FB)
 val SurfaceColor = Color(0xFFFFFFFF)
 val TextPrimary = Color(0xFF111827)
+
+data class SoccerColors(
+    val liveRed: Color = LiveRed,
+    val winnerText: Color = WinnerText,
+    val loserText: Color = LoserText,
+    val zoneChampionsLeague: Color = Color(0xFF1E3A8A), // Dark Blue
+    val zoneEuropaLeague: Color = Color(0xFFD97706), // Amber
+    val zoneConferenceLeague: Color = Color(0xFF15803D), // Green
+    val zoneRelegation: Color = Color(0xFFDC2626), // Red
+    val homeColor: Color = Color(0xFF00B050),
+    val awayColor: Color = Color(0xFF2B44FF)
+)
+
+val LocalSoccerColors = androidx.compose.runtime.compositionLocalOf { SoccerColors() }

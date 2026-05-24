@@ -51,7 +51,10 @@ fun SoccerWorldTheme(
         LightColorScheme
     }
 
-    CompositionLocalProvider(LocalSpacing provides Spacing()) {
+    CompositionLocalProvider(
+        LocalSpacing provides Spacing(),
+        LocalSoccerColors provides SoccerColors()
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,

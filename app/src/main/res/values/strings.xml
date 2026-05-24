@@ -17,5 +17,23 @@
     <string name="player_height">Height</string>
     <string name="player_name">Cristiano Ronaldo</string>
 
+    <!-- Chatbot -->
+    <string name="chatbot_name">Soccer Assistant</string>
+    <string name="chatbot_model">llama-3.1-8b-instant</string>
+    <string name="chatbot_input_hint">Ask about football…</string>
+    <string name="chatbot_welcome_message">Hi! I\'m your soccer assistant. Ask me anything about football — history, rules, stats, teams, or players!</string>
+    <string name="chatbot_system_prompt">You are a knowledgeable soccer/football assistant. You help users with questions about football history, rules, statistics, teams, players, tournaments, and tactics. Answer concisely and accurately. If you don\'t know something, say so honestly. Respond in the same language the user writes in.</string>
+    <string name="chatbot_error_network">Unable to connect. Please check your internet connection.</string>
+    <string name="chatbot_error_api">Something went wrong. Please try again.</string>
+    <string name="chatbot_error_no_api_key">API key not configured.</string>
+    <string name="chatbot_clear_history">Clear chat</string>
+    <string name="chatbot_clear_confirm_title">Clear chat history?</string>
+    <string name="chatbot_clear_confirm_message">This will delete all messages. This action cannot be undone.</string>
+    <string name="chatbot_clear_confirm_yes">Clear</string>
+    <string name="chatbot_clear_confirm_no">Cancel</string>
+    <string name="chatbot_typing">Thinking…</string>
+    <string name="chatbot_content_description_fab">Open chat assistant</string>
+    <string name="chatbot_content_description_send">Send message</string>
+    <string name="chatbot_content_description_close">Close chat</string>
 
 </resources>

@@ -12,6 +12,7 @@ import com.example.soccerworld.data.local.entity.MatchDetailCacheEntity
 import com.example.soccerworld.data.local.entity.StandingsCacheEntity
 import com.example.soccerworld.data.local.entity.TeamPlayersCacheEntity
 import com.example.soccerworld.data.local.entity.TeamsCacheEntity
+import com.example.soccerworld.data.local.entity.ChatMessageEntity
 import com.example.soccerworld.model.topscorer.TopScorerEntity
 
 @Database(
@@ -22,14 +23,16 @@ import com.example.soccerworld.model.topscorer.TopScorerEntity
         FixturesCacheEntity::class,
         TeamsCacheEntity::class,
         TeamPlayersCacheEntity::class,
-        MatchDetailCacheEntity::class
+        MatchDetailCacheEntity::class,
+        ChatMessageEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 abstract class FootballDatabase : RoomDatabase() {
 
     abstract fun footballDao(): FootballDao
+    abstract fun chatDao(): ChatDao
 
     companion object {
         private val MIGRATION_6_7 = object : Migration(6, 7) {
@@ -152,6 +155,21 @@ abstract class FootballDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS chat_messages (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        role TEXT NOT NULL,
+                        content TEXT NOT NULL,
+                        timestamp INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         @Volatile
         private var instance: FootballDatabase? = null
         private val lock = Any()
@@ -166,7 +184,7 @@ abstract class FootballDatabase : RoomDatabase() {
             context.applicationContext,
             FootballDatabase::class.java,
             "footballdatabase"
-        ).addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+        ).addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
             .fallbackToDestructiveMigrationFrom(1, 2, 3, 4, 5)
             .build()
     }

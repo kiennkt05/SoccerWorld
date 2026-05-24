@@ -13,3 +13,10 @@
 /captures
 .externalNativeBuild
 .cxx
+.agents
+.claude
+.cursor
+skills-lock.json
+.idea
+docs
+.kotlin

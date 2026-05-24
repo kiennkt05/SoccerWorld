@@ -82,12 +82,10 @@ fun TopScorerRow(rank: Int, item: TopScorerEntity, playerImageUrl: String?) {
         }
     }
 
-    Card(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .padding(vertical = 4.dp)
     ) {
         Row(
             modifier = Modifier
@@ -135,5 +133,6 @@ fun TopScorerRow(rank: Int, item: TopScorerEntity, playerImageUrl: String?) {
                 color = MaterialTheme.colorScheme.secondary
             )
         }
+        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
