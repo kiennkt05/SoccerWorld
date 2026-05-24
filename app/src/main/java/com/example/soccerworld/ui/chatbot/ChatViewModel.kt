@@ -22,6 +22,9 @@ class ChatViewModel(private val repository: ChatRepository) : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
+    private val _toolSteps = MutableStateFlow<List<String>>(emptyList())
+    val toolSteps = _toolSteps.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
@@ -30,13 +33,21 @@ class ChatViewModel(private val repository: ChatRepository) : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
+            _toolSteps.value = emptyList()
             
-            val result = repository.sendMessage(content, messages.value)
+            val result = repository.sendMessage(
+                userMessage = content, 
+                currentHistory = messages.value,
+                onToolStep = { step ->
+                    _toolSteps.value = _toolSteps.value + step
+                }
+            )
             
             if (result.isFailure) {
                 _error.value = result.exceptionOrNull()?.message
             }
             _isLoading.value = false
+            _toolSteps.value = emptyList()
         }
     }
 

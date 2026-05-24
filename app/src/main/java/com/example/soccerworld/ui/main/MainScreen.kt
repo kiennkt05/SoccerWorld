@@ -30,6 +30,8 @@ import com.example.soccerworld.ui.chatbot.ChatBottomSheet
 import com.example.soccerworld.ui.chatbot.ChatFab
 import com.example.soccerworld.ui.chatbot.ChatViewModel
 import com.example.soccerworld.util.ViewModelFactory
+import com.example.soccerworld.data.agent.ToolExecutor
+import com.example.soccerworld.util.Injection
 
 @Composable
 fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
@@ -132,7 +134,9 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
     if (showChat) {
         val context = LocalContext.current
         val db = FootballDatabase.invoke(context)
-        val chatRepo = remember { ChatRepository(db.chatDao(), GroqApiClient.api, context) }
+        val footballRepo = remember { Injection.provideFootballRepository(context) }
+        val toolExecutor = remember { ToolExecutor(footballRepo) }
+        val chatRepo = remember { ChatRepository(db.chatDao(), GroqApiClient.api, toolExecutor, context) }
         val chatViewModel: ChatViewModel = viewModel(factory = ViewModelFactory(chatRepository = chatRepo))
 
         ChatBottomSheet(
