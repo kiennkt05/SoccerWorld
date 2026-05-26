@@ -3,9 +3,13 @@ package com.example.soccerworld.ui.chatbot
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
@@ -71,7 +75,7 @@ fun ChatBottomSheet(
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                reverseLayout = true
+                reverseLayout = messages.isNotEmpty()
             ) {
                 if (isLoading) {
                     item {
@@ -118,11 +122,66 @@ fun ChatBottomSheet(
 
                 if (messages.isEmpty()) {
                     item {
-                        Text(
-                            text = stringResource(R.string.chatbot_welcome_message),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 16.dp)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 16.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp)
+                                    )
+                                    .padding(14.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.chatbot_welcome_message),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            val suggestions = listOf(
+                "Bảng xếp hạng mới nhất? 📊",
+                "Hôm nay có trận nào? ⚽",
+                "Ai đang dẫn đầu vua phá lưới? 🏆"
+            )
+            
+            if (!isLoading) {
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp)
+                ) {
+                    items(suggestions) { query ->
+                        SuggestionChip(
+                            onClick = {
+                                viewModel.sendMessage(query)
+                            },
+                            label = {
+                                Text(
+                                    text = query,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                                labelColor = MaterialTheme.colorScheme.primary
+                            ),
+                            border = SuggestionChipDefaults.suggestionChipBorder(
+                                borderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                enabled = true
+                            )
                         )
                     }
                 }
@@ -131,7 +190,7 @@ fun ChatBottomSheet(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
@@ -153,7 +212,11 @@ fun ChatBottomSheet(
                     Icon(
                         Icons.AutoMirrored.Filled.Send,
                         contentDescription = stringResource(R.string.chatbot_content_description_send),
-                        tint = if (inputText.isNotBlank() && !isLoading) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = if (inputText.isNotBlank() && !isLoading) {
+                            Color(0xFF374DF5)
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                        }
                     )
                 }
             }

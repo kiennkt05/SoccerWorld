@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -125,11 +126,11 @@ fun StatsTab(stages: List<EventStatsStage>) {
                     }
                 }
                 
-                items(
+                itemsIndexed(
                     items = group.items.orEmpty(),
-                    key = { "stat_${it.incidentName ?: it.hashCode()}" },
-                    contentType = { "stat_row" }
-                ) { stat ->
+                    key = { index, it -> "stat_${group.groupLabel ?: ""}_${it.incidentName ?: ""}_$index" },
+                    contentType = { _, _ -> "stat_row" }
+                ) { index, stat ->
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()

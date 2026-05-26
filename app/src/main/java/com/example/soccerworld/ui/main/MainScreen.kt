@@ -32,6 +32,13 @@ import com.example.soccerworld.ui.chatbot.ChatViewModel
 import com.example.soccerworld.util.ViewModelFactory
 import com.example.soccerworld.data.agent.ToolExecutor
 import com.example.soccerworld.util.Injection
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.geometry.Offset
+import com.example.soccerworld.ui.theme.AccentEmerald
+import com.example.soccerworld.ui.theme.TextSecondary
 
 @Composable
 fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
@@ -39,6 +46,20 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
     val authViewModel: AuthViewModel = viewModel()
     
     var showChat by remember { mutableStateOf(false) }
+    var isScrollingDown by remember { mutableStateOf(false) }
+    
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (available.y < -5) {
+                    isScrollingDown = true
+                } else if (available.y > 5) {
+                    isScrollingDown = false
+                }
+                return Offset.Zero
+            }
+        }
+    }
     
     val items = listOf(
         BottomNavItem.Home,
@@ -49,8 +70,9 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
     )
 
     Scaffold(
+        modifier = Modifier.nestedScroll(nestedScrollConnection),
         floatingActionButton = {
-            ChatFab(onClick = { showChat = true })
+            ChatFab(isScrollingDown = isScrollingDown, onClick = { showChat = true })
         },
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
@@ -58,10 +80,16 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                 val currentRoute = navBackStackEntry?.destination?.route
 
                 items.forEach { item ->
+                    val selected = currentRoute == item.route
                     NavigationBarItem(
                         icon = { Icon(item.icon, contentDescription = item.title) },
-                        label = { Text(text = item.title) },
-                        selected = currentRoute == item.route,
+                        label = { 
+                            Text(
+                                text = item.title,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                            ) 
+                        },
+                        selected = selected,
                         onClick = {
                             navController.navigate(item.route) {
                                 navController.graph.startDestinationRoute?.let { route ->
@@ -73,10 +101,10 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                         },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            unselectedIconColor = TextSecondary,
                             selectedTextColor = MaterialTheme.colorScheme.primary,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            unselectedTextColor = TextSecondary,
+                            indicatorColor = AccentEmerald.copy(alpha = 0.15f)
                         )
                     )
                 }
@@ -89,9 +117,16 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(BottomNavItem.Home.route) {
-                HomeScreen(onTeamClick = { teamId ->
-                    rootNavController.navigate(Screen.TeamDetail.createRoute(teamId))
-                })
+                HomeScreen(
+                    onTeamClick = { teamId ->
+                        rootNavController.navigate(Screen.TeamDetail.createRoute(teamId))
+                    },
+                    onChangeLeague = {
+                        rootNavController.navigate(Screen.LeagueSelection.route) {
+                            popUpTo(Screen.Main.route) { inclusive = true }
+                        }
+                    }
+                )
             }
             composable(BottomNavItem.Fixtures.route) {
                 FixturesScreen(onMatchClick = { matchId ->

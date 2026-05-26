@@ -3,8 +3,12 @@ package com.example.soccerworld.ui.home.topscorer
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.ui.graphics.Color
+import com.example.soccerworld.ui.theme.TextSecondary
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -24,11 +28,15 @@ import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 
 @Composable
-fun TopScorersScreen() {
+fun TopScorersScreen(key: Int = 0) {
     val context = LocalContext.current
     val viewModel: TopScorerViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideFootballRepository(context))
     )
+
+    LaunchedEffect(key) {
+        if (key > 0) viewModel.refresh()
+    }
 
     val state by viewModel.uiState.collectAsState()
 
@@ -51,7 +59,7 @@ fun TopScorersScreen() {
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp)
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 88.dp)
         ) {
             itemsIndexed(
                 state.topScorerList,
@@ -121,7 +129,7 @@ fun TopScorerRow(rank: Int, item: TopScorerEntity, playerImageUrl: String?) {
                 )
                 Text(
                     text = item.teamName,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (isSystemInDarkTheme()) TextSecondary else Color(0xFF4B5563),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

@@ -49,4 +49,6 @@ class LeagueTableViewModel(private val repository: FootballRepository) : ViewMod
             }
         }
     }
-}
+
+    fun refresh() = fetchStandings()
+}

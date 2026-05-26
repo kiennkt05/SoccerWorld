@@ -58,4 +58,6 @@
             }
         }
 
-    }
+        fun refresh() = getTopScorers()
+
+    }

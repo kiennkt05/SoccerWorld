@@ -36,6 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.soccerworld.ui.auth.AuthViewModel
 import com.example.soccerworld.ui.favorites.FavoritesViewModel
 import com.example.soccerworld.ui.onboarding.popularLeagues
+import com.example.soccerworld.ui.theme.*
 import com.example.soccerworld.util.CustomSharedPreferences
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
@@ -146,25 +147,31 @@ fun ProfileScreen(
                 .height(260.dp)
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(primaryContainer, primary)
+                        colors = listOf(BrandNavy, BrandNavyMid)
                     )
                 )
         ) {
-            // Decorative circles
+            // Decorative glows
             Box(
                 modifier = Modifier
-                    .size(200.dp)
-                    .offset(x = (-60).dp, y = (-60).dp)
-                    .clip(CircleShape)
-                    .background(onPrimary.copy(alpha = 0.06f))
+                    .size(220.dp)
+                    .offset(x = (-70).dp, y = (-70).dp)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(AccentEmerald.copy(alpha = 0.18f), Color.Transparent)
+                        )
+                    )
             )
             Box(
                 modifier = Modifier
-                    .size(150.dp)
+                    .size(160.dp)
                     .align(Alignment.TopEnd)
-                    .offset(x = 40.dp, y = (-20).dp)
-                    .clip(CircleShape)
-                    .background(onPrimary.copy(alpha = 0.06f))
+                    .offset(x = 40.dp, y = (-30).dp)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(SofascoreBlue.copy(alpha = 0.18f), Color.Transparent)
+                        )
+                    )
             )
 
             Column(
@@ -174,27 +181,41 @@ fun ProfileScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Avatar
+                // Avatar with premium gradient and initial letters
+                val firstLetter = displayName.take(1).uppercase()
                 Box(
                     modifier = Modifier
                         .size(96.dp)
                         .clip(CircleShape)
-                        .background(onPrimary.copy(alpha = 0.2f)),
+                        .background(Color.White.copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Box(
                         modifier = Modifier
                             .size(76.dp)
                             .clip(CircleShape)
-                            .background(onPrimary.copy(alpha = 0.25f)),
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(AccentEmerald, SofascoreBlue)
+                                )
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            tint = onPrimary,
-                            modifier = Modifier.size(46.dp)
-                        )
+                        if (isLoggedIn) {
+                            Text(
+                                text = firstLetter,
+                                fontSize = 38.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(46.dp)
+                            )
+                        }
                     }
                 }
 
@@ -205,7 +226,7 @@ fun ProfileScreen(
                         text = displayName,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = onPrimary
+                        color = Color.White
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(
@@ -214,14 +235,14 @@ fun ProfileScreen(
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = Color(0xFF4CAF50).copy(alpha = 0.9f),
+                            color = AccentEmerald.copy(alpha = 0.9f),
                             modifier = Modifier.size(8.dp)
                         ) {}
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = email,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = onPrimary.copy(alpha = 0.85f)
+                            color = Color.White.copy(alpha = 0.75f)
                         )
                     }
                 } else {
@@ -229,13 +250,13 @@ fun ProfileScreen(
                         text = "Guest",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = onPrimary
+                        color = Color.White
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Sign in to unlock all features",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = onPrimary.copy(alpha = 0.8f)
+                        color = Color.White.copy(alpha = 0.65f)
                     )
                 }
             }
@@ -367,15 +388,6 @@ fun ProfileScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-
-            MenuRow(
-                icon = Icons.Default.ExitToApp,
-                title = "Sign Out",
-                subtitle = "Sign out of your current account",
-                iconBg = MaterialTheme.colorScheme.error,
-                showDivider = false,
-                onClick = { showLogoutDialog = true }
-            )
         } else {
             MenuRow(
                 icon = Icons.Default.Login,
@@ -428,7 +440,7 @@ fun ProfileScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Mã giải: $leagueId",
+                        text = "League: $leagueName",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -474,9 +486,37 @@ fun ProfileScreen(
                 title = "Notifications",
                 subtitle = "Get alerts when matches are live",
                 iconBg = Color(0xFFFF9800),
-                showDivider = false,
+                showDivider = isLoggedIn,
                 onClick = {}
             )
+            if (isLoggedIn) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showLogoutDialog = true }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier.size(44.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Text(
+                        text = "Sign Out",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(20.dp))

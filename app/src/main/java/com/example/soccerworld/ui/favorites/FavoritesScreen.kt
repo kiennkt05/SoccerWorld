@@ -1,6 +1,7 @@
 package com.example.soccerworld.ui.favorites
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,77 +19,72 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.soccerworld.ui.fixture.FixtureCard
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
+import com.example.soccerworld.ui.theme.BrandNavy
+import com.example.soccerworld.ui.theme.TextOnDark
+import com.example.soccerworld.ui.theme.TextSecondary
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoritesScreen(
     onMatchClick: (String) -> Unit = {},
     onNavigateToLogin: () -> Unit = {}
 ) {
     val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
-    val primary = MaterialTheme.colorScheme.primary
-    val primaryContainer = MaterialTheme.colorScheme.primaryContainer
-    val onPrimary = MaterialTheme.colorScheme.onPrimary
-
-    Column(modifier = Modifier.fillMaxSize()) {
-
-        // ── Header ───────────────────────────────────────────────────
+    Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            LargeTopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = "Favorite Matches",
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (isSystemInDarkTheme()) TextOnDark else BrandNavy
+                        )
+                        if (!isLoggedIn) {
+                            Text(
+                                text = "Sign in to follow your favorites",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                ),
+                scrollBehavior = scrollBehavior
+            )
+        }
+    ) { innerPadding ->
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(primaryContainer, primary)))
-                .padding(horizontal = 20.dp, vertical = 20.dp)
+                .fillMaxSize()
+                .padding(innerPadding)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(onPrimary.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = null,
-                        tint = onPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(14.dp))
-                Column {
-                    Text(
-                        text = "Favorite Matches",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = onPrimary
-                    )
-                    if (!isLoggedIn) {
-                        Text(
-                            text = "Sign in to use",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = onPrimary.copy(alpha = 0.8f)
-                        )
-                    }
-                }
+            if (!isLoggedIn) {
+                // Show login prompt
+                LoginRequiredState(onNavigateToLogin = onNavigateToLogin)
+            } else {
+                // Show favorites content
+                FavoritesContent(onMatchClick = onMatchClick)
             }
-        }
-
-        // ── Content ──────────────────────────────────────────────────
-        if (!isLoggedIn) {
-            // Show login prompt
-            LoginRequiredState(onNavigateToLogin = onNavigateToLogin)
-        } else {
-            // Show favorites content
-            FavoritesContent(onMatchClick = onMatchClick)
         }
     }
 }

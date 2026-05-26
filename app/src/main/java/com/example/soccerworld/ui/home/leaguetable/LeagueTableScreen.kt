@@ -2,6 +2,11 @@ package com.example.soccerworld.ui.home.leaguetable
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -54,7 +59,7 @@ import com.example.soccerworld.util.ViewModelFactory
 // 1. HÀM STATEFUL (Dùng để chạy thật trên máy)
 // ==========================================
 @Composable
-fun LeagueTableScreen(onTeamClick: (String) -> Unit = {}) {
+fun LeagueTableScreen(key: Int = 0, onTeamClick: (String) -> Unit = {}) {
     val context = LocalContext.current
 
     val viewModel: LeagueTableViewModel = viewModel(factory = ViewModelFactory(
@@ -63,6 +68,11 @@ fun LeagueTableScreen(onTeamClick: (String) -> Unit = {}) {
             )
         )
     )
+
+    // Re-fetch when key changes (league was switched)
+    LaunchedEffect(key) {
+        if (key > 0) viewModel.refresh()
+    }
 
     val state by viewModel.uiState.collectAsState()
 
@@ -74,6 +84,8 @@ fun LeagueTableScreen(onTeamClick: (String) -> Unit = {}) {
 // ==========================================
 @Composable
 fun LeagueTableContent(state: LeagueTableUiState, onTeamClick: (String) -> Unit = {}) {
+    var highlightedTeamId by remember { mutableStateOf<String?>(null) }
+
     when {
         state.isLoading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -111,7 +123,7 @@ fun LeagueTableContent(state: LeagueTableUiState, onTeamClick: (String) -> Unit 
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)
+                contentPadding = PaddingValues(start = 0.dp, end = 0.dp, top = 0.dp, bottom = 88.dp)
             ) {
                 // Header row
                 item(key = "header", contentType = "header") {
@@ -125,7 +137,11 @@ fun LeagueTableContent(state: LeagueTableUiState, onTeamClick: (String) -> Unit 
                 ) { item ->
                     TeamRow(
                         item = item,
-                        onTeamClick = onTeamClick
+                        highlightedTeamId = highlightedTeamId,
+                        onTeamClick = onTeamClick,
+                        onTeamLongClick = { teamId ->
+                            highlightedTeamId = if (highlightedTeamId == teamId) null else teamId
+                        }
                     )
                 }
             }
@@ -141,7 +157,7 @@ private fun TableHeaderRow() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(SofascoreBlue.copy(alpha = 0.08f))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -150,7 +166,7 @@ private fun TableHeaderRow() {
             text = "#",
             fontWeight = FontWeight.Bold,
             fontSize = 11.sp,
-            color = SofascoreBlue,
+            color = AccentEmerald,
             modifier = Modifier.width(24.dp),
             textAlign = TextAlign.Center
         )
@@ -162,7 +178,7 @@ private fun TableHeaderRow() {
             text = "Team",
             fontWeight = FontWeight.Bold,
             fontSize = 11.sp,
-            color = SofascoreBlue,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)
         )
 
@@ -172,7 +188,7 @@ private fun TableHeaderRow() {
                 text = label,
                 fontWeight = FontWeight.Bold,
                 fontSize = 10.sp,
-                color = SofascoreBlue,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.width(if (label == "GD") 28.dp else 24.dp)
             )
@@ -183,14 +199,18 @@ private fun TableHeaderRow() {
 // ==========================================
 // TEAM ROW — clickable, with zone indicator and contrast
 // ==========================================
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TeamRow(
     item: Table,
-    onTeamClick: (String) -> Unit = {}
+    highlightedTeamId: String?,
+    onTeamClick: (String) -> Unit = {},
+    onTeamLongClick: (String) -> Unit = {}
 ) {
     val position = item.position ?: 0
     val teamId = item.team?.id ?: ""
     val ballPainter = painterResource(id = R.drawable.ic_ball)
+    val isHighlighted = teamId.isNotEmpty() && teamId == highlightedTeamId
 
     // Zone color for position indicator
     val soccerColors = LocalSoccerColors.current
@@ -204,14 +224,22 @@ fun TeamRow(
         }
     }
 
-    // Alternating row background for contrast
-    val rowBg = if (position % 2 == 0) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+    // Alternating row background for contrast, or premium highlighted light blue/indigo
+    val normalBg = if (position % 2 == 0) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+    val rowBg = if (isHighlighted) {
+        if (isSystemInDarkTheme()) Color(0xFF1E3A8A).copy(alpha = 0.4f) else Color(0xFFE3F2FD)
+    } else {
+        normalBg
+    }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(rowBg)
-            .clickable { if (teamId.isNotEmpty()) onTeamClick(teamId) }
+            .combinedClickable(
+                onClick = { if (teamId.isNotEmpty()) onTeamClick(teamId) },
+                onLongClick = { if (teamId.isNotEmpty()) onTeamLongClick(teamId) }
+            )
     ) {
         Row(
             modifier = Modifier
@@ -235,18 +263,17 @@ fun TeamRow(
                     text = "$position",
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
-                    color = if (zoneColor != Color.Transparent) zoneColor else TextDark,
+                    color = if (zoneColor != Color.Transparent) zoneColor else MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
             }
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Team crest — using simple AsyncImage instead of SubcomposeAsyncImage
+            // Team crest
             com.example.soccerworld.ui.components.TeamCrestImage(
                 model = item.team?.crest,
                 size = 24.dp
-
             )
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -256,21 +283,27 @@ fun TeamRow(
                 text = item.team?.shortName ?: item.team?.name ?: "Unknown",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
-                color = TextDark,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
 
-            // Stats: GP, W, D, L, GD, Pts
+            // Stats: GP, W, D, L, GD, Pts (with robust math calculation)
+            val wins = item.won ?: 0
+            val played = item.playedGames ?: 0
+            val pts = item.points ?: 0
+            val draws = maxOf(0, pts - wins * 3)
+            val losses = maxOf(0, played - wins - draws)
             val gd = item.goalDifference ?: 0
+            
             val stats = listOf(
-                "${item.playedGames ?: 0}",
-                "${item.won ?: 0}",
-                "${item.draw ?: 0}",
-                "${item.lost ?: 0}",
+                "$played",
+                "$wins",
+                "$draws",
+                "$losses",
                 if (gd >= 0) "+$gd" else "$gd",
-                "${item.points ?: 0}"
+                "$pts"
             )
 
             stats.forEachIndexed { index, value ->
@@ -281,10 +314,10 @@ fun TeamRow(
                     fontSize = 12.sp,
                     fontWeight = if (isPoints) FontWeight.ExtraBold else FontWeight.Normal,
                     color = when {
-                        isPoints -> SofascoreBlue
-                        isGD && gd > 0 -> Color(0xFF2ECC71)
-                        isGD && gd < 0 -> Color(0xFFE74C3C)
-                        else -> TextSecondary
+                        isPoints -> AccentEmerald
+                        isGD && gd > 0 -> Color(0xFF00D9A3)
+                        isGD && gd < 0 -> LiveRed
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },
                     textAlign = TextAlign.Center,
                     modifier = Modifier.width(if (isGD) 28.dp else 24.dp)
@@ -295,7 +328,7 @@ fun TeamRow(
         // Subtle divider
         HorizontalDivider(
             thickness = 0.5.dp,
-            color = DividerColor,
+            color = MaterialTheme.colorScheme.outlineVariant,
             modifier = Modifier.padding(horizontal = 12.dp)
         )
     }

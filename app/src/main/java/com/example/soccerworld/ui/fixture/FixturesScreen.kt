@@ -125,13 +125,13 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
                 }
         }
 
-        Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
+        Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
             // Sofascore-style tab bar — xanh dương đậm
             ScrollableTabRow(
                 selectedTabIndex = selectedTabIndex,
                 modifier = Modifier.fillMaxWidth(),
                 edgePadding = 8.dp,
-                containerColor = SofascoreBlue,
+                containerColor = BrandNavy,
                 contentColor = Color.White,
                 indicator = { tabPositions ->
                     if (selectedTabIndex < tabPositions.size) {
