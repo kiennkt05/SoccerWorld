@@ -33,6 +33,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -43,8 +44,10 @@ import com.example.soccerworld.data.remote.flashlive.TeamSearchItemDto
 import com.example.soccerworld.data.remote.flashlive.TournamentSearchItemDto
 import com.example.soccerworld.data.remote.flashlive.UnknownSearchItemDto
 import com.example.soccerworld.data.remote.flashlive.SearchItemDto
+import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
+import com.example.soccerworld.ui.player.PlayerDetailInfo
 
 // Hot search suggestions shown before user types
 private val hotSearches = listOf(
@@ -56,11 +59,10 @@ private val hotSearches = listOf(
     "Premier League" to Icons.Default.Star
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     onTeamClick: (String) -> Unit = {},
-    onPlayerClick: (String) -> Unit = {}
+    onPlayerClick: (PlayerDetailInfo) -> Unit = {}
 ) {
     val context = LocalContext.current
     val viewModel: SearchViewModel = viewModel(
@@ -68,6 +70,22 @@ fun SearchScreen(
     )
     val state by viewModel.uiState.collectAsState()
 
+    SearchScreenContent(
+        state = state,
+        onSearchQueryChanged = viewModel::onSearchQueryChanged,
+        onTeamClick = onTeamClick,
+        onPlayerClick = onPlayerClick
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchScreenContent(
+    state: SearchUiState,
+    onSearchQueryChanged: (String) -> Unit,
+    onTeamClick: (String) -> Unit,
+    onPlayerClick: (PlayerDetailInfo) -> Unit
+) {
     val primary = MaterialTheme.colorScheme.primary
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -80,7 +98,7 @@ fun SearchScreen(
         ) {
             TextField(
                 value = state.query,
-                onValueChange = viewModel::onSearchQueryChanged,
+                onValueChange = onSearchQueryChanged,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 10.dp),
@@ -95,7 +113,7 @@ fun SearchScreen(
                 },
                 trailingIcon = {
                     if (state.query.isNotEmpty()) {
-                        TextButton(onClick = { viewModel.onSearchQueryChanged("") }) {
+                        TextButton(onClick = { onSearchQueryChanged("") }) {
                             Text("Clear", color = primary, fontSize = 13.sp)
                         }
                     }
@@ -152,7 +170,7 @@ fun SearchScreen(
             // Empty query – show suggestions
             state.query.isEmpty() -> {
                 SearchSuggestions(
-                    onSuggestionClick = { query -> viewModel.onSearchQueryChanged(query) }
+                    onSuggestionClick = onSearchQueryChanged
                 )
             }
 
@@ -282,7 +300,7 @@ private fun SearchSuggestions(onSuggestionClick: (String) -> Unit) {
 private fun SearchResultList(
     results: List<SearchItemDto>,
     onTeamClick: (String) -> Unit,
-    onPlayerClick: (String) -> Unit
+    onPlayerClick: (PlayerDetailInfo) -> Unit
 ) {
     val teams = results.filterIsInstance<TeamSearchItemDto>()
     val players = results.filterIsInstance<PlayerSearchItemDto>()
@@ -357,7 +375,7 @@ private fun GroupHeader(title: String, icon: ImageVector, count: Int) {
 fun SearchItemCard(
     item: SearchItemDto,
     onTeamClick: (String) -> Unit,
-    onPlayerClick: (String) -> Unit
+    onPlayerClick: (PlayerDetailInfo) -> Unit
 ) {
     val imageUrl = when (item) {
         is TeamSearchItemDto -> item.image
@@ -396,7 +414,18 @@ fun SearchItemCard(
             .clickable {
                 when (item) {
                     is TeamSearchItemDto -> onTeamClick(item.id)
-                    is PlayerSearchItemDto -> onPlayerClick(item.id)
+                    is PlayerSearchItemDto -> onPlayerClick(
+                        PlayerDetailInfo(
+                            id = item.id,
+                            name = item.name,
+                            position = null,
+                            dateOfBirth = null,
+                            nationality = item.countryName,
+                            jerseyNumber = null,
+                            imageUrl = item.image,
+                            flagId = null
+                        )
+                    )
                     else -> {}
                 }
             },
@@ -470,5 +499,51 @@ fun SearchItemCard(
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SearchScreenPreview() {
+    SoccerWorldTheme {
+        SearchScreenContent(
+            state = SearchUiState(
+                query = "Arsenal",
+                results = listOf(
+                    TeamSearchItemDto(id = "1", name = "Arsenal", countryName = "England", image = ""),
+                    PlayerSearchItemDto(id = "2", name = "Gabriel Jesus", countryName = "Brazil", image = ""),
+                    TournamentSearchItemDto(id = "3", name = "Premier League", countryName = "England")
+                )
+            ),
+            onSearchQueryChanged = {},
+            onTeamClick = {},
+            onPlayerClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SearchScreenEmptyPreview() {
+    SoccerWorldTheme {
+        SearchScreenContent(
+            state = SearchUiState(query = ""),
+            onSearchQueryChanged = {},
+            onTeamClick = {},
+            onPlayerClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SearchScreenLoadingPreview() {
+    SoccerWorldTheme {
+        SearchScreenContent(
+            state = SearchUiState(query = "Man City", isLoading = true),
+            onSearchQueryChanged = {},
+            onTeamClick = {},
+            onPlayerClick = {}
+        )
     }
 }

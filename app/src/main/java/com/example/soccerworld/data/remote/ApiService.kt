@@ -10,6 +10,7 @@ import com.example.soccerworld.data.remote.flashlive.FixturesResponse
 import com.example.soccerworld.data.remote.flashlive.H2HResponse
 import com.example.soccerworld.data.remote.flashlive.LineupsResponse
 import com.example.soccerworld.data.remote.flashlive.PlayerDataResponse
+import com.example.soccerworld.data.remote.flashlive.PlayerCareerResponse
 import com.example.soccerworld.data.remote.flashlive.SearchItemDto
 import com.example.soccerworld.data.remote.flashlive.TeamTransfersResponse
 import com.example.soccerworld.data.remote.flashlive.SquadResponse
@@ -124,6 +125,13 @@ interface ApiService {
         @Query("sport_id") sportId: Int,
         @Query("player_id") playerId: String
     ): PlayerDataResponse
+
+    @GET("/v1/players/career")
+    suspend fun getPlayerCareer(
+        @Query("locale") locale: String,
+        @Query("sport_id") sportId: Int,
+        @Query("player_id") playerId: String
+    ): PlayerCareerResponse
 
     @GET("/v1/teams/fixtures")
     suspend fun getTeamFixtures(

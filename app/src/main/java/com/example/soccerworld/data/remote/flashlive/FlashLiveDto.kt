@@ -237,18 +237,57 @@ data class PlayerDataResponse(
 
 data class PlayerData(
     @SerializedName("ID") val id: String? = null,
+    @SerializedName("LAYOUT") val layout: String? = null,
+    @SerializedName("SHORT_NAME") val shortName: String? = null,
+    @SerializedName("GENDER_ID") val genderId: Int? = null,
+    @SerializedName("COUNTRY_ID") val countryId: Int? = null,
+    @SerializedName("COUNTRY_NAME") val countryName: String? = null,
+    @SerializedName("IMAGE_PATH") val imagePath: String? = null,
     @SerializedName("NAME") val name: String? = null,
-    @SerializedName("IMAGE_PATH") val imagePath: String? = null
+    @SerializedName("BIRTHDAY_TIME") val birthdayTime: String? = null,
+    @SerializedName("TYPE_ID") val typeId: Int? = null,
+    @SerializedName("TYPE_NAME") val typeName: String? = null,
+    @SerializedName("PARENT_NAME") val parentName: String? = null,
+    @SerializedName("PMV") val pmv: String? = null,
+    @SerializedName("PCE") val pce: String? = null,
+    @SerializedName("TEAM_ID") val teamId: String? = null,
+    @SerializedName("TEAM_IMAGE") val teamImage: String? = null,
+    @SerializedName("TEAM_NAME") val teamName: String? = null
+)
+
+data class PlayerCareerResponse(
+    @SerializedName("DATA") val data: List<CareerTabBlock>? = null
+)
+
+data class CareerTabBlock(
+    @SerializedName("TAB_ID") val tabId: Int? = null,
+    @SerializedName("TAB_LABEL") val tabLabel: String? = null,
+    @SerializedName("TAB_TYPE") val tabType: Int? = null,
+    @SerializedName("ROWS") val rows: List<CareerRow>? = null
+)
+
+data class CareerRow(
+    @SerializedName("SEASON_LABEL") val seasonLabel: String? = null,
+    @SerializedName("TEAM_ID") val teamId: String? = null,
+    @SerializedName("TEAM_NAME") val teamName: String? = null,
+    @SerializedName("TEAM_IMAGE_URL") val teamImageUrl: String? = null,
+    @SerializedName("TOURNAMENT_NAME") val tournamentName: String? = null,
+    @SerializedName("TOURNAMENT_FLAG_ID") val tournamentFlagId: Int? = null,
+    @SerializedName("TOURNAMENT_STAGE_ID") val tournamentStageId: String? = null,
+    @SerializedName("PAZ") val paz: String? = null,
+    @SerializedName("STATS") val stats: Map<String, String>? = null
 )
 
 sealed interface SearchItemDto {
     val id: String
     val type: String
+    val sportId: Int?
 }
 
 data class TeamSearchItemDto(
     @SerializedName("ID") override val id: String,
     @SerializedName("TYPE") override val type: String = "team",
+    @SerializedName("SPORT_ID") override val sportId: Int? = null,
     @SerializedName("NAME") val name: String,
     @SerializedName("COUNTRY_NAME") val countryName: String? = null,
     @SerializedName("IMAGE") val image: String? = null
@@ -257,6 +296,7 @@ data class TeamSearchItemDto(
 data class PlayerSearchItemDto(
     @SerializedName("ID") override val id: String,
     @SerializedName("TYPE") override val type: String = "playersInTeam",
+    @SerializedName("SPORT_ID") override val sportId: Int? = null,
     @SerializedName("NAME") val name: String,
     @SerializedName("IMAGE") val image: String? = null,
     @SerializedName("COUNTRY_NAME") val countryName: String? = null
@@ -265,6 +305,7 @@ data class PlayerSearchItemDto(
 data class TournamentSearchItemDto(
     @SerializedName("ID") override val id: String,
     @SerializedName("TYPE") override val type: String = "tournament",
+    @SerializedName("SPORT_ID") override val sportId: Int? = null,
     @SerializedName("NAME") val name: String,
     @SerializedName("COUNTRY_NAME") val countryName: String? = null
 ) : SearchItemDto
@@ -275,7 +316,8 @@ data class MultiSearchResponse(
 
 data class UnknownSearchItemDto(
     @SerializedName("ID") override val id: String = "unknown",
-    @SerializedName("TYPE") override val type: String = "unknown"
+    @SerializedName("TYPE") override val type: String = "unknown",
+    @SerializedName("SPORT_ID") override val sportId: Int? = null
 ) : SearchItemDto
 
 data class TeamTransfersResponse(

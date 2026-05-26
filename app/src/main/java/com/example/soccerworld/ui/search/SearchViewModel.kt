@@ -40,7 +40,9 @@ class SearchViewModel(private val repository: FootballRepository) : ViewModel() 
                             _uiState.update {
                                 it.copy(
                                     isLoading = false,
-                                    results = result.data.distinctBy { item -> "${item.type}_${item.id}" },
+                                    results = result.data
+                                        .filter { item -> item.sportId == 1 }
+                                        .distinctBy { item -> "${item.type}_${item.id}" },
                                     error = null
                                 )
                             }

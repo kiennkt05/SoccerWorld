@@ -13,6 +13,8 @@ import com.example.soccerworld.data.local.entity.StandingsCacheEntity
 import com.example.soccerworld.data.local.entity.TeamPlayersCacheEntity
 import com.example.soccerworld.data.local.entity.TeamsCacheEntity
 import com.example.soccerworld.data.local.entity.ChatMessageEntity
+import com.example.soccerworld.data.local.entity.FavoriteTeamEntity
+import com.example.soccerworld.data.local.entity.FavoritePlayerEntity
 import com.example.soccerworld.model.topscorer.TopScorerEntity
 
 @Database(
@@ -24,9 +26,11 @@ import com.example.soccerworld.model.topscorer.TopScorerEntity
         TeamsCacheEntity::class,
         TeamPlayersCacheEntity::class,
         MatchDetailCacheEntity::class,
-        ChatMessageEntity::class
+        ChatMessageEntity::class,
+        FavoriteTeamEntity::class,
+        FavoritePlayerEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 abstract class FootballDatabase : RoomDatabase() {
@@ -170,6 +174,36 @@ abstract class FootballDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS favorite_teams (
+                        teamId TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        logoUrl TEXT,
+                        country TEXT,
+                        savedAt INTEGER NOT NULL,
+                        PRIMARY KEY(teamId)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS favorite_players (
+                        playerId TEXT NOT NULL,
+                        name TEXT NOT NULL,
+                        imageUrl TEXT,
+                        nationality TEXT,
+                        position TEXT,
+                        savedAt INTEGER NOT NULL,
+                        PRIMARY KEY(playerId)
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         @Volatile
         private var instance: FootballDatabase? = null
         private val lock = Any()
@@ -184,7 +218,7 @@ abstract class FootballDatabase : RoomDatabase() {
             context.applicationContext,
             FootballDatabase::class.java,
             "footballdatabase"
-        ).addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+        ).addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
             .fallbackToDestructiveMigrationFrom(1, 2, 3, 4, 5)
             .build()
     }

@@ -19,6 +19,7 @@ import com.example.soccerworld.ui.navigation.Screen
 import com.example.soccerworld.ui.search.SearchScreen
 import com.example.soccerworld.ui.profile.ProfileScreen
 import com.example.soccerworld.ui.navigation.BottomNavItem
+import com.example.soccerworld.ui.player.PlayerDetailInfo
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -137,6 +138,12 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                 SearchScreen(
                     onTeamClick = { teamId ->
                         rootNavController.navigate(Screen.TeamDetail.createRoute(teamId))
+                    },
+                    onPlayerClick = { playerInfo ->
+                        rootNavController.currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("player_info", playerInfo)
+                        rootNavController.navigate(Screen.PlayerDetail.createRoute(playerInfo.id))
                     }
                 )
             }
@@ -144,6 +151,15 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                 FavoritesScreen(
                     onMatchClick = { matchId ->
                         rootNavController.navigate(Screen.MatchDetail.createRoute(matchId))
+                    },
+                    onTeamClick = { teamId ->
+                        rootNavController.navigate(Screen.TeamDetail.createRoute(teamId))
+                    },
+                    onPlayerClick = { playerInfo ->
+                        rootNavController.currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("player_info", playerInfo)
+                        rootNavController.navigate(Screen.PlayerDetail.createRoute(playerInfo.id))
                     },
                     onNavigateToLogin = {
                         rootNavController.navigate(Screen.Login.route)

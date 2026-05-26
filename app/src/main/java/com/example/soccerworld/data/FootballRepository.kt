@@ -5,6 +5,8 @@ import com.example.soccerworld.data.cache.CacheTtl
 import com.example.soccerworld.data.local.FootballDao
 import com.example.soccerworld.data.local.entity.FixturesCacheEntity
 import com.example.soccerworld.data.local.entity.FavoriteMatchEntity
+import com.example.soccerworld.data.local.entity.FavoriteTeamEntity
+import com.example.soccerworld.data.local.entity.FavoritePlayerEntity
 import com.example.soccerworld.data.local.entity.MatchDetailCacheEntity
 import com.example.soccerworld.data.local.entity.StandingsCacheEntity
 import com.example.soccerworld.data.local.entity.TeamPlayersCacheEntity
@@ -12,6 +14,8 @@ import com.example.soccerworld.data.local.entity.TeamsCacheEntity
 import com.example.soccerworld.data.model.DataResult
 import com.example.soccerworld.data.model.ErrorType
 import com.example.soccerworld.data.remote.ApiService
+import com.example.soccerworld.data.remote.flashlive.PlayerDataResponse
+import com.example.soccerworld.data.remote.flashlive.PlayerCareerResponse
 import com.example.soccerworld.data.remote.flashlive.EventHighlightResponse
 import com.example.soccerworld.data.remote.flashlive.EventNewsResponse
 import com.example.soccerworld.data.remote.flashlive.EventStatsResponse
@@ -454,6 +458,57 @@ class FootballRepository(
 
     fun observeFavorites(): Flow<List<FavoriteMatchEntity>> = dao.getAllFavorites()
     fun observeIsFavorite(matchId: String): Flow<Boolean> = dao.observeIsFavorite(matchId)
+
+    suspend fun getPlayerData(playerId: String): DataResult<PlayerDataResponse> {
+        return safeApiCall {
+            apiService.getPlayerData(Constant.LOCALE, Constant.SPORT_ID, playerId)
+        }
+    }
+
+    suspend fun getPlayerCareer(playerId: String): DataResult<PlayerCareerResponse> {
+        return safeApiCall {
+            apiService.getPlayerCareer(Constant.LOCALE, Constant.SPORT_ID, playerId)
+        }
+    }
+
+    fun observeFavoriteTeams(): Flow<List<FavoriteTeamEntity>> = dao.getAllFavoriteTeams()
+    fun observeIsFavoriteTeam(teamId: String): Flow<Boolean> = dao.observeIsFavoriteTeam(teamId)
+
+    suspend fun toggleFavoriteTeam(teamId: String, name: String, logoUrl: String?, country: String?) {
+        if (dao.isFavoriteTeam(teamId)) {
+            dao.deleteFavoriteTeam(teamId)
+            return
+        }
+        dao.insertFavoriteTeam(
+            FavoriteTeamEntity(
+                teamId = teamId,
+                name = name,
+                logoUrl = logoUrl,
+                country = country,
+                savedAt = System.currentTimeMillis()
+            )
+        )
+    }
+
+    fun observeFavoritePlayers(): Flow<List<FavoritePlayerEntity>> = dao.getAllFavoritePlayers()
+    fun observeIsFavoritePlayer(playerId: String): Flow<Boolean> = dao.observeIsFavoritePlayer(playerId)
+
+    suspend fun toggleFavoritePlayer(playerId: String, name: String, imageUrl: String?, nationality: String?, position: String?) {
+        if (dao.isFavoritePlayer(playerId)) {
+            dao.deleteFavoritePlayer(playerId)
+            return
+        }
+        dao.insertFavoritePlayer(
+            FavoritePlayerEntity(
+                playerId = playerId,
+                name = name,
+                imageUrl = imageUrl,
+                nationality = nationality,
+                position = position,
+                savedAt = System.currentTimeMillis()
+            )
+        )
+    }
 
     suspend fun getAllH2hItems(fixtureId: String): DataResult<H2HResponse> {
         return safeApiCall {

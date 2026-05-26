@@ -10,6 +10,8 @@ import com.example.soccerworld.data.local.entity.MatchDetailCacheEntity
 import com.example.soccerworld.data.local.entity.StandingsCacheEntity
 import com.example.soccerworld.data.local.entity.TeamPlayersCacheEntity
 import com.example.soccerworld.data.local.entity.TeamsCacheEntity
+import com.example.soccerworld.data.local.entity.FavoriteTeamEntity
+import com.example.soccerworld.data.local.entity.FavoritePlayerEntity
 import com.example.soccerworld.model.topscorer.TopScorerEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -68,4 +70,34 @@ interface FootballDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM favorite_matches WHERE matchId = :matchId)")
     suspend fun isFavorite(matchId: String): Boolean
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFavoriteTeam(team: FavoriteTeamEntity)
+
+    @Query("DELETE FROM favorite_teams WHERE teamId = :teamId")
+    suspend fun deleteFavoriteTeam(teamId: String)
+
+    @Query("SELECT * FROM favorite_teams ORDER BY savedAt DESC")
+    fun getAllFavoriteTeams(): Flow<List<FavoriteTeamEntity>>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM favorite_teams WHERE teamId = :teamId)")
+    fun observeIsFavoriteTeam(teamId: String): Flow<Boolean>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM favorite_teams WHERE teamId = :teamId)")
+    suspend fun isFavoriteTeam(teamId: String): Boolean
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertFavoritePlayer(player: FavoritePlayerEntity)
+
+    @Query("DELETE FROM favorite_players WHERE playerId = :playerId")
+    suspend fun deleteFavoritePlayer(playerId: String)
+
+    @Query("SELECT * FROM favorite_players ORDER BY savedAt DESC")
+    fun getAllFavoritePlayers(): Flow<List<FavoritePlayerEntity>>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM favorite_players WHERE playerId = :playerId)")
+    fun observeIsFavoritePlayer(playerId: String): Flow<Boolean>
+
+    @Query("SELECT EXISTS(SELECT 1 FROM favorite_players WHERE playerId = :playerId)")
+    suspend fun isFavoritePlayer(playerId: String): Boolean
 }

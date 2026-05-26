@@ -10,6 +10,7 @@ import com.example.soccerworld.model.player.PlayerResponse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 data class TeamDetailUiState(
@@ -22,7 +23,8 @@ data class TeamDetailUiState(
     val transfersState: TabState<List<TransferData>> = TabState.Idle,
     val matchesState: TabState<List<Matche>> = TabState.Idle,
     val matchesPage: Int = 1,
-    val hasMoreMatches: Boolean = true
+    val hasMoreMatches: Boolean = true,
+    val isFavorite: Boolean = false
 )
 
 sealed class TabState<out T> {
@@ -40,6 +42,29 @@ class TeamDetailViewModel(private val repository: FootballRepository) : ViewMode
         if (_uiState.value.teamId != teamId) {
             _uiState.update { TeamDetailUiState(teamId = teamId) }
             loadTab(0)
+            observeFavoriteStatus(teamId)
+        }
+    }
+
+    private fun observeFavoriteStatus(teamId: String) {
+        viewModelScope.launch {
+            repository.observeIsFavoriteTeam(teamId).collect { isFav ->
+                _uiState.update { it.copy(isFavorite = isFav) }
+            }
+        }
+    }
+
+    fun toggleFavorite() {
+        val state = _uiState.value
+        val teamId = state.teamId
+        if (teamId.isEmpty()) return
+        viewModelScope.launch {
+            repository.toggleFavoriteTeam(
+                teamId = teamId,
+                name = state.teamName,
+                logoUrl = state.teamCrest,
+                country = null
+            )
         }
     }
 
