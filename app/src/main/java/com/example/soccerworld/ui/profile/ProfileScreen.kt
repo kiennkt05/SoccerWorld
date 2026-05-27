@@ -51,11 +51,12 @@ import com.google.firebase.auth.FirebaseAuth
 fun ProfileScreen(
     onChangeLeague: () -> Unit = {},
     onNavigateToLogin: () -> Unit = {},
+    onNavigateToNotificationSettings: () -> Unit = {},
     authViewModel: AuthViewModel = viewModel()
 ) {
     val context = LocalContext.current
     val sharedPrefs = CustomSharedPreferences.invoke(context)
-    
+
     var refreshTrigger by remember { mutableStateOf(0) }
     val firebaseUser = remember(refreshTrigger) { FirebaseAuth.getInstance().currentUser }
     val isLoggedIn = firebaseUser != null

@@ -18,6 +18,10 @@ class CustomSharedPreferences {
         private const val MATCH_DETAIL_TIME_PREFIX = "match_detail_time_"
         private val RB_ID = "rb_id"
         private val LEAGUE_ID = "league_id"
+        // Notification settings
+        private const val NOTIF_MATCH_REMINDER = "notif_match_reminder_enabled"
+        private const val NOTIF_LIVE_SCORE = "notif_live_score_enabled"
+        private const val NOTIF_MATCH_RESULT = "notif_match_result_enabled"
         private var sharedPreferences: SharedPreferences? = null
 
         @Volatile
@@ -124,6 +128,35 @@ class CustomSharedPreferences {
     }
 
     fun hasSelectedLeague(): Boolean = getLeagueId() != null
+
+    // ── Notification Settings ────────────────────────────────────────────────
+
+    fun setMatchReminderEnabled(enabled: Boolean) {
+        sharedPreferences?.edit(commit = true) {
+            putBoolean(NOTIF_MATCH_REMINDER, enabled)
+        }
+    }
+
+    fun isMatchReminderEnabled(): Boolean =
+        sharedPreferences?.getBoolean(NOTIF_MATCH_REMINDER, true) ?: true
+
+    fun setLiveScoreEnabled(enabled: Boolean) {
+        sharedPreferences?.edit(commit = true) {
+            putBoolean(NOTIF_LIVE_SCORE, enabled)
+        }
+    }
+
+    fun isLiveScoreEnabled(): Boolean =
+        sharedPreferences?.getBoolean(NOTIF_LIVE_SCORE, true) ?: true
+
+    fun setMatchResultEnabled(enabled: Boolean) {
+        sharedPreferences?.edit(commit = true) {
+            putBoolean(NOTIF_MATCH_RESULT, enabled)
+        }
+    }
+
+    fun isMatchResultEnabled(): Boolean =
+        sharedPreferences?.getBoolean(NOTIF_MATCH_RESULT, true) ?: true
 
     private fun normalizeLeagueCode(raw: String): String? {
         return when (raw.uppercase()) {

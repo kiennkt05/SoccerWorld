@@ -22,6 +22,7 @@ sealed class Screen(val route: String) {
     object PlayerDetail : Screen("player_detail/{player_id}") {
         fun createRoute(playerId: String) = "player_detail/$playerId"
     }
+    object NotificationSettings : Screen("notification_settings")
 }
 
 sealed class BottomNavItem(val route: String, val title: String, val icon: ImageVector) {
