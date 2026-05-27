@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -208,11 +209,11 @@ fun LineupsTab(
         }
         val subs = activeTeam?.substitutes ?: emptyList()
         if (subs.isNotEmpty()) {
-            items(
+            itemsIndexed(
                 items = subs,
-                key = { "sub_${it.name}" },
-                contentType = { "substitute_row" }
-            ) { sub ->
+                key = { index, sub -> "sub_${sub.name}_$index" },
+                contentType = { _, _ -> "substitute_row" }
+            ) { index, sub ->
                 Column(
                     modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)
                 ) {

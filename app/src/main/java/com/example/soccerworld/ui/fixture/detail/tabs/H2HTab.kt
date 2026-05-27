@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -150,11 +151,11 @@ fun H2HTab(
                 }
             }
             
-            items(
+            itemsIndexed(
                 items = matchesList,
-                key = { match -> match.utcDate ?: match.hashCode() },
-                contentType = { "h2h_match" }
-            ) { match ->
+                key = { index, match -> "h2h_${match.utcDate ?: match.hashCode()}_$index" },
+                contentType = { _, _ -> "h2h_match" }
+            ) { index, match ->
                 Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
                     H2HMatchRow(
                         match = match,

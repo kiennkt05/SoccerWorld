@@ -22,6 +22,7 @@ import com.example.soccerworld.ui.team.team_detail.TeamDetailScreen
 import com.example.soccerworld.ui.player.PlayerDetailScreen
 import com.example.soccerworld.ui.player.PlayerDetailInfo
 import com.example.soccerworld.util.CustomSharedPreferences
+import com.example.soccerworld.ui.notification.NotificationSettingsScreen
 
 @Composable
 fun AppNavigation() {
@@ -104,6 +105,11 @@ fun AppNavigation() {
                 }
                 Box(modifier = Modifier.fillMaxSize())
             }
+        }
+        composable(Screen.NotificationSettings.route) {
+            NotificationSettingsScreen(
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }

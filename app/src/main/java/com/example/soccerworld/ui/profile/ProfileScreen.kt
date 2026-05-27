@@ -46,6 +46,7 @@ import com.google.firebase.auth.FirebaseAuth
 fun ProfileScreen(
     onChangeLeague: () -> Unit = {},
     onNavigateToLogin: () -> Unit = {},
+    onNavigateToNotificationSettings: () -> Unit = {},
     authViewModel: AuthViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -487,7 +488,7 @@ fun ProfileScreen(
                 subtitle = "Get alerts when matches are live",
                 iconBg = Color(0xFFFF9800),
                 showDivider = isLoggedIn,
-                onClick = {}
+                onClick = onNavigateToNotificationSettings
             )
             if (isLoggedIn) {
                 Row(

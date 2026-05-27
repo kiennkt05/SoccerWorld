@@ -176,6 +176,9 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                     onNavigateToLogin = {
                         rootNavController.navigate(Screen.Login.route)
                     },
+                    onNavigateToNotificationSettings = {
+                        rootNavController.navigate(Screen.NotificationSettings.route)
+                    },
                     authViewModel = authViewModel
                 )
             }
