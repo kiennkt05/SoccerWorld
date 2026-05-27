@@ -1,204 +1,246 @@
 package com.example.soccerworld.ui.favorites
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Login
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import com.example.soccerworld.R
 import com.example.soccerworld.data.local.entity.FavoriteTeamEntity
-import com.example.soccerworld.data.local.entity.FavoritePlayerEntity
+import com.example.soccerworld.data.remote.flashlive.TeamSearchItemDto
+import com.example.soccerworld.data.remote.flashlive.SearchItemDto
 import com.example.soccerworld.ui.fixture.FixtureCard
-import com.example.soccerworld.ui.player.PlayerDetailInfo
-import com.example.soccerworld.model.fixture.Matche
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
-import com.example.soccerworld.ui.theme.BrandNavy
-import com.example.soccerworld.ui.theme.TextOnDark
-import com.example.soccerworld.ui.theme.TextSecondary
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FavoritesScreen(
     onMatchClick: (String) -> Unit = {},
-    onTeamClick: (String) -> Unit = {},
-    onPlayerClick: (PlayerDetailInfo) -> Unit = {},
-    onNavigateToLogin: () -> Unit = {}
+    onNavigateToLogin: () -> Unit = {},
+    onTeamClick: (String) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val viewModel: FavoritesViewModel = viewModel(
+        factory = ViewModelFactory(Injection.provideFootballRepository(context))
+    )
+    val state by viewModel.uiState.collectAsState()
+    
     val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    var selectedTab by remember { mutableIntStateOf(0) }
+    var showAddTeamSheet by remember { mutableStateOf(false) }
 
     Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier.fillMaxSize(),
         topBar = {
-            LargeTopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "Favorites",
-                            fontWeight = FontWeight.ExtraBold,
-                            color = if (isSystemInDarkTheme()) TextOnDark else BrandNavy
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF5B3FC4))
+                    .statusBarsPadding()
+            ) {
+                // Header Title
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Favorites",
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White,
+                        fontSize = 18.sp
+                    )
+                }
+
+                // Sub-tabs (Events, Teams, Competitions, Athletes)
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = Color(0xFF5B3FC4),
+                    contentColor = Color.White,
+                    indicator = { tabPositions ->
+                        TabRowDefaults.SecondaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = Color.White
                         )
-                        if (!isLoggedIn) {
-                            Text(
-                                text = "Sign in to follow your favorites",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
-                            )
-                        }
                     }
-                },
-                colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
-                ),
-                scrollBehavior = scrollBehavior
-            )
+                ) {
+                    val tabs = listOf("Events", "Teams", "Competitions", "Athletes")
+                    tabs.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = { 
+                                Text(
+                                    text = title, 
+                                    fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Medium,
+                                    fontSize = 13.sp
+                                ) 
+                            },
+                            selectedContentColor = Color.White,
+                            unselectedContentColor = Color.White.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+            }
         }
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .background(Color(0xFFF5F5F9))
         ) {
-            if (!isLoggedIn) {
+            if (!isLoggedIn && selectedTab == 0) {
+                // Keep the matches list locked if user is a guest, but let them interact with Teams locally
                 LoginRequiredState(onNavigateToLogin = onNavigateToLogin)
             } else {
-                FavoritesContent(
-                    onMatchClick = onMatchClick,
-                    onTeamClick = onTeamClick,
-                    onPlayerClick = onPlayerClick
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FavoritesContent(
-    onMatchClick: (String) -> Unit,
-    onTeamClick: (String) -> Unit,
-    onPlayerClick: (PlayerDetailInfo) -> Unit
-) {
-    val context = LocalContext.current
-    val viewModel: FavoritesViewModel = viewModel(factory = ViewModelFactory(Injection.provideFootballRepository(context)))
-    val state by viewModel.uiState.collectAsState()
-
-    var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Matches", "Clubs", "Players")
-
-    Column(modifier = Modifier.fillMaxSize()) {
-        TabRow(
-            selectedTabIndex = selectedTabIndex,
-            containerColor = MaterialTheme.colorScheme.background,
-            contentColor = MaterialTheme.colorScheme.primary,
-            indicator = { tabPositions ->
-                TabRowDefaults.SecondaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTabIndex == index,
-                    onClick = { selectedTabIndex = index },
-                    text = {
-                        Text(
-                            text = title,
-                            fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal
-                        )
-                    }
-                )
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .weight(1f)
-        ) {
-            if (state.isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
-            } else {
-                when (selectedTabIndex) {
-                    0 -> MatchFavoritesTab(
-                        matches = state.matches,
-                        onMatchClick = onMatchClick,
-                        onToggleFavorite = { viewModel.toggleFavoriteMatch(it) }
-                    )
-                    1 -> ClubFavoritesTab(
-                        clubs = state.teams,
+                when (selectedTab) {
+                    0 -> EventsTabContent(state = state, onMatchClick = onMatchClick)
+                    1 -> TeamsTabContent(
+                        state = state,
+                        onAddClick = { showAddTeamSheet = true },
                         onTeamClick = onTeamClick,
-                        onToggleFavorite = { viewModel.toggleFavoriteTeam(it.teamId, it.name, it.logoUrl) }
+                        onToggleFavorite = { team ->
+                            viewModel.toggleFavoriteTeam(
+                                teamId = team.teamId,
+                                name = team.name,
+                                logoUrl = team.logoUrl,
+                                countryName = team.countryName
+                            )
+                        }
                     )
-                    2 -> PlayerFavoritesTab(
-                        players = state.players,
-                        onPlayerClick = onPlayerClick,
-                        onToggleFavorite = { viewModel.toggleFavoritePlayer(it.playerId, it.name, it.imageUrl) }
-                    )
+                    2 -> CompetitionsTabContent()
+                    3 -> AthletesTabContent()
                 }
+            }
+
+            // Sync prompt banner at top if user is a guest and looking at teams
+            if (!isLoggedIn && selectedTab == 1) {
+                GuestSyncBanner(
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    onLoginClick = onNavigateToLogin
+                )
+            }
+        }
+    }
+
+    if (showAddTeamSheet) {
+        AddTeamBottomSheet(
+            onDismiss = { showAddTeamSheet = false },
+            favoriteTeams = state.teams,
+            onToggleFavorite = { id, name, logo, country ->
+                viewModel.toggleFavoriteTeam(id, name, logo, country)
+            }
+        )
+    }
+}
+
+// ── Sync Banner for Guests ───────────────────────────────────────────────────
+@Composable
+private fun GuestSyncBanner(
+    modifier: Modifier = Modifier,
+    onLoginClick: () -> Unit
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF5B3FC4)),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Lock, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Sync your Favorites",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+                Text(
+                    text = "Sign in to back up your matches and teams.",
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 11.sp
+                )
+            }
+            Button(
+                onClick = onLoginClick,
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color(0xFF5B3FC4)),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Sign In", fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
 }
 
+// ── Events (Matches) Tab Content ─────────────────────────────────────────────
 @Composable
-private fun MatchFavoritesTab(
-    matches: List<Matche>,
-    onMatchClick: (String) -> Unit,
-    onToggleFavorite: (Matche) -> Unit
+private fun EventsTabContent(
+    state: FavoritesUiState,
+    onMatchClick: (String) -> Unit
 ) {
-    if (matches.isEmpty()) {
-        EmptyState(
-            title = "No favorite matches",
-            description = "Tap the favorite icon on any match\nto save it here"
-        )
+    if (state.isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = Color(0xFF5B3FC4))
+        }
+    } else if (state.matches.isEmpty()) {
+        FavoritesEmptyState(message = "No favorite matches yet", hint = "Tap the ☆ icon on matches to save them here.")
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(
-                items = matches,
-                key = { it.id ?: it.hashCode() }
+                items = state.matches,
+                key = { it.id ?: it.hashCode() },
+                contentType = { "favorite_match" }
             ) { match ->
                 FixtureCard(
                     match = match,
                     isFavorite = true,
-                    onToggleFavorite = { onToggleFavorite(match) },
+                    onToggleFavorite = { },
                     onClick = { onMatchClick(match.id ?: "") }
                 )
             }
@@ -206,81 +248,382 @@ private fun MatchFavoritesTab(
     }
 }
 
+// ── Teams Tab Content ────────────────────────────────────────────────────────
 @Composable
-private fun ClubFavoritesTab(
-    clubs: List<FavoriteTeamEntity>,
+private fun TeamsTabContent(
+    state: FavoritesUiState,
+    onAddClick: () -> Unit,
     onTeamClick: (String) -> Unit,
     onToggleFavorite: (FavoriteTeamEntity) -> Unit
 ) {
-    if (clubs.isEmpty()) {
-        EmptyState(
-            title = "No favorite clubs",
-            description = "Tap the favorite icon on any club page\nto save it here"
-        )
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(
-                items = clubs,
-                key = { it.teamId }
-            ) { team ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable { onTeamClick(team.teamId) },
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    ),
-                    border = CardDefaults.outlinedCardBorder()
-                ) {
+    val trendingTeams = listOf(
+        Triple("66", "Manchester United", "https://crests.football-data.org/66.png"),
+        Triple("86", "Real Madrid", "https://crests.football-data.org/86.png"),
+        Triple("81", "FC Barcelona", "https://crests.football-data.org/81.png"),
+        Triple("64", "Liverpool", "https://crests.football-data.org/64.png"),
+        Triple("57", "Arsenal", "https://crests.football-data.org/57.png"),
+        Triple("vietnam_team", "Vietnam", "https://images.flashscore.info/image/r_4/vietnam-4V0l10a5.png")
+    )
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 90.dp)
+    ) {
+        // Grid Header
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "My Teams",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Color.Black
+                )
+                Text(
+                    text = "${state.teams.size} teams",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+        }
+
+        // Teams Grid Area
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Column {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Box(
+                        // Add Button Card
+                        Card(
                             modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.surface),
-                            contentAlignment = Alignment.Center
+                                .weight(1f)
+                                .height(110.dp)
+                                .clickable { onAddClick() },
+                            colors = CardDefaults.cardColors(containerColor = Color.White),
+                            border = BorderStroke(1.dp, Color(0xFFE8E8EF)),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            AsyncImage(
-                                model = team.logoUrl,
-                                contentDescription = team.name,
-                                modifier = Modifier.size(36.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = team.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            if (!team.country.isNullOrBlank()) {
-                                Text(
-                                    text = team.country,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF5B3FC4).copy(alpha = 0.1f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = "Add", tint = Color(0xFF5B3FC4))
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("Add Team", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF5B3FC4))
                             }
                         }
 
-                        IconButton(onClick = { onToggleFavorite(team) }) {
-                            Icon(
-                                imageVector = Icons.Default.Favorite,
-                                contentDescription = "Unfavorite",
-                                tint = MaterialTheme.colorScheme.primary
+                        // Populate the first row with favorited teams if available
+                        repeat(2) { index ->
+                            if (index < state.teams.size) {
+                                val team = state.teams[index]
+                                Box(modifier = Modifier.weight(1f)) {
+                                    FavoritedTeamGridItem(team = team, onTeamClick = onTeamClick, onToggle = onToggleFavorite)
+                                }
+                            } else {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+
+                    // Remaining rows for teams
+                    if (state.teams.size > 2) {
+                        val remainingTeams = state.teams.drop(2)
+                        val chunks = remainingTeams.chunked(3)
+                        chunks.forEach { chunk ->
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                repeat(3) { index ->
+                                    if (index < chunk.size) {
+                                        val team = chunk[index]
+                                        Box(modifier = Modifier.weight(1f)) {
+                                            FavoritedTeamGridItem(team = team, onTeamClick = onTeamClick, onToggle = onToggleFavorite)
+                                        }
+                                    } else {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Trending Section
+        item {
+            Text(
+                text = "Trending Teams",
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                color = Color.Black,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 28.dp, bottom = 12.dp)
+            )
+        }
+
+        items(trendingTeams) { (id, name, logo) ->
+            val isFav = state.teams.any { it.teamId == id }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .clickable { onTeamClick(id) }
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AsyncImage(
+                    model = logo,
+                    contentDescription = name,
+                    modifier = Modifier.size(32.dp),
+                    placeholder = painterResource(id = R.drawable.ic_ball),
+                    error = painterResource(id = R.drawable.ic_ball)
+                )
+                Spacer(modifier = Modifier.width(14.dp))
+                Text(
+                    text = name,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = {
+                        onToggleFavorite(
+                            FavoriteTeamEntity(
+                                teamId = id,
+                                name = name,
+                                logoUrl = logo,
+                                countryName = null,
+                                savedAt = System.currentTimeMillis()
                             )
+                        )
+                    }
+                ) {
+                    Icon(
+                        imageVector = if (isFav) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        contentDescription = "Favorite",
+                        tint = if (isFav) Color(0xFFFF9800) else Color.LightGray
+                    )
+                }
+            }
+            HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFE8E8EF))
+        }
+    }
+}
+
+@Composable
+private fun FavoritedTeamGridItem(
+    team: FavoriteTeamEntity,
+    onTeamClick: (String) -> Unit,
+    onToggle: (FavoriteTeamEntity) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(110.dp)
+            .clickable { onTeamClick(team.teamId) },
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFE8E8EF)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Delete close icon
+            IconButton(
+                onClick = { onToggle(team) },
+                modifier = Modifier
+                    .size(24.dp)
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "Remove", tint = Color.Gray, modifier = Modifier.size(14.dp))
+            }
+
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                AsyncImage(
+                    model = team.logoUrl,
+                    contentDescription = team.name,
+                    modifier = Modifier.size(40.dp),
+                    placeholder = painterResource(id = R.drawable.ic_ball),
+                    error = painterResource(id = R.drawable.ic_ball)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = team.name,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 6.dp)
+                )
+            }
+        }
+    }
+}
+
+// ── Competitions Tab Content ─────────────────────────────────────────────────
+@Composable
+private fun CompetitionsTabContent() {
+    FavoritesEmptyState(message = "No favorite competitions yet", hint = "Follow your favorite leagues in matches screen to see updates.")
+}
+
+// ── Athletes Tab Content ─────────────────────────────────────────────────────
+@Composable
+private fun AthletesTabContent() {
+    FavoritesEmptyState(message = "No favorite athletes yet", hint = "Search and star soccer players to view them here.")
+}
+
+// ── Search & Add Team Bottom Sheet ──────────────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddTeamBottomSheet(
+    onDismiss: () -> Unit,
+    favoriteTeams: List<FavoriteTeamEntity>,
+    onToggleFavorite: (String, String, String?, String?) -> Unit
+) {
+    val context = LocalContext.current
+    val repository = remember { Injection.provideFootballRepository(context) }
+    val scope = rememberCoroutineScope()
+    
+    var query by remember { mutableStateOf("") }
+    var results by remember { mutableStateOf<List<SearchItemDto>>(emptyList()) }
+    var searchJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    var isSearching by remember { mutableStateOf(false) }
+
+    // Search query debounced observer
+    LaunchedEffect(query) {
+        if (query.trim().length < 2) {
+            results = emptyList()
+            return@LaunchedEffect
+        }
+        isSearching = true
+        searchJob?.cancel()
+        searchJob = scope.launch {
+            delay(300L)
+            val res = repository.multiSearch(query)
+            if (res is com.example.soccerworld.data.model.DataResult.Success) {
+                results = res.data.filterIsInstance<TeamSearchItemDto>()
+            }
+            isSearching = false
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.8f)
+                .padding(horizontal = 16.dp)
+        ) {
+            Text(
+                text = "Add team to favorites",
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search club name...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (isSearching) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color(0xFF5B3FC4))
+                }
+            } else if (results.isEmpty() && query.trim().length >= 2) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No clubs found matching \"$query\"", color = Color.Gray)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(results) { item ->
+                        if (item is TeamSearchItemDto) {
+                            val isFav = favoriteTeams.any { it.teamId == item.id }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color.White, RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                AsyncImage(
+                                    model = item.image,
+                                    contentDescription = item.name,
+                                    modifier = Modifier.size(36.dp),
+                                    placeholder = painterResource(id = R.drawable.ic_ball),
+                                    error = painterResource(id = R.drawable.ic_ball)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(item.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text(item.countryName ?: "Club", fontSize = 11.sp, color = Color.Gray)
+                                }
+                                IconButton(
+                                    onClick = {
+                                        onToggleFavorite(item.id, item.name, item.image, item.countryName)
+                                    }
+                                ) {
+                                    Icon(
+                                        imageVector = if (isFav) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                                        contentDescription = "Star",
+                                        tint = if (isFav) Color(0xFFFF9800) else Color.LightGray
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -289,111 +632,9 @@ private fun ClubFavoritesTab(
     }
 }
 
+// ── Generic Empty State Composable ───────────────────────────────────────────
 @Composable
-private fun PlayerFavoritesTab(
-    players: List<FavoritePlayerEntity>,
-    onPlayerClick: (PlayerDetailInfo) -> Unit,
-    onToggleFavorite: (FavoritePlayerEntity) -> Unit
-) {
-    if (players.isEmpty()) {
-        EmptyState(
-            title = "No favorite players",
-            description = "Tap the favorite icon on any player page\nto save it here"
-        )
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(
-                items = players,
-                key = { it.playerId }
-            ) { player ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable {
-                            val playerInfo = PlayerDetailInfo(
-                                id = player.playerId,
-                                name = player.name,
-                                position = player.position,
-                                dateOfBirth = null,
-                                nationality = player.nationality,
-                                jerseyNumber = null,
-                                imageUrl = player.imageUrl,
-                                flagId = null,
-                                teamId = null
-                            )
-                            onPlayerClick(playerInfo)
-                        },
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    ),
-                    border = CardDefaults.outlinedCardBorder()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(24.dp))
-                                .background(MaterialTheme.colorScheme.surface),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            AsyncImage(
-                                model = player.imageUrl,
-                                contentDescription = player.name,
-                                modifier = Modifier.size(36.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = player.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            val details = listOfNotNull(
-                                player.position?.replaceFirstChar { it.uppercase() },
-                                player.nationality
-                            ).joinToString(" • ")
-                            if (details.isNotBlank()) {
-                                Text(
-                                    text = details,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        IconButton(onClick = { onToggleFavorite(player) }) {
-                            Icon(
-                                imageVector = Icons.Default.Favorite,
-                                contentDescription = "Unfavorite",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun EmptyState(
-    title: String,
-    description: String
-) {
+private fun FavoritesEmptyState(message: String, hint: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -401,36 +642,37 @@ private fun EmptyState(
         ) {
             Box(
                 modifier = Modifier
-                    .size(100.dp)
-                    .clip(RoundedCornerShape(50.dp))
-                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f)),
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE8E8EF)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.FavoriteBorder,
+                    imageVector = Icons.Outlined.StarBorder,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(52.dp)
+                    tint = Color.Gray,
+                    modifier = Modifier.size(40.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
+                text = message,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = hint,
+                fontSize = 12.sp,
+                color = Color.Gray,
                 textAlign = TextAlign.Center
             )
         }
     }
 }
 
+// ── Authentication Login Prompts ─────────────────────────────────────────────
 @Composable
 private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -440,54 +682,39 @@ private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
         ) {
             Box(
                 modifier = Modifier
-                    .size(100.dp)
-                    .clip(RoundedCornerShape(50.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF5B3FC4).copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(52.dp)
+                    tint = Color(0xFF5B3FC4),
+                    modifier = Modifier.size(36.dp)
                 )
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             Text(
-                text = "Login required",
-                style = MaterialTheme.typography.titleMedium,
+                text = "Login Required",
+                fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.Black
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "You need to sign in to save and view\nyour favorites",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = "You need to sign in to save and sync\nyour favorite matches & teams.",
+                fontSize = 12.sp,
+                color = Color.Gray,
                 textAlign = TextAlign.Center
             )
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             Button(
                 onClick = onNavigateToLogin,
-                modifier = Modifier
-                    .fillMaxWidth(0.6f)
-                    .height(48.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B3FC4))
             ) {
-                Icon(
-                    imageVector = Icons.Default.Login,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Sign In",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
+                Text("Sign In", fontWeight = FontWeight.Bold)
             }
         }
     }

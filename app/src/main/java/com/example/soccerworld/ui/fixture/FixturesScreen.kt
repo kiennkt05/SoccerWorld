@@ -126,18 +126,18 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
         }
 
         Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-            // Sofascore-style tab bar — xanh dương đậm
+            // Sofascore-style tab bar — Clean white/surface background
             ScrollableTabRow(
                 selectedTabIndex = selectedTabIndex,
                 modifier = Modifier.fillMaxWidth(),
                 edgePadding = 8.dp,
-                containerColor = BrandNavy,
-                contentColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.primary,
                 indicator = { tabPositions ->
                     if (selectedTabIndex < tabPositions.size) {
                         TabRowDefaults.SecondaryIndicator(
                             modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 },
@@ -154,8 +154,8 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
                                 fontSize = 14.sp
                             )
                         },
-                        selectedContentColor = Color.White,
-                        unselectedContentColor = Color.White.copy(alpha = 0.7f)
+                        selectedContentColor = MaterialTheme.colorScheme.primary,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

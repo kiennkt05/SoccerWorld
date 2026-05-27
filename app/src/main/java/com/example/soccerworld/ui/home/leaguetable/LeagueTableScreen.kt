@@ -157,7 +157,7 @@ private fun TableHeaderRow() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -165,8 +165,8 @@ private fun TableHeaderRow() {
         Text(
             text = "#",
             fontWeight = FontWeight.Bold,
-            fontSize = 11.sp,
-            color = AccentEmerald,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(24.dp),
             textAlign = TextAlign.Center
         )
@@ -177,7 +177,7 @@ private fun TableHeaderRow() {
         Text(
             text = "Team",
             fontWeight = FontWeight.Bold,
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)
         )
@@ -187,7 +187,7 @@ private fun TableHeaderRow() {
             Text(
                 text = label,
                 fontWeight = FontWeight.Bold,
-                fontSize = 10.sp,
+                fontSize = 11.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.width(if (label == "GD") 28.dp else 24.dp)
@@ -273,7 +273,7 @@ fun TeamRow(
             // Team crest
             com.example.soccerworld.ui.components.TeamCrestImage(
                 model = item.team?.crest,
-                size = 24.dp
+                size = 18.dp
             )
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -312,10 +312,10 @@ fun TeamRow(
                 Text(
                     text = value,
                     fontSize = 12.sp,
-                    fontWeight = if (isPoints) FontWeight.ExtraBold else FontWeight.Normal,
+                    fontWeight = if (isPoints) FontWeight.Bold else FontWeight.Normal,
                     color = when {
-                        isPoints -> AccentEmerald
-                        isGD && gd > 0 -> Color(0xFF00D9A3)
+                        isPoints -> MaterialTheme.colorScheme.onSurface
+                        isGD && gd > 0 -> WinGreen
                         isGD && gd < 0 -> LiveRed
                         else -> MaterialTheme.colorScheme.onSurfaceVariant
                     },

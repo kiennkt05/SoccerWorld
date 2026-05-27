@@ -105,7 +105,7 @@ fun TopScorerRow(rank: Int, item: TopScorerEntity, playerImageUrl: String?) {
             Text(
                 text = "$rank",
                 fontWeight = FontWeight.Bold,
-                color = if (rank <= 3) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (rank == 1) Color(0xFFFFC107) else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.width(32.dp)
             )
 
@@ -138,7 +138,7 @@ fun TopScorerRow(rank: Int, item: TopScorerEntity, playerImageUrl: String?) {
             Text(
                 text = "${item.goals} Goals",
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.secondary
+                color = MaterialTheme.colorScheme.primary
             )
         }
         HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)

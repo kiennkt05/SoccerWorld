@@ -152,7 +152,7 @@ fun ChatBottomSheet(
                 "Hôm nay có trận nào? ⚽",
                 "Ai đang dẫn đầu vua phá lưới? 🏆"
             )
-            
+
             if (!isLoading) {
                 LazyRow(
                     modifier = Modifier
@@ -212,11 +212,7 @@ fun ChatBottomSheet(
                     Icon(
                         Icons.AutoMirrored.Filled.Send,
                         contentDescription = stringResource(R.string.chatbot_content_description_send),
-                        tint = if (inputText.isNotBlank() && !isLoading) {
-                            Color(0xFF374DF5)
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
-                        }
+                        tint = if (inputText.isNotBlank() && !isLoading) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

@@ -25,8 +25,7 @@ sealed class Screen(val route: String) {
 }
 
 sealed class BottomNavItem(val route: String, val title: String, val icon: ImageVector) {
-    object Home : BottomNavItem("home", "League", Icons.Default.Home)
-    object Fixtures : BottomNavItem("fixtures", "Fixtures", Icons.Default.DateRange)
+    object Matches : BottomNavItem("matches", "Matches", Icons.Default.DateRange)
     object Search : BottomNavItem("search", "Search", Icons.Default.Search)
     object Favorites : BottomNavItem("favorites", "Favorites", Icons.Default.Favorite)
     object Profile : BottomNavItem("profile", "Profile", Icons.Default.Person)

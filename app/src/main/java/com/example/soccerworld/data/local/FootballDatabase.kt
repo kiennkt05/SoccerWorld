@@ -30,7 +30,7 @@ import com.example.soccerworld.model.topscorer.TopScorerEntity
         FavoriteTeamEntity::class,
         FavoritePlayerEntity::class
     ],
-    version = 11,
+    version = 13,
     exportSchema = false
 )
 abstract class FootballDatabase : RoomDatabase() {
@@ -219,7 +219,7 @@ abstract class FootballDatabase : RoomDatabase() {
             FootballDatabase::class.java,
             "footballdatabase"
         ).addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
-            .fallbackToDestructiveMigrationFrom(1, 2, 3, 4, 5)
+            .fallbackToDestructiveMigration()
             .build()
     }
 }

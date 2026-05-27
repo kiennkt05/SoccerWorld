@@ -13,13 +13,11 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.soccerworld.ui.auth.AuthViewModel
 import com.example.soccerworld.ui.favorites.FavoritesScreen
-import com.example.soccerworld.ui.home.HomeScreen
-import com.example.soccerworld.ui.fixture.FixturesScreen
+import com.example.soccerworld.ui.matches.MatchesScreen
 import com.example.soccerworld.ui.navigation.Screen
 import com.example.soccerworld.ui.search.SearchScreen
 import com.example.soccerworld.ui.profile.ProfileScreen
 import com.example.soccerworld.ui.navigation.BottomNavItem
-import com.example.soccerworld.ui.player.PlayerDetailInfo
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -40,6 +38,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.geometry.Offset
 import com.example.soccerworld.ui.theme.AccentEmerald
 import com.example.soccerworld.ui.theme.TextSecondary
+import com.example.soccerworld.util.CustomSharedPreferences
 
 @Composable
 fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
@@ -47,33 +46,17 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
     val authViewModel: AuthViewModel = viewModel()
     
     var showChat by remember { mutableStateOf(false) }
-    var isScrollingDown by remember { mutableStateOf(false) }
-    
-    val nestedScrollConnection = remember {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                if (available.y < -5) {
-                    isScrollingDown = true
-                } else if (available.y > 5) {
-                    isScrollingDown = false
-                }
-                return Offset.Zero
-            }
-        }
-    }
     
     val items = listOf(
-        BottomNavItem.Home,
-        BottomNavItem.Fixtures,
+        BottomNavItem.Matches,
         BottomNavItem.Search,
         BottomNavItem.Favorites,
         BottomNavItem.Profile
     )
 
     Scaffold(
-        modifier = Modifier.nestedScroll(nestedScrollConnection),
         floatingActionButton = {
-            ChatFab(isScrollingDown = isScrollingDown, onClick = { showChat = true })
+            ChatFab(onClick = { showChat = true })
         },
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
@@ -105,7 +88,7 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                             unselectedIconColor = TextSecondary,
                             selectedTextColor = MaterialTheme.colorScheme.primary,
                             unselectedTextColor = TextSecondary,
-                            indicatorColor = AccentEmerald.copy(alpha = 0.15f)
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                         )
                     )
                 }
@@ -114,11 +97,11 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = BottomNavItem.Home.route,
+            startDestination = BottomNavItem.Matches.route,
             modifier = Modifier.padding(paddingValues)
         ) {
-            composable(BottomNavItem.Home.route) {
-                HomeScreen(
+            composable(BottomNavItem.Matches.route) {
+                MatchesScreen(
                     onTeamClick = { teamId ->
                         rootNavController.navigate(Screen.TeamDetail.createRoute(teamId))
                     },
@@ -126,24 +109,28 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                         rootNavController.navigate(Screen.LeagueSelection.route) {
                             popUpTo(Screen.Main.route) { inclusive = true }
                         }
+                    },
+                    onMatchClick = { matchId ->
+                        rootNavController.navigate(Screen.MatchDetail.createRoute(matchId))
                     }
                 )
             }
-            composable(BottomNavItem.Fixtures.route) {
-                FixturesScreen(onMatchClick = { matchId ->
-                    rootNavController.navigate(Screen.MatchDetail.createRoute(matchId))
-                })
-            }
             composable(BottomNavItem.Search.route) {
+                val context = LocalContext.current
                 SearchScreen(
                     onTeamClick = { teamId ->
                         rootNavController.navigate(Screen.TeamDetail.createRoute(teamId))
                     },
-                    onPlayerClick = { playerInfo ->
-                        rootNavController.currentBackStackEntry
-                            ?.savedStateHandle
-                            ?.set("player_info", playerInfo)
-                        rootNavController.navigate(Screen.PlayerDetail.createRoute(playerInfo.id))
+                    onPlayerClick = { playerId ->
+                        rootNavController.navigate(Screen.PlayerDetail.createRoute(playerId))
+                    },
+                    onCompetitionClick = { leagueCode ->
+                        CustomSharedPreferences(context).saveLeagueId(leagueCode)
+                        navController.navigate(BottomNavItem.Matches.route) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 )
             }
@@ -152,17 +139,11 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                     onMatchClick = { matchId ->
                         rootNavController.navigate(Screen.MatchDetail.createRoute(matchId))
                     },
-                    onTeamClick = { teamId ->
-                        rootNavController.navigate(Screen.TeamDetail.createRoute(teamId))
-                    },
-                    onPlayerClick = { playerInfo ->
-                        rootNavController.currentBackStackEntry
-                            ?.savedStateHandle
-                            ?.set("player_info", playerInfo)
-                        rootNavController.navigate(Screen.PlayerDetail.createRoute(playerInfo.id))
-                    },
                     onNavigateToLogin = {
                         rootNavController.navigate(Screen.Login.route)
+                    },
+                    onTeamClick = { teamId ->
+                        rootNavController.navigate(Screen.TeamDetail.createRoute(teamId))
                     }
                 )
             }

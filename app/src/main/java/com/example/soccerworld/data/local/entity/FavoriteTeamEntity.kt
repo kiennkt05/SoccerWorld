@@ -8,6 +8,6 @@ data class FavoriteTeamEntity(
     @PrimaryKey val teamId: String,
     val name: String,
     val logoUrl: String?,
-    val country: String?,
+    val countryName: String?,
     val savedAt: Long
 )

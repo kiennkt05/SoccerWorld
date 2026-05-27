@@ -253,7 +253,7 @@ class FootballRepository(
         return safeApiCall {
             val teamData = apiService.getTeamData(Constant.LOCALE, Constant.SPORT_ID, teamId).data
             val squadResponse = apiService.getTeamSquad(Constant.LOCALE, Constant.SPORT_ID, teamId).data.orEmpty()
-            
+
             val players = squadResponse
                 .flatMap { it.items.orEmpty() }
                 .map {
@@ -266,15 +266,15 @@ class FootballRepository(
                         flagId = it.flagId
                     )
                 }
-            
+
             val coachDto = squadResponse
                 .flatMap { it.items.orEmpty() }
                 .firstOrNull { it.playerTypeId == "COACH" }
 
             PlayerResponse(
-                id = teamData?.id, 
-                name = teamData?.name, 
-                crest = teamData?.imagePath, 
+                id = teamData?.id,
+                name = teamData?.name,
+                crest = teamData?.imagePath,
                 venue = teamData?.stadium,
                 coach = coachDto?.let { com.example.soccerworld.model.player.Coach(name = it.playerName) },
                 squad = players
@@ -364,7 +364,7 @@ class FootballRepository(
 
         return safeApiCall {
             val events = mutableListOf<FlashLiveEvent>()
-            
+
             for ((index, stageId) in league.allStageIds.withIndex()) {
                 if (index > 0) {
                     delay(400L) // Throttling giữa các stages
@@ -380,7 +380,7 @@ class FootballRepository(
                 } catch (e: HttpException) {
                     if (e.code() != 404) throw e
                 }
-                
+
                 // Load results từ page hiện tại
                 try {
                     delay(200L) // Throttling giữa fixtures và results của cùng stage
@@ -394,7 +394,7 @@ class FootballRepository(
                     if (e.code() != 404) throw e
                 }
             }
-            
+
             events
                 .distinctBy { it.eventId }
                 .map { it.toFixtureMatch(league.name, leagueId) }
@@ -412,7 +412,7 @@ class FootballRepository(
             apiService.getTeamTransfers(Constant.LOCALE, Constant.SPORT_ID, teamId).data.orEmpty()
         }
     }
-    
+
     suspend fun getTeamMatches(teamId: String, page: Int, isResults: Boolean): DataResult<List<Matche>> {
         return safeApiCall {
             val response = if (isResults) {
@@ -471,7 +471,7 @@ class FootballRepository(
         }
     }
 
-    fun observeFavoriteTeams(): Flow<List<FavoriteTeamEntity>> = dao.getAllFavoriteTeams()
+//    fun observeFavoriteTeams(): Flow<List<FavoriteTeamEntity>> = dao.getAllFavoriteTeams()
     fun observeIsFavoriteTeam(teamId: String): Flow<Boolean> = dao.observeIsFavoriteTeam(teamId)
 
     suspend fun toggleFavoriteTeam(teamId: String, name: String, logoUrl: String?, country: String?) {
@@ -484,7 +484,7 @@ class FootballRepository(
                 teamId = teamId,
                 name = name,
                 logoUrl = logoUrl,
-                country = country,
+                countryName = country,
                 savedAt = System.currentTimeMillis()
             )
         )
@@ -510,20 +510,34 @@ class FootballRepository(
         )
     }
 
+    fun getAllFavoriteTeams(): Flow<List<FavoriteTeamEntity>> =
+        dao.getAllFavoriteTeams()
+
+    suspend fun addFavoriteTeam(teamId: String, name: String, logoUrl: String?, countryName: String?) {
+        val entity = FavoriteTeamEntity(
+            teamId = teamId,
+            name = name,
+            logoUrl = logoUrl,
+            countryName = countryName,
+            savedAt = System.currentTimeMillis()
+        )
+        dao.insertFavoriteTeam(entity)
+    }
+
     suspend fun getAllH2hItems(fixtureId: String): DataResult<H2HResponse> {
         return safeApiCall {
             val groups = apiService.getHeadToHead(Constant.LOCALE, fixtureId)
                 .data?.firstOrNull()
                 ?.groups.orEmpty()
-            
+
             // Find the Head-to-head group. Usually it's the 3rd group (index 2) or has a specific label.
-            val h2hGroup = groups.firstOrNull { 
+            val h2hGroup = groups.firstOrNull {
                 val label = it.groupLabel.orEmpty()
                 label.contains("Head-to-head", ignoreCase = true) || label.contains("đối đầu", ignoreCase = true)
             } ?: groups.getOrNull(2) ?: groups.lastOrNull()
 
             val items = h2hGroup?.items.orEmpty()
-            
+
             H2HResponse(
                 matches = items.map {
                     val scores = parseScorePair(it.currentResult)
@@ -548,14 +562,14 @@ class FootballRepository(
                 utcDate = toIsoDateTime(event?.startTime),
                 status = mapStatus(event?.stageType),
                 homeTeam = StatsHomeTeam(
-                    id = event?.homeId, 
-                    name = event?.homeName, 
+                    id = event?.homeId,
+                    name = event?.homeName,
                     shortName = event?.shortNameHome,
                     crest = event?.homeImagePath ?: event?.homeImages?.firstOrNull()
                 ),
                 awayTeam = StatsAwayTeam(
-                    id = event?.awayId, 
-                    name = event?.awayName, 
+                    id = event?.awayId,
+                    name = event?.awayName,
                     shortName = event?.shortNameAway,
                     crest = event?.awayImagePath ?: event?.awayImages?.firstOrNull()
                 ),
@@ -578,7 +592,7 @@ class FootballRepository(
     suspend fun getMatchDetailAggregate(fixtureId: String): DataResult<MatchDetailAggregate> {
         val updateTime = customPreferences.getMatchDetailTime(fixtureId) ?: 0L
         val now = System.currentTimeMillis()
-        
+
         var cachedData: MatchDetailAggregate? = matchDetailCache[fixtureId]
         if (cachedData == null) {
             val cachedEntity = dao.getMatchDetailCache(fixtureId)
@@ -591,7 +605,7 @@ class FootballRepository(
             val status = aggregate.core?.status ?: "FINISHED"
             val hasValidData = aggregate.core?.homeTeam?.name != null
             if (!hasValidData) return@let false
-            
+
             val ttl = when {
                 status == "IN_PLAY" || status == "PAUSED" || status == "LIVE" -> CacheTtl.ESPN_ENRICHMENT_LIVE_MS
                 status == "SCHEDULED" || status == "TIMED" -> 3600_000L // 1 hour for scheduled matches
@@ -698,7 +712,7 @@ class FootballRepository(
         val events = summary.data.orEmpty().reversed().flatMap { stage ->
             val rawItems = stage.items.orEmpty()
             val stageMappedEvents = mutableListOf<MatchEvent>()
-            
+
             rawItems.forEach { item ->
                 val participants = item.participants.orEmpty()
                 val isHome = item.team == 1
@@ -706,17 +720,17 @@ class FootballRepository(
 
                 val hasGoal = participants.any { it.type?.uppercase()?.contains("GOAL") == true }
                 val hasAssist = participants.any { it.type?.uppercase()?.contains("ASSIST") == true }
-                
+
                 when {
                     hasGoal && hasAssist -> {
                         val goalPart = participants.find { it.type?.uppercase()?.contains("GOAL") == true }
                         val assistPart = participants.find { it.type?.uppercase()?.contains("ASSIST") == true }
-                        
+
                         val scorer = goalPart?.participantName ?: ""
                         val assist = assistPart?.participantName ?: ""
                         val homeScore = goalPart?.homeScore ?: ""
                         val awayScore = goalPart?.awayScore ?: ""
-                        
+
                         stageMappedEvents.add(
                             MatchEvent(
                                 minute = item.time ?: "--",
@@ -726,13 +740,13 @@ class FootballRepository(
                             )
                         )
                     }
-                    
+
                     hasGoal -> {
                         val goalPart = participants.find { it.type?.uppercase()?.contains("GOAL") == true }
                         val scorer = goalPart?.participantName ?: ""
                         val homeScore = goalPart?.homeScore ?: ""
                         val awayScore = goalPart?.awayScore ?: ""
-                        
+
                         stageMappedEvents.add(
                             MatchEvent(
                                 minute = item.time ?: "--",
@@ -742,13 +756,13 @@ class FootballRepository(
                             )
                         )
                     }
-                    
-                    participants.size == 2 && 
-                    participants.any { it.type == "SUBSTITUTION_IN" } && 
-                    participants.any { it.type == "SUBSTITUTION_OUT" } -> {
+
+                    participants.size == 2 &&
+                            participants.any { it.type == "SUBSTITUTION_IN" } &&
+                            participants.any { it.type == "SUBSTITUTION_OUT" } -> {
                         val subIn = participants.find { it.type == "SUBSTITUTION_IN" }?.participantName ?: ""
                         val subOut = participants.find { it.type == "SUBSTITUTION_OUT" }?.participantName ?: ""
-                        
+
                         stageMappedEvents.add(
                             MatchEvent(
                                 minute = item.time ?: "--",
@@ -758,7 +772,7 @@ class FootballRepository(
                             )
                         )
                     }
-                    
+
                     else -> {
                         participants.forEach { participant ->
                             val pType = participant.type ?: ""
@@ -773,7 +787,7 @@ class FootballRepository(
                             } else {
                                 participant.participantName ?: participant.incidentName ?: "Event"
                             }
-                            
+
                             stageMappedEvents.add(
                                 MatchEvent(
                                     minute = item.time ?: "--",
@@ -786,13 +800,13 @@ class FootballRepository(
                     }
                 }
             }
-            
+
             stageMappedEvents.reverse()
-            
+
             val maxAddedTime = stage.items.orEmpty()
                 .mapNotNull { it.addedTime?.trim()?.removeSuffix("'")?.toIntOrNull() }
                 .maxOrNull()
-                
+
             if (maxAddedTime != null && maxAddedTime > 0) {
                 val lastPlusIndex = stageMappedEvents.indexOfLast { it.minute.contains("+") }
                 val insertIndex = if (lastPlusIndex != -1) lastPlusIndex + 1 else 0
@@ -803,7 +817,7 @@ class FootballRepository(
                     team = null
                 ))
             }
-            
+
             val resultHome = stage.resultHome ?: ""
             val resultAway = stage.resultAway ?: ""
             val scoreText = if (resultHome.isNotBlank() && resultAway.isNotBlank()) " $resultHome - $resultAway" else ""
@@ -813,14 +827,14 @@ class FootballRepository(
                 rawName.contains("2nd", ignoreCase = true) -> "FT$scoreText"
                 else -> "$rawName$scoreText"
             }
-            
+
             stageMappedEvents.add(0, MatchEvent(
                 minute = "",
                 type = "STAGE_HEADER",
                 description = stageLabel,
                 team = null
             ))
-            
+
             stageMappedEvents
         }
         val statItems = stats.data.orEmpty().flatMap { stage ->
@@ -879,11 +893,11 @@ class FootballRepository(
                     }
 
                     if (isHome) {
-                        if (isStarting) homeStarters.addAll(mappedPlayers) 
+                        if (isStarting) homeStarters.addAll(mappedPlayers)
                         else if (isSubs) homeSubs.addAll(mappedPlayers)
                         else if (isCoaches) homeCoach = mappedPlayers.firstOrNull()
                     } else {
-                        if (isStarting) awayStarters.addAll(mappedPlayers) 
+                        if (isStarting) awayStarters.addAll(mappedPlayers)
                         else if (isSubs) awaySubs.addAll(mappedPlayers)
                         else if (isCoaches) awayCoach = mappedPlayers.firstOrNull()
                     }
@@ -906,7 +920,7 @@ class FootballRepository(
             }
         }
         val newsItems = news.data.orEmpty().map { item ->
-            val imageUrl = item.links?.firstOrNull { it.variantId == 38 }?.url 
+            val imageUrl = item.links?.firstOrNull { it.variantId == 38 }?.url
                 ?: item.links?.firstOrNull()?.url
             MatchNews(
                 id = item.id,

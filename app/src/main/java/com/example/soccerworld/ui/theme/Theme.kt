@@ -13,46 +13,46 @@ import androidx.core.view.WindowCompat
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.runtime.SideEffect
 
-// ── Dark scheme: Midnight Navy + Emerald accent ────────────────────────────
+// ── Dark scheme: Deep navy surfaces, Sofascore Blue accents ────────────────
 private val DarkColorScheme = darkColorScheme(
-    primary              = AccentEmerald,
-    onPrimary            = BrandNavy,
-    primaryContainer     = AccentEmeraldDim,
-    onPrimaryContainer   = TextOnDark,
-    secondary            = SofascoreBlue,
-    onSecondary          = Color.White,
-    secondaryContainer   = BrandNavyLight,
+    primary              = Color(0xFF7B8CFF),   // lighter blue for dark bg
+    onPrimary            = Color(0xFF001A9E),
+    primaryContainer     = SofascoreBlueDark,
+    onPrimaryContainer   = Color(0xFFDEE0FF),
+    secondary            = Color(0xFFCBBEFF),
+    onSecondary          = Color(0xFF332B6A),
+    secondaryContainer   = DarkSurfaceVar,
     onSecondaryContainer = TextOnDark,
-    background           = BrandNavy,
+    background           = DarkBackground,
     onBackground         = TextOnDark,
-    surface              = BrandNavyMid,
+    surface              = DarkSurface,
     onSurface            = TextOnDark,
-    surfaceVariant       = BrandNavyLight,
+    surfaceVariant       = DarkSurfaceVar,
     onSurfaceVariant     = TextSecondary,
-    outline              = Color(0xFF2E4560),
-    outlineVariant       = Color(0xFF1E3550),
+    outline              = Color(0xFF2C2C40),
+    outlineVariant       = Color(0xFF222236),
     error                = LiveRed,
     onError              = Color.White
 )
 
-// ── Light scheme: Clean white + Midnight navy + Emerald ───────────────────
+// ── Light scheme: Sofascore Blue primary, clean white surfaces ─────────────
 private val LightColorScheme = lightColorScheme(
-    primary              = BrandNavy,
+    primary              = SofascoreBlue,
     onPrimary            = Color.White,
-    primaryContainer     = Color(0xFFDFF9F2),   // soft emerald tint
-    onPrimaryContainer   = BrandNavy,
-    secondary            = AccentEmerald,
-    onSecondary          = BrandNavy,
-    secondaryContainer   = Color(0xFFE8FDF7),
-    onSecondaryContainer = BrandNavy,
-    background           = Color(0xFFF6F9FC),
+    primaryContainer     = Color(0xFFE8EBFF),   // soft blue tint
+    onPrimaryContainer   = SofascoreBlueDark,
+    secondary            = SofascorePurple,
+    onSecondary          = Color.White,
+    secondaryContainer   = Color(0xFFF0ECFF),
+    onSecondaryContainer = SofascorePurple,
+    background           = LightBackground,
     onBackground         = TextDark,
-    surface              = Color.White,
+    surface              = LightSurface,
     onSurface            = TextDark,
-    surfaceVariant       = Color(0xFFF0F4F8),
+    surfaceVariant       = LightSurfaceVar,
     onSurfaceVariant     = TextSecondary,
     outline              = DividerColor,
-    outlineVariant       = Color(0xFFE0EAF3),
+    outlineVariant       = Color(0xFFE0E0EC),
     error                = LiveRed,
     onError              = Color.White
 )
@@ -68,8 +68,8 @@ fun SoccerWorldTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.surface.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            window.statusBarColor = SofascoreBlueDark.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }
 

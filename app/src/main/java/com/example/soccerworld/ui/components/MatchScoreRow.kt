@@ -16,6 +16,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.soccerworld.ui.theme.LocalSoccerColors
+import com.example.soccerworld.ui.theme.WinGreen
+import com.example.soccerworld.ui.theme.LiveRed
+import com.example.soccerworld.ui.theme.DrawAmber
 
 @Immutable
 data class MatchDisplayModel(
@@ -31,8 +34,8 @@ data class MatchDisplayModel(
     val awayScore: Int?,
     val isFinishedOrLive: Boolean
 ) {
-    val homeWins: Boolean get() = isFinishedOrLive && (homeScore ?: 0) > (awayScore ?: 0)
-    val awayWins: Boolean get() = isFinishedOrLive && (awayScore ?: 0) > (homeScore ?: 0)
+    val homeWins: Boolean get() = isFinishedOrLive && !isLive && (homeScore ?: 0) > (awayScore ?: 0)
+    val awayWins: Boolean get() = isFinishedOrLive && !isLive && (awayScore ?: 0) > (homeScore ?: 0)
 }
 
 @Composable
@@ -90,11 +93,18 @@ fun MatchScoreRow(
                         modifier = Modifier.weight(1f)
                     )
                     if (match.isFinishedOrLive) {
+                        val isDraw = !match.isLive && (match.homeScore ?: 0) == (match.awayScore ?: 0)
+                        val homeScoreColor = when {
+                            match.isLive -> soccerColors.liveRed
+                            match.homeWins -> WinGreen
+                            isDraw -> DrawAmber
+                            else -> soccerColors.loserText
+                        }
                         Text(
                             text = "${match.homeScore ?: 0}",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = if (match.homeWins) FontWeight.Bold else FontWeight.Normal,
-                            color = if (match.awayWins) soccerColors.loserText else colorScheme.onSurface,
+                            color = homeScoreColor,
                             textAlign = TextAlign.End,
                             modifier = Modifier.width(24.dp)
                         )
@@ -115,11 +125,18 @@ fun MatchScoreRow(
                         modifier = Modifier.weight(1f)
                     )
                     if (match.isFinishedOrLive) {
+                        val isDraw = !match.isLive && (match.homeScore ?: 0) == (match.awayScore ?: 0)
+                        val awayScoreColor = when {
+                            match.isLive -> soccerColors.liveRed
+                            match.awayWins -> WinGreen
+                            isDraw -> DrawAmber
+                            else -> soccerColors.loserText
+                        }
                         Text(
                             text = "${match.awayScore ?: 0}",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = if (match.awayWins) FontWeight.Bold else FontWeight.Normal,
-                            color = if (match.homeWins) soccerColors.loserText else colorScheme.onSurface,
+                            color = awayScoreColor,
                             textAlign = TextAlign.End,
                             modifier = Modifier.width(24.dp)
                         )
