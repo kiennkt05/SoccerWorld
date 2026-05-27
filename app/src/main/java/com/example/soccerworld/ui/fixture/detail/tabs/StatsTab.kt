@@ -64,6 +64,7 @@ import com.example.soccerworld.ui.theme.TextDark
 import com.example.soccerworld.ui.theme.TextSecondary
 import com.example.soccerworld.ui.theme.DividerColor
 import com.example.soccerworld.ui.theme.LoserText
+import com.example.soccerworld.ui.theme.BrandGreenDark
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import java.text.SimpleDateFormat
@@ -117,7 +118,7 @@ fun StatsTab(stages: List<EventStatsStage>) {
                             text = group.groupLabel ?: "",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
-                            color = Color(0xFF111111),
+                            color = TextDark,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp),
@@ -167,7 +168,7 @@ private fun StageToggleBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
-            .background(Color(0xFFEBECEF), RoundedCornerShape(20.dp))
+            .background(DividerColor, RoundedCornerShape(20.dp))
             .padding(4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -185,14 +186,14 @@ private fun StageToggleBar(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(if (isSelected) Color(0xFF222226) else Color.Transparent)
+                    .background(if (isSelected) BrandGreenDark else Color.Transparent)
                     .clickable { onSelect(index) }
                     .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = tabName,
-                    color = if (isSelected) Color.White else Color(0xFF444444),
+                    color = if (isSelected) Color.White else TextSecondary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )
@@ -254,7 +255,7 @@ private fun StatProgressRow(stat: EventStatsItem) {
                 Text(
                     text = homeStr,
                     fontSize = 14.sp,
-                    color = Color(0xFF111111),
+                    color = TextDark,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -263,7 +264,7 @@ private fun StatProgressRow(stat: EventStatsItem) {
             Text(
                 text = stat.incidentName ?: "",
                 fontSize = 13.sp,
-                color = Color(0xFF555555), // Muted dark gray
+                color = TextSecondary, // Muted dark gray
                 textAlign = TextAlign.Center,
                 modifier = Modifier.weight(if (isPercentage) 1.5f else 2f)
             )
@@ -282,7 +283,7 @@ private fun StatProgressRow(stat: EventStatsItem) {
                 Text(
                     text = awayStr,
                     fontSize = 14.sp,
-                    color = Color(0xFF111111),
+                    color = TextDark,
                     textAlign = TextAlign.End,
                     modifier = Modifier.weight(1f)
                 )

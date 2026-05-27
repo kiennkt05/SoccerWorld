@@ -38,6 +38,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.soccerworld.ui.theme.AccentEmerald
+import com.example.soccerworld.ui.theme.AccentNeonOrange
+import com.example.soccerworld.ui.theme.BrandGreenMedium
 import com.example.soccerworld.ui.theme.BrandNavy
 import com.example.soccerworld.ui.theme.BrandNavyMid
 import com.example.soccerworld.util.CustomSharedPreferences
@@ -210,7 +212,7 @@ fun NotificationSettingsScreen(
                 // 1. Match Reminder
                 NotificationToggleRow(
                     icon        = Icons.Default.Schedule,
-                    iconColor   = Color(0xFF1976D2),
+                    iconColor   = BrandGreenMedium,
                     title       = "Match Reminder",
                     description = "Nhắc nhở 15 phút trước khi trận yêu thích bắt đầu",
                     checked     = matchReminderEnabled,
@@ -244,7 +246,7 @@ fun NotificationSettingsScreen(
                 // 3. Match Result
                 NotificationToggleRow(
                     icon        = Icons.Default.Notifications,
-                    iconColor   = Color(0xFFFF9800),
+                    iconColor   = AccentNeonOrange,
                     title       = "Match Result",
                     description = "Nhận kết quả cuối trận ngay sau khi trận kết thúc",
                     checked     = matchResultEnabled,

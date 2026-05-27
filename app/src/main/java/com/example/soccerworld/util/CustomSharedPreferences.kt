@@ -158,6 +158,43 @@ class CustomSharedPreferences {
     fun isMatchResultEnabled(): Boolean =
         sharedPreferences?.getBoolean(NOTIF_MATCH_RESULT, true) ?: true
 
+
+    fun getSearchHistory(): List<String> {
+        val historyStr = sharedPreferences?.getString("search_history", "") ?: ""
+        if (historyStr.isBlank()) return emptyList()
+        return historyStr.split("|").filter { it.isNotBlank() }
+    }
+
+    fun addSearchQuery(query: String) {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return
+        val current = getSearchHistory().toMutableList()
+        current.remove(trimmed)
+        current.add(0, trimmed)
+        if (current.size > 10) {
+            current.removeAt(current.lastIndex)
+        }
+        val historyStr = current.joinToString("|")
+        sharedPreferences?.edit(commit = true) {
+            putString("search_history", historyStr)
+        }
+    }
+
+    fun clearSearchHistory() {
+        sharedPreferences?.edit(commit = true) {
+            remove("search_history")
+        }
+    }
+
+    fun removeSearchQuery(query: String) {
+        val current = getSearchHistory().toMutableList()
+        current.remove(query.trim())
+        val historyStr = current.joinToString("|")
+        sharedPreferences?.edit(commit = true) {
+            putString("search_history", historyStr)
+        }
+    }
+
     private fun normalizeLeagueCode(raw: String): String? {
         return when (raw.uppercase()) {
             // New FlashLive league codes

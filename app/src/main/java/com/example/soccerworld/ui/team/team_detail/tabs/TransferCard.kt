@@ -22,6 +22,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.example.soccerworld.ui.theme.BrandGreenMedium
+import com.example.soccerworld.ui.theme.TextDark
+import com.example.soccerworld.ui.theme.TextSecondary
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -66,7 +69,7 @@ fun TransferCard(
                     text = transfer.player?.value ?: "Unknown",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF111111) // Crisp dark text
+                    color = TextDark // Crisp dark text
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -87,7 +90,7 @@ fun TransferCard(
                     Text(
                         text = transfer.player?.countryName ?: "Unknown",
                         fontSize = 14.sp,
-                        color = Color(0xFF666666) // Muted gray
+                        color = TextSecondary // Muted gray
                     )
                 }
             }
@@ -113,7 +116,7 @@ fun TransferCard(
                     Text(
                         text = formatDate(transfer.transferDate),
                         fontSize = 14.sp,
-                        color = Color(0xFF666666)
+                        color = TextSecondary
                     )
                 }
 
@@ -122,7 +125,7 @@ fun TransferCard(
                 Text(
                     text = transfer.transferTypeStr ?: "Transfer",
                     fontSize = 14.sp,
-                    color = Color(0xFF1E88E5) // Sofascore standard blue
+                    color = BrandGreenMedium // Transfer type accent
                 )
             }
         }

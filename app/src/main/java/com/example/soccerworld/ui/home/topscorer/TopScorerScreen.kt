@@ -3,8 +3,7 @@ package com.example.soccerworld.ui.home.topscorer
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.ui.graphics.Color
+import com.example.soccerworld.ui.theme.FavoriteGold
 import com.example.soccerworld.ui.theme.TextSecondary
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -105,7 +104,7 @@ fun TopScorerRow(rank: Int, item: TopScorerEntity, playerImageUrl: String?) {
             Text(
                 text = "$rank",
                 fontWeight = FontWeight.Bold,
-                color = if (rank == 1) Color(0xFFFFC107) else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (rank == 1) FavoriteGold else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.width(32.dp)
             )
 
@@ -129,7 +128,7 @@ fun TopScorerRow(rank: Int, item: TopScorerEntity, playerImageUrl: String?) {
                 )
                 Text(
                     text = item.teamName,
-                    color = if (isSystemInDarkTheme()) TextSecondary else Color(0xFF4B5563),
+                    color = TextSecondary,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

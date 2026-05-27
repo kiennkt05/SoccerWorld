@@ -15,6 +15,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
+import com.example.soccerworld.ui.theme.FavoriteGold
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -66,7 +67,7 @@ fun TeamDetailScreen(teamId: String, onBack: () -> Unit, onNavigateToPlayer: (Pl
                         Icon(
                             imageVector = if (state.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                             contentDescription = "Favorite",
-                            tint = if (state.isFavorite) Color(0xFFFFC107) else MaterialTheme.colorScheme.onPrimary
+                            tint = if (state.isFavorite) FavoriteGold else MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 },

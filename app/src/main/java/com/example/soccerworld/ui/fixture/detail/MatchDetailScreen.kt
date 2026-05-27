@@ -63,6 +63,8 @@ import com.example.soccerworld.ui.theme.TextDark
 import com.example.soccerworld.ui.theme.TextSecondary
 import com.example.soccerworld.ui.theme.DividerColor
 import com.example.soccerworld.ui.theme.LoserText
+import com.example.soccerworld.ui.theme.FavoriteGold
+import com.example.soccerworld.ui.theme.LiveRed
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import java.text.SimpleDateFormat
@@ -171,10 +173,10 @@ fun MatchDetailContent(
                         onClick = { onTabSelected(index) },
                         text = {
                             Text(
-                                title,
+                                text = title,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 12.5.sp, // Sleek font size
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                fontSize = 13.sp,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
                             )
                         }
                     )
@@ -297,7 +299,7 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
                     Icon(
                         imageVector = if (isHomeFav) Icons.Filled.Star else Icons.Outlined.StarBorder,
                         contentDescription = "Favorite Home Team",
-                        tint = if (isHomeFav) Color(0xFFFFC107) else Color.LightGray,
+                        tint = if (isHomeFav) FavoriteGold else Color.LightGray,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -360,7 +362,7 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
                         status == "TIMED" -> "Upcoming"
                         else -> status
                     },
-                    color = if (isLive) Color(0xFFD32F2F) else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    color = if (isLive) LiveRed else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center
@@ -405,7 +407,7 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
                     Icon(
                         imageVector = if (isAwayFav) Icons.Filled.Star else Icons.Outlined.StarBorder,
                         contentDescription = "Favorite Away Team",
-                        tint = if (isAwayFav) Color(0xFFFFC107) else Color.LightGray,
+                        tint = if (isAwayFav) FavoriteGold else Color.LightGray,
                         modifier = Modifier.size(20.dp)
                     )
                 }

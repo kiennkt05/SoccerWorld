@@ -13,14 +13,14 @@ import androidx.core.view.WindowCompat
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.runtime.SideEffect
 
-// ── Dark scheme: Deep navy surfaces, Sofascore Blue accents ────────────────
+// ── Dark scheme: Premium Deep Forest & Neon Mint Accents ──────────────────
 private val DarkColorScheme = darkColorScheme(
-    primary              = Color(0xFF7B8CFF),   // lighter blue for dark bg
-    onPrimary            = Color(0xFF001A9E),
-    primaryContainer     = SofascoreBlueDark,
-    onPrimaryContainer   = Color(0xFFDEE0FF),
-    secondary            = Color(0xFFCBBEFF),
-    onSecondary          = Color(0xFF332B6A),
+    primary              = Color(0xFF66BB6A),   // Soft green-mint for high legibility on dark
+    onPrimary            = Color(0xFF072117),   // Deep forest green contrast
+    primaryContainer     = BrandGreenDark,
+    onPrimaryContainer   = Color(0xFFE8F5E9),
+    secondary            = Color(0xFF81C784),   // Soft sage green
+    onSecondary          = Color(0xFF072117),
     secondaryContainer   = DarkSurfaceVar,
     onSecondaryContainer = TextOnDark,
     background           = DarkBackground,
@@ -29,22 +29,22 @@ private val DarkColorScheme = darkColorScheme(
     onSurface            = TextOnDark,
     surfaceVariant       = DarkSurfaceVar,
     onSurfaceVariant     = TextSecondary,
-    outline              = Color(0xFF2C2C40),
-    outlineVariant       = Color(0xFF222236),
+    outline              = Color(0xFF1C2C24),   // Soft slate green border
+    outlineVariant       = Color(0xFF121D18),
     error                = LiveRed,
     onError              = Color.White
 )
 
-// ── Light scheme: Sofascore Blue primary, clean white surfaces ─────────────
+// ── Light scheme: Premium Sports Teal & Clean Light Background ──────────────
 private val LightColorScheme = lightColorScheme(
-    primary              = SofascoreBlue,
+    primary              = BrandGreenMedium,   // Premium Teal
     onPrimary            = Color.White,
-    primaryContainer     = Color(0xFFE8EBFF),   // soft blue tint
-    onPrimaryContainer   = SofascoreBlueDark,
-    secondary            = SofascorePurple,
+    primaryContainer     = Color(0xFFE2F0EC),   // Soft minty-green container tint
+    onPrimaryContainer   = BrandGreenDark,
+    secondary            = BrandGreenLight,
     onSecondary          = Color.White,
-    secondaryContainer   = Color(0xFFF0ECFF),
-    onSecondaryContainer = SofascorePurple,
+    secondaryContainer   = Color(0xFFEBF5F0),   // Light emerald-green tint
+    onSecondaryContainer = BrandGreenMedium,
     background           = LightBackground,
     onBackground         = TextDark,
     surface              = LightSurface,
@@ -52,7 +52,7 @@ private val LightColorScheme = lightColorScheme(
     surfaceVariant       = LightSurfaceVar,
     onSurfaceVariant     = TextSecondary,
     outline              = DividerColor,
-    outlineVariant       = Color(0xFFE0E0EC),
+    outlineVariant       = Color(0xFFD4E2DC),   // Soft slate-green borders
     error                = LiveRed,
     onError              = Color.White
 )
@@ -68,7 +68,7 @@ fun SoccerWorldTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = SofascoreBlueDark.toArgb()
+            window.statusBarColor = BrandGreenDark.toArgb() // Beautiful deep forest status bar
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }

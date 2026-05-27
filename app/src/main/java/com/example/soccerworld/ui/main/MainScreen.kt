@@ -17,6 +17,7 @@ import com.example.soccerworld.ui.matches.MatchesScreen
 import com.example.soccerworld.ui.navigation.Screen
 import com.example.soccerworld.ui.search.SearchScreen
 import com.example.soccerworld.ui.profile.ProfileScreen
+import com.example.soccerworld.ui.player.PlayerDetailInfo
 import com.example.soccerworld.ui.navigation.BottomNavItem
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -121,8 +122,9 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                     onTeamClick = { teamId ->
                         rootNavController.navigate(Screen.TeamDetail.createRoute(teamId))
                     },
-                    onPlayerClick = { playerId ->
-                        rootNavController.navigate(Screen.PlayerDetail.createRoute(playerId))
+                    onPlayerClick = { playerInfo ->
+                        rootNavController.currentBackStackEntry?.savedStateHandle?.set("player_info", playerInfo)
+                        rootNavController.navigate(Screen.PlayerDetail.createRoute(playerInfo.id))
                     },
                     onCompetitionClick = { leagueCode ->
                         CustomSharedPreferences(context).saveLeagueId(leagueCode)

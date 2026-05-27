@@ -39,6 +39,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.soccerworld.ui.auth.AuthViewModel
 import com.example.soccerworld.ui.favorites.FavoritesViewModel
 import com.example.soccerworld.ui.onboarding.popularLeagues
+import com.example.soccerworld.ui.theme.AccentNeonOrange
+import com.example.soccerworld.ui.theme.BrandGreenDark
+import com.example.soccerworld.ui.theme.BrandGreenMedium
+import com.example.soccerworld.ui.theme.DividerColor
+import com.example.soccerworld.ui.theme.LightBackground
 import com.example.soccerworld.ui.theme.SofascoreBlue
 import com.example.soccerworld.ui.theme.TextSecondary
 import com.example.soccerworld.util.CustomSharedPreferences
@@ -85,7 +90,7 @@ fun ProfileScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF5B3FC4))
+                    .background(BrandGreenMedium)
                     .statusBarsPadding()
                     .padding(bottom = 20.dp)
             ) {
@@ -118,7 +123,7 @@ fun ProfileScreen(
                         modifier = Modifier
                             .size(72.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFFF9800)),
+                            .background(AccentNeonOrange),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -153,17 +158,17 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(Color(0xFFF5F5F9))
+                .background(LightBackground)
         ) {
             // Profile Tabs (Overview / Predictions)
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.White,
-                contentColor = Color(0xFF5B3FC4),
+                contentColor = BrandGreenMedium,
                 indicator = { tabPositions ->
                     TabRowDefaults.SecondaryIndicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = Color(0xFF5B3FC4)
+                        color = BrandGreenMedium
                     )
                 }
             ) {
@@ -189,7 +194,8 @@ fun ProfileScreen(
                         isLoggedIn = isLoggedIn,
                         leagueName = leagueName,
                         onChangeLeague = onChangeLeague,
-                        onNavigateToLogin = onNavigateToLogin
+                        onNavigateToLogin = onNavigateToLogin,
+                        onNavigateToNotificationSettings = onNavigateToNotificationSettings
                     )
                 } else {
                     PredictionsTab()
@@ -206,7 +212,7 @@ fun ProfileScreen(
             text = { Text("Welcome to SoccerWorld! Here you can follow live matches, track statistics, save your favorite clubs, and use our smart AI chatbot to query team details.") },
             confirmButton = {
                 TextButton(onClick = { showHelpDialog = false }) {
-                    Text("Close", color = Color(0xFF5B3FC4))
+                    Text("Close", color = BrandGreenMedium)
                 }
             }
         )
@@ -224,6 +230,10 @@ fun ProfileScreen(
             onNavigateToLogin = {
                 showSettingsSheet = false
                 onNavigateToLogin()
+            },
+            onNavigateToNotificationSettings = {
+                showSettingsSheet = false
+                onNavigateToNotificationSettings()
             },
             onLogout = {
                 showSettingsSheet = false
@@ -264,7 +274,8 @@ private fun OverviewTab(
     isLoggedIn: Boolean,
     leagueName: String,
     onChangeLeague: () -> Unit,
-    onNavigateToLogin: () -> Unit
+    onNavigateToLogin: () -> Unit,
+    onNavigateToNotificationSettings: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -277,14 +288,14 @@ private fun OverviewTab(
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = BorderStroke(1.dp, Color(0xFFE8E8EF))
+            border = BorderStroke(1.dp, DividerColor)
         ) {
             Column {
                 Text(
                     text = "Quick Links",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF5B3FC4),
+                    color = BrandGreenMedium,
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                 )
 
@@ -292,39 +303,19 @@ private fun OverviewTab(
                     icon = Icons.Default.SportsSoccer,
                     title = "Change League",
                     subtitle = "Active: $leagueName",
-                    iconColor = Color(0xFF5B3FC4),
+                    iconColor = BrandGreenMedium,
                     onClick = onChangeLeague
                 )
 
-                HorizontalDivider(color = Color(0xFFE8E8EF), modifier = Modifier.padding(horizontal = 16.dp))
+                HorizontalDivider(color = DividerColor, modifier = Modifier.padding(horizontal = 16.dp))
 
-                var notifsEnabled by remember { mutableStateOf(true) }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFFF9800).copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Notifications, contentDescription = null, tint = Color(0xFFFF9800), modifier = Modifier.size(18.dp))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Notifications", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text("Alerts when matches start", fontSize = 11.sp, color = Color.Gray)
-                    }
-                    Switch(
-                        checked = notifsEnabled,
-                        onCheckedChange = { notifsEnabled = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF5B3FC4), checkedTrackColor = Color(0xFF5B3FC4).copy(alpha = 0.3f))
-                    )
-                }
+                ProfileMenuRow(
+                    icon = Icons.Default.Notifications,
+                    title = "Notification Settings",
+                    subtitle = "Manage FCM live alerts & reminders",
+                    iconColor = AccentNeonOrange,
+                    onClick = onNavigateToNotificationSettings
+                )
             }
         }
 
@@ -332,14 +323,14 @@ private fun OverviewTab(
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = BorderStroke(1.dp, Color(0xFFE8E8EF))
+            border = BorderStroke(1.dp, DividerColor)
         ) {
             Column {
                 Text(
                     text = "Support",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF5B3FC4),
+                    color = BrandGreenMedium,
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                 )
 
@@ -350,7 +341,7 @@ private fun OverviewTab(
                     iconColor = Color(0xFF2196F3)
                 ) {}
 
-                HorizontalDivider(color = Color(0xFFE8E8EF), modifier = Modifier.padding(horizontal = 16.dp))
+                HorizontalDivider(color = DividerColor, modifier = Modifier.padding(horizontal = 16.dp))
 
                 ProfileMenuRow(
                     icon = Icons.Default.Star,
@@ -374,7 +365,7 @@ private fun OverviewTab(
                     .fillMaxSize()
                     .background(
                         Brush.horizontalGradient(
-                            colors = listOf(Color(0xFF5B3FC4), Color(0xFFFF9800))
+                            colors = listOf(BrandGreenDark, AccentNeonOrange)
                         )
                     )
                     .padding(16.dp)
@@ -402,7 +393,7 @@ private fun OverviewTab(
 
                 Button(
                     onClick = {},
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color(0xFF5B3FC4)),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BrandGreenMedium),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.align(Alignment.CenterEnd),
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
@@ -453,7 +444,7 @@ private fun PredictionsTab() {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = BorderStroke(1.dp, Color(0xFFE8E8EF)),
+                border = BorderStroke(1.dp, DividerColor),
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Row(
@@ -466,10 +457,10 @@ private fun PredictionsTab() {
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF5B3FC4).copy(alpha = 0.1f)),
+                            .background(BrandGreenMedium.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ListAlt, contentDescription = null, tint = Color(0xFF5B3FC4), modifier = Modifier.size(18.dp))
+                        Icon(Icons.AutoMirrored.Filled.ListAlt, contentDescription = null, tint = BrandGreenMedium, modifier = Modifier.size(18.dp))
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
@@ -516,6 +507,7 @@ private fun SettingsBottomSheet(
     isLoggedIn: Boolean,
     onChangeLeague: () -> Unit,
     onNavigateToLogin: () -> Unit,
+    onNavigateToNotificationSettings: () -> Unit,
     onLogout: () -> Unit
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -538,41 +530,24 @@ private fun SettingsBottomSheet(
                 icon = Icons.Default.SportsSoccer,
                 title = "Change League",
                 subtitle = "Select league to follow",
-                iconColor = Color(0xFF5B3FC4),
+                iconColor = BrandGreenMedium,
                 onClick = onChangeLeague
             )
 
-            HorizontalDivider(color = Color(0xFFE8E8EF))
+            HorizontalDivider(color = DividerColor)
 
-            var localNotifChecked by remember { mutableStateOf(true) }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFFF9800).copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Notifications, contentDescription = null, tint = Color(0xFFFF9800), modifier = Modifier.size(18.dp))
+            ProfileMenuRow(
+                icon = Icons.Default.Notifications,
+                title = "Push Notifications",
+                subtitle = "Manage FCM live alerts & reminders",
+                iconColor = AccentNeonOrange,
+                onClick = {
+                    onDismiss()
+                    onNavigateToNotificationSettings()
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Push Notifications", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text("Alerts when matches are live", fontSize = 11.sp, color = Color.Gray)
-                }
-                Switch(
-                    checked = localNotifChecked,
-                    onCheckedChange = { localNotifChecked = it },
-                    colors = SwitchDefaults.colors(checkedThumbColor = Color(0xFF5B3FC4), checkedTrackColor = Color(0xFF5B3FC4).copy(alpha = 0.3f))
-                )
-            }
+            )
 
-            HorizontalDivider(color = Color(0xFFE8E8EF))
+            HorizontalDivider(color = DividerColor)
 
             if (isLoggedIn) {
                 Row(
@@ -606,13 +581,13 @@ private fun SettingsBottomSheet(
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF5B3FC4).copy(alpha = 0.1f)),
+                            .background(BrandGreenMedium.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = Color(0xFF5B3FC4), modifier = Modifier.size(18.dp))
+                        Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = BrandGreenMedium, modifier = Modifier.size(18.dp))
                     }
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("Sign In with Google", fontWeight = FontWeight.Bold, color = Color(0xFF5B3FC4), fontSize = 14.sp)
+                    Text("Sign In with Google", fontWeight = FontWeight.Bold, color = BrandGreenMedium, fontSize = 14.sp)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))

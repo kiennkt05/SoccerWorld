@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBox
@@ -25,7 +26,16 @@ import androidx.compose.material.icons.filled.SportsSoccer
 import com.example.soccerworld.ui.theme.TextOnDark
 import com.example.soccerworld.ui.theme.TextDark
 import com.example.soccerworld.ui.theme.TextSecondary
+import com.example.soccerworld.ui.theme.BrandGreenMedium
+import com.example.soccerworld.ui.theme.AccentNeonOrange
+import com.example.soccerworld.ui.theme.AccentNeonMint
+import com.example.soccerworld.ui.theme.LightBackground
+import com.example.soccerworld.ui.theme.DividerColor
+import com.example.soccerworld.ui.player.PlayerDetailInfo
+import com.example.soccerworld.util.CustomSharedPreferences
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -35,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -55,17 +66,22 @@ import com.example.soccerworld.util.ViewModelFactory
 @Composable
 fun SearchScreen(
     onTeamClick: (String) -> Unit = {},
-    onPlayerClick: (String) -> Unit = {},
+    onPlayerClick: (PlayerDetailInfo) -> Unit = {},
     onCompetitionClick: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val sharedPrefs = remember { CustomSharedPreferences.invoke(context) }
     val viewModel: SearchViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideFootballRepository(context))
     )
     val state by viewModel.uiState.collectAsState()
     
     var selectedSubTab by remember { mutableIntStateOf(0) }
-    val recentSearches = remember { mutableStateListOf("Arsenal", "Real Madrid", "Manchester United") }
+    val recentSearches = remember {
+        mutableStateListOf<String>().apply {
+            addAll(sharedPrefs.getSearchHistory())
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -73,7 +89,7 @@ fun SearchScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF5B3FC4))
+                .background(BrandGreenMedium)
                 .statusBarsPadding()
                 .padding(horizontal = 8.dp, vertical = 12.dp),
             contentAlignment = Alignment.CenterStart
@@ -94,40 +110,61 @@ fun SearchScreen(
                     )
                 }
 
-                TextField(
+                BasicTextField(
                     value = state.query,
                     onValueChange = viewModel::onSearchQueryChanged,
                     modifier = Modifier
                         .weight(1f)
                         .padding(end = 8.dp)
-                        .height(48.dp),
-                    placeholder = {
-                        Text(
-                            "Search matches, competitions, team...",
-                            color = Color.Gray,
-                            fontSize = 13.sp
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray)
-                    },
-                    trailingIcon = {
-                        if (state.query.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color.Gray)
+                        .height(40.dp)
+                        .background(Color.White, CircleShape),
+                    textStyle = TextStyle(color = Color.Black, fontSize = 14.sp),
+                    singleLine = true,
+                    cursorBrush = SolidColor(BrandGreenMedium),
+                    decorationBox = { innerTextField ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 14.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                tint = Color.Gray,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Box(
+                                modifier = Modifier.weight(1f),
+                                contentAlignment = Alignment.CenterStart
+                            ) {
+                                if (state.query.isEmpty()) {
+                                    Text(
+                                        text = "Search matches, competitions, team...",
+                                        color = Color.Gray,
+                                        fontSize = 13.sp,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                innerTextField()
+                            }
+                            if (state.query.isNotEmpty()) {
+                                IconButton(
+                                    onClick = { viewModel.onSearchQueryChanged("") },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = "Clear",
+                                        tint = Color.Gray,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
                             }
                         }
-                    },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black
-                    ),
-                    shape = RoundedCornerShape(24.dp),
-                    singleLine = true
+                    }
                 )
             }
         }
@@ -138,7 +175,7 @@ fun SearchScreen(
             state.isLoading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = Color(0xFF5B3FC4))
+                        CircularProgressIndicator(color = BrandGreenMedium)
                         Spacer(modifier = Modifier.height(12.dp))
                         Text("Searching...", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -178,42 +215,81 @@ fun SearchScreen(
                 TabRow(
                     selectedTabIndex = selectedSubTab,
                     containerColor = Color.White,
-                    contentColor = Color(0xFF5B3FC4),
+                    contentColor = BrandGreenMedium,
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
                             modifier = Modifier.tabIndicatorOffset(tabPositions[selectedSubTab]),
-                            color = Color(0xFF5B3FC4)
+                            color = BrandGreenMedium
                         )
                     }
                 ) {
                     Tab(
                         selected = selectedSubTab == 0,
                         onClick = { selectedSubTab = 0 },
-                        text = { Text("Suggested", fontWeight = FontWeight.Bold) },
-                        selectedContentColor = Color(0xFF5B3FC4),
+                        text = {
+                            Text(
+                                text = "Suggested",
+                                fontWeight = if (selectedSubTab == 0) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 13.sp
+                            )
+                        },
+                        selectedContentColor = BrandGreenMedium,
                         unselectedContentColor = Color.Gray
                     )
                     Tab(
                         selected = selectedSubTab == 1,
                         onClick = { selectedSubTab = 1 },
-                        text = { Text("Recent", fontWeight = FontWeight.Bold) },
-                        selectedContentColor = Color(0xFF5B3FC4),
+                        text = {
+                            Text(
+                                text = "Recent",
+                                fontWeight = if (selectedSubTab == 1) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 13.sp
+                            )
+                        },
+                        selectedContentColor = BrandGreenMedium,
                         unselectedContentColor = Color.Gray
                     )
                 }
 
                 if (selectedSubTab == 0) {
                     SuggestedTabContent(
-                        onTeamClick = onTeamClick,
-                        onPlayerClick = onPlayerClick,
-                        onCompetitionClick = onCompetitionClick
+                        onTeamClick = { id, name ->
+                            sharedPrefs.addSearchQuery(name)
+                            recentSearches.clear()
+                            recentSearches.addAll(sharedPrefs.getSearchHistory())
+                            onTeamClick(id)
+                        },
+                        onPlayerClick = { playerInfo ->
+                            sharedPrefs.addSearchQuery(playerInfo.name)
+                            recentSearches.clear()
+                            recentSearches.addAll(sharedPrefs.getSearchHistory())
+                            onPlayerClick(playerInfo)
+                        },
+                        onCompetitionClick = { code, name ->
+                            sharedPrefs.addSearchQuery(name)
+                            recentSearches.clear()
+                            recentSearches.addAll(sharedPrefs.getSearchHistory())
+                            onCompetitionClick(code)
+                        }
                     )
                 } else {
                     RecentTabContent(
                         recentSearches = recentSearches,
-                        onItemClick = { query -> viewModel.onSearchQueryChanged(query) },
-                        onClearAll = { recentSearches.clear() },
-                        onRemoveItem = { item -> recentSearches.remove(item) }
+                        onItemClick = { query ->
+                            sharedPrefs.addSearchQuery(query)
+                            recentSearches.clear()
+                            recentSearches.addAll(sharedPrefs.getSearchHistory())
+                            viewModel.onSearchQueryChanged(query)
+                        },
+                        onClearAll = {
+                            sharedPrefs.clearSearchHistory()
+                            recentSearches.clear()
+                        },
+                        onRemoveItem = { item ->
+                            sharedPrefs.removeSearchQuery(item)
+                            recentSearches.clear()
+                            recentSearches.addAll(sharedPrefs.getSearchHistory())
+                        }
                     )
                 }
             }
@@ -222,8 +298,18 @@ fun SearchScreen(
             else -> {
                 SearchResultList(
                     results = state.results,
-                    onTeamClick = onTeamClick,
-                    onPlayerClick = onPlayerClick
+                    onTeamClick = { id, name ->
+                        sharedPrefs.addSearchQuery(name)
+                        recentSearches.clear()
+                        recentSearches.addAll(sharedPrefs.getSearchHistory())
+                        onTeamClick(id)
+                    },
+                    onPlayerClick = { playerInfo ->
+                        sharedPrefs.addSearchQuery(playerInfo.name)
+                        recentSearches.clear()
+                        recentSearches.addAll(sharedPrefs.getSearchHistory())
+                        onPlayerClick(playerInfo)
+                    }
                 )
             }
         }
@@ -233,16 +319,16 @@ fun SearchScreen(
 // ── Suggested Tab Content Composable ─────────────────────────────────────────
 @Composable
 private fun SuggestedTabContent(
-    onTeamClick: (String) -> Unit,
-    onPlayerClick: (String) -> Unit,
-    onCompetitionClick: (String) -> Unit
+    onTeamClick: (String, String) -> Unit,
+    onPlayerClick: (PlayerDetailInfo) -> Unit,
+    onCompetitionClick: (String, String) -> Unit
 ) {
     val expandedStates = remember { mutableStateMapOf("Vietnam" to false, "World" to false, "Europe" to false) }
 
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F9)),
+            .background(LightBackground),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         
@@ -261,7 +347,7 @@ private fun SuggestedTabContent(
                 )
                 items(teams, key = { it.first }) { (id, name, logo) ->
                     SuggestedCard(name = name, logo = logo) {
-                        onTeamClick(id)
+                        onTeamClick(id, name)
                     }
                 }
             }
@@ -275,14 +361,43 @@ private fun SuggestedTabContent(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 val players = listOf(
-                    Triple("cr7", "C. Ronaldo", "https://www.flashscore.com/res/image/data/h24_placeholder.jpg"),
-                    Triple("messi", "Lionel Messi", "https://www.flashscore.com/res/image/data/h24_placeholder.jpg"),
-                    Triple("mbappe", "K. Mbappé", "https://www.flashscore.com/res/image/data/h24_placeholder.jpg"),
-                    Triple("yamal", "Lamine Yamal", "https://www.flashscore.com/res/image/data/h24_placeholder.jpg")
+                    Triple("WGOY4FSt", "C. Ronaldo", "https://www.flashscore.com/res/image/data/nsF9bZdM-bTK8dxEL.png"),
+                    Triple("vgOOdZbd", "Lionel Messi", "https://www.flashscore.com/res/image/data/d8SZZtZg-S4hzKKkP.png"),
+                    Triple("Wn6E2SED", "K. Mbappé", "https://www.flashscore.com/res/image/data/W6bb7hg5-fgmNpuz4.png"),
+                    Triple("lAt3vEub", "Lamine Yamal", "https://www.flashscore.com/res/image/data/KKCp9peM-hEMFHRD2.png")
                 )
                 items(players, key = { it.first }) { (id, name, photo) ->
                     SuggestedPlayerCard(name = name, photo = photo) {
-                        onPlayerClick(id)
+                        val playerInfo = PlayerDetailInfo(
+                            id = id,
+                            name = name,
+                            position = "Forward",
+                            dateOfBirth = when (id) {
+                                "WGOY4FSt" -> "1985-02-05"
+                                "vgOOdZbd" -> "1987-06-24"
+                                "Wn6E2SED" -> "1998-12-20"
+                                "lAt3vEub" -> "2007-07-13"
+                                else -> null
+                            },
+                            nationality = when (id) {
+                                "WGOY4FSt" -> "Portugal"
+                                "vgOOdZbd" -> "Argentina"
+                                "Wn6E2SED" -> "France"
+                                "lAt3vEub" -> "Spain"
+                                else -> null
+                            },
+                            jerseyNumber = when (id) {
+                                "WGOY4FSt" -> 7
+                                "vgOOdZbd" -> 10
+                                "Wn6E2SED" -> 9
+                                "lAt3vEub" -> 19
+                                else -> null
+                            },
+                            imageUrl = photo,
+                            flagId = null,
+                            teamId = null
+                        )
+                        onPlayerClick(playerInfo)
                     }
                 }
             }
@@ -318,7 +433,7 @@ private fun SuggestedTabContent(
                 )
                 items(comps) { (code, name, logo) ->
                     SuggestedCard(name = name, logo = logo) {
-                        onCompetitionClick(code)
+                        onCompetitionClick(code, name)
                     }
                 }
             }
@@ -350,7 +465,7 @@ private fun SuggestedTabContent(
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onCompetitionClick("PL") } // Demo redirect
+                            .clickable { onCompetitionClick("PL", "V-League 1") } // Demo redirect
                             .padding(horizontal = 32.dp, vertical = 12.dp)
                     )
                 }
@@ -363,7 +478,7 @@ private fun SuggestedTabContent(
                 title = "World",
                 icon = Icons.Default.Public,
                 badge = "1/7",
-                badgeColor = Color(0xFF1DB954),
+                badgeColor = AccentNeonMint,
                 isExpanded = expandedStates["World"] == true,
                 onToggle = { expandedStates["World"] = !(expandedStates["World"] == true) }
             )
@@ -381,10 +496,10 @@ private fun SuggestedTabContent(
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onCompetitionClick("CL") } // Demo redirect
+                                .clickable { onCompetitionClick("CL", name) } // Demo redirect
                                 .padding(horizontal = 32.dp, vertical = 12.dp)
                         )
-                        HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFE8E8EF))
+                        HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
                     }
                 }
             }
@@ -396,7 +511,7 @@ private fun SuggestedTabContent(
                 title = "Europe",
                 icon = Icons.Default.Star,
                 badge = "3",
-                badgeColor = Color(0xFF5B3FC4),
+                badgeColor = BrandGreenMedium,
                 isExpanded = expandedStates["Europe"] == true,
                 onToggle = { expandedStates["Europe"] = !(expandedStates["Europe"] == true) }
             )
@@ -418,10 +533,10 @@ private fun SuggestedTabContent(
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onCompetitionClick(code) }
+                                .clickable { onCompetitionClick(code, name) }
                                 .padding(horizontal = 32.dp, vertical = 12.dp)
                         )
-                        HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFE8E8EF))
+                        HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
                     }
                 }
             }
@@ -451,7 +566,7 @@ private fun RecentTabContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F9))
+            .background(LightBackground)
     ) {
         Card(
             modifier = Modifier
@@ -485,7 +600,7 @@ private fun RecentTabContent(
                         }
                     }
                     if (index < recentSearches.size - 1) {
-                        HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFE8E8EF))
+                        HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
                     }
                 }
             }
@@ -498,7 +613,7 @@ private fun RecentTabContent(
             contentAlignment = Alignment.Center
         ) {
             TextButton(onClick = onClearAll) {
-                Text("Clear search history", color = Color(0xFF5B3FC4), fontWeight = FontWeight.Bold)
+                Text("Clear search history", color = BrandGreenMedium, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -512,7 +627,7 @@ private fun SuggestedHeader(title: String) {
         text = title,
         fontSize = 14.sp,
         fontWeight = FontWeight.Bold,
-        color = Color(0xFF5B3FC4),
+        color = BrandGreenMedium,
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 10.dp)
     )
 }
@@ -526,7 +641,7 @@ private fun SuggestedCard(name: String, logo: String, onClick: () -> Unit) {
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFE8E8EF))
+        border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -561,11 +676,11 @@ private fun SuggestedPlayerCard(name: String, photo: String, onClick: () -> Unit
     Card(
         modifier = Modifier
             .width(100.dp)
-            .height(110.dp)
+            .height(115.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFE8E8EF))
+        border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -574,15 +689,16 @@ private fun SuggestedPlayerCard(name: String, photo: String, onClick: () -> Unit
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(54.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFE8E8EF)),
+                    .background(DividerColor),
                 contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
                     model = photo,
                     contentDescription = name,
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    contentScale = ContentScale.Crop,
                     placeholder = painterResource(id = R.drawable.ic_ball),
                     error = painterResource(id = R.drawable.ic_ball)
                 )
@@ -611,7 +727,7 @@ private fun SuggestedRankingCard(name: String, icon: ImageVector, onClick: () ->
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFE8E8EF))
+        border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -622,13 +738,13 @@ private fun SuggestedRankingCard(name: String, icon: ImageVector, onClick: () ->
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF5B3FC4).copy(alpha = 0.1f)),
+                    .background(BrandGreenMedium.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = Color(0xFF5B3FC4),
+                    tint = BrandGreenMedium,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -662,7 +778,7 @@ private fun ExpandableCategoryRow(
             .clickable { onToggle() },
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(0.5.dp, Color(0xFFE8E8EF))
+        border = BorderStroke(0.5.dp, DividerColor)
     ) {
         Row(
             modifier = Modifier
@@ -709,8 +825,8 @@ private fun ExpandableCategoryRow(
 @Composable
 private fun SearchResultList(
     results: List<SearchItemDto>,
-    onTeamClick: (String) -> Unit,
-    onPlayerClick: (String) -> Unit
+    onTeamClick: (String, String) -> Unit,
+    onPlayerClick: (PlayerDetailInfo) -> Unit
 ) {
     val teams = results.filterIsInstance<TeamSearchItemDto>()
     val players = results.filterIsInstance<PlayerSearchItemDto>()
@@ -748,7 +864,7 @@ private fun SearchResultList(
 
 @Composable
 private fun GroupHeader(title: String, icon: ImageVector, count: Int) {
-    val primary = Color(0xFF5B3FC4)
+    val primary = BrandGreenMedium
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -782,8 +898,8 @@ private fun GroupHeader(title: String, icon: ImageVector, count: Int) {
 @Composable
 fun SearchItemCard(
     item: SearchItemDto,
-    onTeamClick: (String) -> Unit,
-    onPlayerClick: (String) -> Unit
+    onTeamClick: (String, String) -> Unit,
+    onPlayerClick: (PlayerDetailInfo) -> Unit
 ) {
     val imageUrl = when (item) {
         is TeamSearchItemDto -> item.image
@@ -809,9 +925,9 @@ fun SearchItemCard(
         else -> Icons.Default.Search
     }
     val typeColor = when (item) {
-        is TeamSearchItemDto -> Color(0xFF5B3FC4)
-        is PlayerSearchItemDto -> Color(0xFFFF9800)
-        is TournamentSearchItemDto -> Color(0xFF1DB954)
+        is TeamSearchItemDto -> BrandGreenMedium
+        is PlayerSearchItemDto -> AccentNeonOrange
+        is TournamentSearchItemDto -> AccentNeonMint
         else -> Color.Gray
     }
 
@@ -820,8 +936,21 @@ fun SearchItemCard(
             .fillMaxWidth()
             .clickable {
                 when (item) {
-                    is TeamSearchItemDto -> onTeamClick(item.id)
-                    is PlayerSearchItemDto -> onPlayerClick(item.id)
+                    is TeamSearchItemDto -> onTeamClick(item.id, item.name)
+                    is PlayerSearchItemDto -> {
+                        val playerInfo = PlayerDetailInfo(
+                            id = item.id,
+                            name = item.name,
+                            position = null,
+                            dateOfBirth = null,
+                            nationality = item.countryName,
+                            jerseyNumber = null,
+                            imageUrl = item.image,
+                            flagId = null,
+                            teamId = null
+                        )
+                        onPlayerClick(playerInfo)
+                    }
                     else -> {}
                 }
             }

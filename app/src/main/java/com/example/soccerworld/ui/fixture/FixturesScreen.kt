@@ -150,8 +150,8 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
                         text = {
                             Text(
                                 text = formatTabTitle(tab),
-                                fontWeight = if (state.selectedTab == tab) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 14.sp
+                                fontWeight = if (state.selectedTab == tab) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 13.sp
                             )
                         },
                         selectedContentColor = MaterialTheme.colorScheme.primary,
@@ -232,7 +232,7 @@ fun FixtureCard(
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = "Toggle favorite",
-                    tint = if (isFavorite) Color(0xFFFFC107) else MaterialTheme.colorScheme.outlineVariant,
+                    tint = if (isFavorite) FavoriteGold else MaterialTheme.colorScheme.outlineVariant,
                     modifier = Modifier.size(20.dp)
                 )
             }

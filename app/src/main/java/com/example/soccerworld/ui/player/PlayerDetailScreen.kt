@@ -48,6 +48,7 @@ import com.example.soccerworld.model.fixture.Matche
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.soccerworld.ui.theme.FavoriteGold
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -140,7 +141,7 @@ fun PlayerDetailScreen(
                         Icon(
                             imageVector = if (uiState.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Favorite",
-                            tint = if (uiState.isFavorite) Color(0xFFFFC107) else Color.White
+                            tint = if (uiState.isFavorite) FavoriteGold else Color.White
                         )
                     }
                 },

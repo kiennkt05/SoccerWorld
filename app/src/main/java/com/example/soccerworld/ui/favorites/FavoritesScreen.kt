@@ -25,6 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import com.example.soccerworld.ui.theme.AccentNeonOrange
+import com.example.soccerworld.ui.theme.BrandGreenMedium
+import com.example.soccerworld.ui.theme.DividerColor
+import com.example.soccerworld.ui.theme.LightBackground
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -68,7 +72,7 @@ fun FavoritesScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF5B3FC4))
+                    .background(BrandGreenMedium)
                     .statusBarsPadding()
             ) {
                 // Header Title
@@ -89,7 +93,7 @@ fun FavoritesScreen(
                 // Sub-tabs (Events, Teams, Competitions, Athletes)
                 TabRow(
                     selectedTabIndex = selectedTab,
-                    containerColor = Color(0xFF5B3FC4),
+                    containerColor = BrandGreenMedium,
                     contentColor = Color.White,
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
@@ -122,7 +126,7 @@ fun FavoritesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(Color(0xFFF5F5F9))
+                .background(LightBackground)
         ) {
             if (!isLoggedIn && selectedTab == 0) {
                 // Keep the matches list locked if user is a guest, but let them interact with Teams locally
@@ -179,7 +183,7 @@ private fun GuestSyncBanner(
         modifier = modifier
             .fillMaxWidth()
             .padding(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF5B3FC4)),
+        colors = CardDefaults.cardColors(containerColor = BrandGreenMedium),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -204,7 +208,7 @@ private fun GuestSyncBanner(
             }
             Button(
                 onClick = onLoginClick,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color(0xFF5B3FC4)),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BrandGreenMedium),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {
@@ -222,7 +226,7 @@ private fun EventsTabContent(
 ) {
     if (state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = Color(0xFF5B3FC4))
+            CircularProgressIndicator(color = BrandGreenMedium)
         }
     } else if (state.matches.isEmpty()) {
         FavoritesEmptyState(message = "No favorite matches yet", hint = "Tap the ☆ icon on matches to save them here.")
@@ -311,7 +315,7 @@ private fun TeamsTabContent(
                                 .height(110.dp)
                                 .clickable { onAddClick() },
                             colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, Color(0xFFE8E8EF)),
+                            border = BorderStroke(1.dp, DividerColor),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Column(
@@ -323,13 +327,13 @@ private fun TeamsTabContent(
                                     modifier = Modifier
                                         .size(36.dp)
                                         .clip(CircleShape)
-                                        .background(Color(0xFF5B3FC4).copy(alpha = 0.1f)),
+                                        .background(BrandGreenMedium.copy(alpha = 0.1f)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(Icons.Default.Add, contentDescription = "Add", tint = Color(0xFF5B3FC4))
+                                    Icon(Icons.Default.Add, contentDescription = "Add", tint = BrandGreenMedium)
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("Add Team", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF5B3FC4))
+                                Text("Add Team", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BrandGreenMedium)
                             }
                         }
 
@@ -425,11 +429,11 @@ private fun TeamsTabContent(
                     Icon(
                         imageVector = if (isFav) Icons.Filled.Star else Icons.Outlined.StarBorder,
                         contentDescription = "Favorite",
-                        tint = if (isFav) Color(0xFFFF9800) else Color.LightGray
+                        tint = if (isFav) AccentNeonOrange else Color.LightGray
                     )
                 }
             }
-            HorizontalDivider(thickness = 0.5.dp, color = Color(0xFFE8E8EF))
+            HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
         }
     }
 }
@@ -446,7 +450,7 @@ private fun FavoritedTeamGridItem(
             .height(110.dp)
             .clickable { onTeamClick(team.teamId) },
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFE8E8EF)),
+        border = BorderStroke(1.dp, DividerColor),
         shape = RoundedCornerShape(12.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -572,7 +576,7 @@ private fun AddTeamBottomSheet(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = Color(0xFF5B3FC4))
+                    CircularProgressIndicator(color = BrandGreenMedium)
                 }
             } else if (results.isEmpty() && query.trim().length >= 2) {
                 Box(
@@ -620,7 +624,7 @@ private fun AddTeamBottomSheet(
                                     Icon(
                                         imageVector = if (isFav) Icons.Filled.Star else Icons.Outlined.StarBorder,
                                         contentDescription = "Star",
-                                        tint = if (isFav) Color(0xFFFF9800) else Color.LightGray
+                                        tint = if (isFav) AccentNeonOrange else Color.LightGray
                                     )
                                 }
                             }
@@ -644,7 +648,7 @@ private fun FavoritesEmptyState(message: String, hint: String) {
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFE8E8EF)),
+                    .background(DividerColor),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -684,13 +688,13 @@ private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF5B3FC4).copy(alpha = 0.1f)),
+                    .background(BrandGreenMedium.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = null,
-                    tint = Color(0xFF5B3FC4),
+                    tint = BrandGreenMedium,
                     modifier = Modifier.size(36.dp)
                 )
             }
@@ -712,7 +716,7 @@ private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
             Button(
                 onClick = onNavigateToLogin,
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B3FC4))
+                colors = ButtonDefaults.buttonColors(containerColor = BrandGreenMedium)
             ) {
                 Text("Sign In", fontWeight = FontWeight.Bold)
             }

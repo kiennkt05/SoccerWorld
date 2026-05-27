@@ -15,8 +15,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.soccerworld.model.matchdetail.MatchLineupTeam
+import com.example.soccerworld.ui.theme.LightBackground
 
-val AppBackground = Color(0xFFF0F1F5)
+val AppBackground = LightBackground
 val HomeColor = Color(0xFF00B050)
 val AwayColor = Color(0xFF2B44FF)
 

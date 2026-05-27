@@ -78,8 +78,8 @@ fun HomeScreen(
                     text = {
                         Text(
                             text = title,
-                            fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 14.sp
+                            fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Medium,
+                            fontSize = 13.sp
                         )
                     },
                     selectedContentColor = AccentEmerald,
