@@ -80,7 +80,8 @@ data class PlayerDetailInfo(
 @Composable
 fun PlayerDetailScreen(
     playerInfo: PlayerDetailInfo,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToMatch: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val factory = ViewModelFactory(Injection.provideFootballRepository(context))
@@ -313,7 +314,7 @@ fun PlayerDetailScreen(
             Box(modifier = Modifier.fillMaxSize()) {
                 when (selectedTab) {
                     0 -> DetailsTab(playerInfo, playerData, uiState.isLoadingDetails, positionColor)
-                    1 -> PlayerMatchesTab(uiState, playerData)
+                    1 -> PlayerMatchesTab(uiState, playerData, onNavigateToMatch)
                     2 -> PlayerCareerTab(uiState)
                 }
             }
@@ -546,7 +547,7 @@ private fun InfoItem(label: String, value: String) {
 // TAB 2 — MATCHES (Ported exact layout from TeamTabs.kt)
 // ─────────────────────────────────────────────────────────────────────────────
 @Composable
-private fun PlayerMatchesTab(uiState: PlayerDetailUiState, playerData: PlayerData?) {
+private fun PlayerMatchesTab(uiState: PlayerDetailUiState, playerData: PlayerData?, onMatchClick: (String) -> Unit = {}) {
     when {
         uiState.isLoadingMatches -> Box(Modifier.fillMaxSize(), Alignment.Center) {
             CircularProgressIndicator()
@@ -568,12 +569,18 @@ private fun PlayerMatchesTab(uiState: PlayerDetailUiState, playerData: PlayerDat
         }
         else -> {
             var activeFilter by remember { mutableStateOf("Finished") }
-            val filters = listOf("Finished", "Scheduled")
+            val filters = listOf("Finished", "Live", "Scheduled")
 
             val finishedMatches = remember(uiState.matches) {
                 uiState.matches.filter {
                     it.status == "FINISHED" || it.stage == "FINISHED"
                 }.sortedByDescending { it.utcDate.orEmpty() }
+            }
+
+            val liveMatches = remember(uiState.matches) {
+                uiState.matches.filter {
+                    it.status == "IN_PLAY" || it.status == "PAUSED" || it.stage == "IN_PLAY" || it.stage == "PAUSED"
+                }.sortedBy { it.utcDate.orEmpty() }
             }
 
             val scheduledMatches = remember(uiState.matches) {
@@ -582,7 +589,11 @@ private fun PlayerMatchesTab(uiState: PlayerDetailUiState, playerData: PlayerDat
                 }.sortedBy { it.utcDate.orEmpty() }
             }
 
-            val activeMatches = if (activeFilter == "Finished") finishedMatches else scheduledMatches
+            val activeMatches = when (activeFilter) {
+                "Finished" -> finishedMatches
+                "Live" -> liveMatches
+                else -> scheduledMatches
+            }
 
             val grouped = remember(activeMatches) {
                 val map = linkedMapOf<String, MutableList<Matche>>()
@@ -608,7 +619,11 @@ private fun PlayerMatchesTab(uiState: PlayerDetailUiState, playerData: PlayerDat
                 ) {
                     filters.forEach { f ->
                         val selected = activeFilter == f
-                        val labelText = if (f == "Finished") stringResource(R.string.player_finished) else stringResource(R.string.player_scheduled)
+                        val labelText = when (f) {
+                            "Finished" -> stringResource(R.string.player_finished)
+                            "Live" -> "Live"
+                            else -> stringResource(R.string.player_scheduled)
+                        }
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -682,7 +697,7 @@ private fun PlayerMatchesTab(uiState: PlayerDetailUiState, playerData: PlayerDat
                                                 modifier = Modifier.padding(horizontal = 14.dp),
                                                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
                                             )
-                                            PlayerMatchRow(match, activeFilter, playerData)
+                                            PlayerMatchRow(match, activeFilter, playerData, onMatchClick)
                                         }
                                     }
                                 }
@@ -696,7 +711,7 @@ private fun PlayerMatchesTab(uiState: PlayerDetailUiState, playerData: PlayerDat
 }
 
 @Composable
-private fun PlayerMatchRow(match: Matche, activeFilter: String, playerData: PlayerData?) {
+private fun PlayerMatchRow(match: Matche, activeFilter: String, playerData: PlayerData?, onClick: (String) -> Unit = {}) {
     val sofaDate = remember(match.utcDate) { formatSofaDate(match.utcDate) }
     val matchTime = remember(match.utcDate) { formatMatchTime(match.utcDate) }
     val isFinished = activeFilter == "Finished"
@@ -707,6 +722,7 @@ private fun PlayerMatchRow(match: Matche, activeFilter: String, playerData: Play
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { match.id?.let { onClick(it) } }
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -724,14 +740,21 @@ private fun PlayerMatchRow(match: Matche, activeFilter: String, playerData: Play
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
             )
             Spacer(modifier = Modifier.height(2.dp))
-            val statusText = if (isFinished) "FT" else matchTime
+            val statusText = when (activeFilter) {
+                "Finished" -> "FT"
+                "Live" -> if (match.status == "PAUSED") "HT" else "Live"
+                else -> matchTime
+            }
             Text(
                 text = statusText,
                 style = MaterialTheme.typography.labelSmall,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (isFinished) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) 
-                        else MaterialTheme.colorScheme.primary
+                color = when (activeFilter) {
+                    "Live" -> Color(0xFFE53935)
+                    "Finished" -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    else -> MaterialTheme.colorScheme.primary
+                }
             )
         }
 
@@ -811,8 +834,8 @@ private fun PlayerMatchRow(match: Matche, activeFilter: String, playerData: Play
             }
         }
 
-        // Scores Column (if finished)
-        if (isFinished) {
+        // Scores Column (if finished or live)
+        if (activeFilter == "Finished" || activeFilter == "Live") {
             val homeScore = match.score?.fullTime?.home
             val awayScore = match.score?.fullTime?.away
             Column(
@@ -839,41 +862,43 @@ private fun PlayerMatchRow(match: Matche, activeFilter: String, playerData: Play
             }
 
             // Outcome badge
-            val homeScoreVal = homeScore ?: 0
-            val awayScoreVal = awayScore ?: 0
-            val homeIsCurrent = remember(match.homeTeam, currentTeamId, currentTeamName) {
-                isCurrentTeam(match.homeTeam?.id, match.homeTeam?.name, currentTeamId, currentTeamName)
-            }
-            val awayIsCurrent = remember(match.awayTeam, currentTeamId, currentTeamName) {
-                isCurrentTeam(match.awayTeam?.id, match.awayTeam?.name, currentTeamId, currentTeamName)
-            }
-            val outcome = remember(homeScoreVal, awayScoreVal, homeIsCurrent, awayIsCurrent) {
-                when {
-                    homeScoreVal == awayScoreVal -> "D"
-                    homeScoreVal > awayScoreVal -> if (homeIsCurrent) "W" else if (awayIsCurrent) "L" else "D"
-                    else -> if (awayIsCurrent) "W" else if (homeIsCurrent) "L" else "D"
+            if (activeFilter == "Finished") {
+                val homeScoreVal = homeScore ?: 0
+                val awayScoreVal = awayScore ?: 0
+                val homeIsCurrent = remember(match.homeTeam, currentTeamId, currentTeamName) {
+                    isCurrentTeam(match.homeTeam?.id, match.homeTeam?.name, currentTeamId, currentTeamName)
                 }
-            }
-            val badgeColor = when (outcome) {
-                "W" -> Color(0xFF2EA64F)
-                "L" -> Color(0xFFE53935)
-                else -> Color(0xFF9E9E9E)
-            }
+                val awayIsCurrent = remember(match.awayTeam, currentTeamId, currentTeamName) {
+                    isCurrentTeam(match.awayTeam?.id, match.awayTeam?.name, currentTeamId, currentTeamName)
+                }
+                val outcome = remember(homeScoreVal, awayScoreVal, homeIsCurrent, awayIsCurrent) {
+                    when {
+                        homeScoreVal == awayScoreVal -> "D"
+                        homeScoreVal > awayScoreVal -> if (homeIsCurrent) "W" else if (awayIsCurrent) "L" else "D"
+                        else -> if (awayIsCurrent) "W" else if (homeIsCurrent) "L" else "D"
+                    }
+                }
+                val badgeColor = when (outcome) {
+                    "W" -> Color(0xFF2EA64F)
+                    "L" -> Color(0xFFE53935)
+                    else -> Color(0xFF9E9E9E)
+                }
 
-            Box(
-                modifier = Modifier
-                    .padding(start = 8.dp)
-                    .size(24.dp)
-                    .background(badgeColor, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = outcome,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
+                Box(
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                        .size(24.dp)
+                        .background(badgeColor, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = outcome,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
         }
     }

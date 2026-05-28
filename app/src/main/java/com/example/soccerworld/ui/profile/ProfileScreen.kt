@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.font.FontWeight
@@ -66,9 +67,20 @@ fun ProfileScreen(
 ) {
     val context = LocalContext.current
     val sharedPrefs = CustomSharedPreferences.invoke(context)
+    val isPreview = LocalInspectionMode.current
 
     var refreshTrigger by remember { mutableStateOf(0) }
-    val firebaseUser = remember(refreshTrigger) { FirebaseAuth.getInstance().currentUser }
+    
+    // Safely get Firebase user, avoiding crash in Previews
+    val firebaseUser = remember(refreshTrigger) {
+        if (isPreview) null else {
+            try {
+                FirebaseAuth.getInstance().currentUser
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
     val isLoggedIn = firebaseUser != null
 
     val displayName = firebaseUser?.displayName?.ifBlank { null }

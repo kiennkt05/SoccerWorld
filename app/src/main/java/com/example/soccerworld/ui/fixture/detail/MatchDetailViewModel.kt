@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
 
 data class MatchDetailUiState(
     val highlights: List<HighlightItem> = emptyList(),
@@ -25,6 +26,8 @@ class MatchDetailViewModel(
     private val tag = "MatchDetailVM"
     private val _uiState = MutableStateFlow(MatchDetailUiState())
     val uiState = _uiState.asStateFlow()
+
+    private var autoRefreshJob: kotlinx.coroutines.Job? = null
 
     private val _selectedTab = MutableStateFlow(0)
     val selectedTab = _selectedTab.asStateFlow()
@@ -56,6 +59,15 @@ class MatchDetailViewModel(
                             "lineups=${result.data.enrichment?.lineups?.size ?: 0}"
                     )
                     _uiState.update { it.copy(isLoading = false, data = result.data) }
+                    
+                    val status = result.data.core?.status ?: "FINISHED"
+                    val isLive = status == "IN_PLAY" || status == "PAUSED" || status == "LIVE" || status == "HALFTIME"
+                    
+                    if (isLive && autoRefreshJob == null) {
+                        startAutoRefresh(fixtureId)
+                    } else if (!isLive && autoRefreshJob != null) {
+                        stopAutoRefresh()
+                    }
                 }
                 is DataResult.Error -> {
                     Log.e(tag, "Aggregate load failed fixtureId=$fixtureId type=${result.type} msg=${result.message}")
@@ -64,5 +76,28 @@ class MatchDetailViewModel(
                 DataResult.Loading -> _uiState.update { it.copy(isLoading = true) }
             }
         }
+    }
+
+    private fun startAutoRefresh(fixtureId: String) {
+        autoRefreshJob = viewModelScope.launch {
+            while (isActive) {
+                kotlinx.coroutines.delay(30_000L)
+                Log.d(tag, "Auto-refreshing match detail...")
+                val result = repository.getMatchDetailAggregate(fixtureId)
+                if (result is DataResult.Success) {
+                    _uiState.update { it.copy(data = result.data) }
+                    val status = result.data.core?.status ?: "FINISHED"
+                    val isLive = status == "IN_PLAY" || status == "PAUSED" || status == "LIVE" || status == "HALFTIME"
+                    if (!isLive) {
+                        stopAutoRefresh()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun stopAutoRefresh() {
+        autoRefreshJob?.cancel()
+        autoRefreshJob = null
     }
 }

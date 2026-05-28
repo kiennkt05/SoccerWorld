@@ -88,7 +88,7 @@ fun SearchScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
 
-        // ── Purple Top Bar (Sofascore Styling) ──────────────────────────────────
+        // ── Top Bar ──────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()

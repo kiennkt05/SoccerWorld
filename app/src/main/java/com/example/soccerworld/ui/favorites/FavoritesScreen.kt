@@ -30,6 +30,7 @@ import com.example.soccerworld.ui.theme.BrandGreenMedium
 import com.example.soccerworld.ui.theme.DividerColor
 import com.example.soccerworld.ui.theme.LightBackground
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +47,7 @@ import com.example.soccerworld.data.local.entity.FavoriteTeamEntity
 import com.example.soccerworld.data.remote.flashlive.TeamSearchItemDto
 import com.example.soccerworld.data.remote.flashlive.SearchItemDto
 import com.example.soccerworld.ui.fixture.FixtureCard
+import com.example.soccerworld.ui.theme.BrandGreenLight
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
@@ -57,7 +59,10 @@ import kotlinx.coroutines.launch
 fun FavoritesScreen(
     onMatchClick: (String) -> Unit = {},
     onNavigateToLogin: () -> Unit = {},
-    onTeamClick: (String) -> Unit = {}
+    onTeamClick: (String) -> Unit = {},
+    // Added isLoggedIn as a parameter with a default value that checks LocalInspectionMode
+    // to prevent FirebaseAuth from crashing in the Android Studio Preview.
+    isLoggedIn: Boolean = if (LocalInspectionMode.current) false else FirebaseAuth.getInstance().currentUser != null
 ) {
     val context = LocalContext.current
     val viewModel: FavoritesViewModel = viewModel(
@@ -65,7 +70,6 @@ fun FavoritesScreen(
     )
     val state by viewModel.uiState.collectAsState()
     
-    val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
     var selectedTab by remember { mutableIntStateOf(0) }
     var showAddTeamSheet by remember { mutableStateOf(false) }
 
@@ -96,12 +100,11 @@ fun FavoritesScreen(
                 // Sub-tabs (Events, Teams, Players)
                 TabRow(
                     selectedTabIndex = selectedTab,
-                    containerColor = BrandGreenMedium,
                     contentColor = Color.White,
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
                             modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                            color = Color.White
+                            color = BrandGreenMedium
                         )
                     }
                 ) {
@@ -121,8 +124,8 @@ fun FavoritesScreen(
                                     fontSize = 13.sp
                                 ) 
                             },
-                            selectedContentColor = Color.White,
-                            unselectedContentColor = Color.White.copy(alpha = 0.6f)
+                            selectedContentColor = BrandGreenMedium,
+                            unselectedContentColor = Color.Gray
                         )
                     }
                 }
@@ -734,6 +737,7 @@ private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
 @Composable
 fun FavoritesScreenPreview() {
     SoccerWorldTheme {
+        // In preview, isLoggedIn will default to false safely due to the parameter default value.
         FavoritesScreen()
     }
 }

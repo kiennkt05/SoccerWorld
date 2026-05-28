@@ -20,6 +20,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +50,7 @@ import com.example.soccerworld.ui.home.leaguetable.LeagueTableViewModel
 import com.example.soccerworld.ui.player.PlayerDetailInfo
 import com.example.soccerworld.ui.team.team_detail.TabState
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
+import com.example.soccerworld.ui.theme.FavoriteGold
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 
@@ -298,12 +301,15 @@ fun MatchRow(
     match: Matche,
     activeFilter: String,
     teamId: String,
-    teamName: String
+    teamName: String,
+    isFavorite: Boolean = false,
+    onClick: (String) -> Unit = {},
+    onToggleFavorite: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* Handle click if needed */ }
+            .clickable { match.id?.let { onClick(it) } }
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -322,17 +328,21 @@ fun MatchRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
             )
             Spacer(modifier = Modifier.height(2.dp))
-            val statusText = if (activeFilter == "Finished") {
-                "FT"
-            } else {
-                remember(match.utcDate) { formatMatchTime(match.utcDate) }
+            val statusText = when (activeFilter) {
+                "Finished" -> "FT"
+                "Live" -> if (match.status == "PAUSED") "HT" else "Live"
+                else -> remember(match.utcDate) { formatMatchTime(match.utcDate) }
             }
             Text(
                 text = statusText,
                 style = MaterialTheme.typography.labelSmall,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (activeFilter == "Finished") MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) else MaterialTheme.colorScheme.primary
+                color = when (activeFilter) {
+                    "Live" -> Color(0xFFE53935)
+                    "Finished" -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    else -> MaterialTheme.colorScheme.primary
+                }
             )
         }
 
@@ -418,8 +428,8 @@ fun MatchRow(
             }
         }
 
-        // Scores Column (if finished)
-        if (activeFilter == "Finished") {
+        // Scores Column (if finished or live)
+        if (activeFilter == "Finished" || activeFilter == "Live") {
             val homeScore = match.score?.fullTime?.home
             val awayScore = match.score?.fullTime?.away
             
@@ -487,14 +497,31 @@ fun MatchRow(
                 )
             }
         }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        IconButton(
+            onClick = onToggleFavorite,
+            modifier = Modifier.size(32.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Star,
+                contentDescription = "Toggle favorite",
+                tint = if (isFavorite) FavoriteGold else MaterialTheme.colorScheme.outlineVariant,
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }
 
 @Composable
 fun TeamMatchesTab(
     matchesState: TabState<List<Matche>>,
+    favoriteMatchIds: Set<String> = emptySet(),
     teamId: String = "",
     teamName: String = "",
+    onMatchClick: (String) -> Unit = {},
+    onToggleFavoriteMatch: (Matche) -> Unit = {},
     onLoadMore: () -> Unit
 ) {
     when (matchesState) {
@@ -510,13 +537,23 @@ fun TeamMatchesTab(
                 }.sortedByDescending { it.utcDate.orEmpty() }
             }
             
+            val liveMatches = remember(matchesState.data) {
+                matchesState.data.filter {
+                    it.status == "IN_PLAY" || it.status == "PAUSED" || it.stage == "IN_PLAY" || it.stage == "PAUSED"
+                }.sortedBy { it.utcDate.orEmpty() }
+            }
+            
             val scheduledMatches = remember(matchesState.data) {
                 matchesState.data.filter {
                     it.status == "SCHEDULED" || it.stage == "SCHEDULED" || it.status == "TIMED"
                 }.sortedBy { it.utcDate.orEmpty() }
             }
 
-            val activeMatches = if (activeFilter == "Finished") finishedMatches else scheduledMatches
+            val activeMatches = when (activeFilter) {
+                "Finished" -> finishedMatches
+                "Live" -> liveMatches
+                else -> scheduledMatches
+            }
 
             // Group by Competition/Tournament to replicate SofaScore layout
             val groupedMatches = remember(activeMatches) {
@@ -553,7 +590,7 @@ fun TeamMatchesTab(
                         .padding(3.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val filters = listOf("Finished", "Scheduled")
+                    val filters = listOf("Finished", "Live", "Scheduled")
                     filters.forEach { filterName ->
                         val isSelected = activeFilter == filterName
                         Box(
@@ -652,7 +689,10 @@ fun TeamMatchesTab(
                                                 match = match,
                                                 activeFilter = activeFilter,
                                                 teamId = teamId,
-                                                teamName = teamName
+                                                teamName = teamName,
+                                                isFavorite = favoriteMatchIds.contains(match.id ?: ""),
+                                                onClick = onMatchClick,
+                                                onToggleFavorite = { onToggleFavoriteMatch(match) }
                                             )
                                         }
                                     }

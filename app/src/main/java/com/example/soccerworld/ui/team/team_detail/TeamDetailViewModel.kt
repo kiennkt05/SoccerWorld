@@ -24,7 +24,8 @@ data class TeamDetailUiState(
     val matchesState: TabState<List<Matche>> = TabState.Idle,
     val matchesPage: Int = 1,
     val hasMoreMatches: Boolean = true,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val favoriteMatchIds: Set<String> = emptySet()
 )
 
 sealed class TabState<out T> {
@@ -43,6 +44,17 @@ class TeamDetailViewModel(private val repository: FootballRepository) : ViewMode
             _uiState.update { TeamDetailUiState(teamId = teamId) }
             loadTab(0)
             observeFavoriteStatus(teamId)
+            observeFavoriteMatches()
+        }
+    }
+
+    private fun observeFavoriteMatches() {
+        viewModelScope.launch {
+            repository.observeFavorites().collect { favorites ->
+                _uiState.update { state -> 
+                    state.copy(favoriteMatchIds = favorites.map { it.matchId }.toSet()) 
+                }
+            }
         }
     }
 
@@ -65,6 +77,12 @@ class TeamDetailViewModel(private val repository: FootballRepository) : ViewMode
                 logoUrl = state.teamCrest,
                 country = null
             )
+        }
+    }
+
+    fun toggleFavoriteMatch(match: Matche) {
+        viewModelScope.launch {
+            repository.toggleFavorite(match)
         }
     }
 

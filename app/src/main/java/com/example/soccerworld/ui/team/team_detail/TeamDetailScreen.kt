@@ -28,7 +28,12 @@ import com.example.soccerworld.ui.player.PlayerDetailInfo
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TeamDetailScreen(teamId: String, onBack: () -> Unit, onNavigateToPlayer: (PlayerDetailInfo) -> Unit = {}) {
+fun TeamDetailScreen(
+    teamId: String, 
+    onBack: () -> Unit, 
+    onNavigateToPlayer: (PlayerDetailInfo) -> Unit = {},
+    onNavigateToMatch: (String) -> Unit = {}
+) {
     val context = LocalContext.current
     val factory = ViewModelFactory(Injection.provideFootballRepository(context))
 
@@ -124,8 +129,11 @@ fun TeamDetailScreen(teamId: String, onBack: () -> Unit, onNavigateToPlayer: (Pl
                     0 -> TeamSquadTab(state.squadState, teamId = state.teamId, onNavigateToPlayer = onNavigateToPlayer)
                     1 -> TeamMatchesTab(
                         matchesState = state.matchesState,
+                        favoriteMatchIds = state.favoriteMatchIds,
                         teamId = state.teamId,
                         teamName = state.teamName,
+                        onMatchClick = onNavigateToMatch,
+                        onToggleFavoriteMatch = { viewModel.toggleFavoriteMatch(it) },
                         onLoadMore = { viewModel.loadMoreMatches() }
                     )
                     2 -> TeamStandingsTab(teamId = state.teamId)

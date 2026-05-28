@@ -82,6 +82,9 @@ fun AppNavigation() {
                         ?.savedStateHandle
                         ?.set("player_info", playerInfo)
                     navController.navigate(Screen.PlayerDetail.createRoute(playerInfo.id))
+                },
+                onNavigateToMatch = { matchId ->
+                    navController.navigate(Screen.MatchDetail.createRoute(matchId))
                 }
             )
         }
@@ -97,7 +100,10 @@ fun AppNavigation() {
             if (playerInfo != null) {
                 PlayerDetailScreen(
                     playerInfo = playerInfo,
-                    onBack = { navController.popBackStack() }
+                    onBack = { navController.popBackStack() },
+                    onNavigateToMatch = { matchId ->
+                        navController.navigate(Screen.MatchDetail.createRoute(matchId))
+                    }
                 )
             } else {
                 LaunchedEffect(Unit) {

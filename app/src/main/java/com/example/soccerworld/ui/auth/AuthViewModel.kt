@@ -24,20 +24,31 @@ import kotlinx.coroutines.tasks.await
 
 data class AuthUiState(
     val isLoading: Boolean = false,
-    val currentUser: FirebaseUser? = FirebaseAuth.getInstance().currentUser,
+    val currentUser: FirebaseUser? = null,
     val errorMessage: String? = null
 )
 
 class AuthViewModel : ViewModel() {
 
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
 
     private val _uiState = MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
+    init {
+        // Use a safe check to initialize the current user state
+        viewModelScope.launch {
+            try {
+                _uiState.value = _uiState.value.copy(currentUser = auth.currentUser)
+            } catch (e: Exception) {
+                // Ignore errors during initialization (e.g. in Previews)
+            }
+        }
+    }
+
     // Luôn đọc trực tiếp từ FirebaseAuth để tránh vấn đề ViewModel instance khác nhau
-    val currentUser: FirebaseUser? get() = auth.currentUser
-    val isLoggedIn: Boolean get() = auth.currentUser != null
+    val currentUser: FirebaseUser? get() = try { auth.currentUser } catch (e: Exception) { null }
+    val isLoggedIn: Boolean get() = try { auth.currentUser != null } catch (e: Exception) { false }
 
     fun getGoogleSignInClient(context: Context): GoogleSignInClient {
         val webClientId = context.getString(R.string.default_web_client_id)

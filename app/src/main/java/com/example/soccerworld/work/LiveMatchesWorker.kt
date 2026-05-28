@@ -5,8 +5,9 @@ import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.soccerworld.data.model.DataResult
-import com.example.soccerworld.util.FcmV1Sender
 import com.example.soccerworld.util.Injection
+import com.example.soccerworld.util.NotificationHelper
+import kotlinx.coroutines.flow.first
 
 class LiveMatchesWorker(
     appContext: Context,
@@ -20,113 +21,97 @@ class LiveMatchesWorker(
     }
 
     override suspend fun doWork(): Result {
+        Log.d(TAG, "LiveMatchesWorker starting poll...")
         val repository = Injection.provideFootballRepository(applicationContext)
-        val leagueId   = repository.getSelectedLeagueId()
+        
+        // 1. Get favorite matches from database
+        val db = com.example.soccerworld.data.local.FootballDatabase.invoke(applicationContext)
+        val favoritesFlow = db.footballDao().getAllFavorites()
+        val favoriteIds = favoritesFlow.first().map { it.matchId }.toSet()
 
-        // ── 1. Kiểm tra trận đang live ────────────────────────────────────────
-        val liveResult = repository.getAllFixtureOfLeague(
-            leagueId     = leagueId,
-            status       = "IN_PLAY",
-            forceRefresh = true
-        )
-
-        when (liveResult) {
-            is DataResult.Success -> {
-                val liveMatches = liveResult.data.matches ?: emptyList()
-                val liveCount   = liveMatches.size
-                Log.d(TAG, "Live polling: liveCount=$liveCount")
-
-                val prefs = applicationContext
-                    .getSharedPreferences("live_score_cache", Context.MODE_PRIVATE)
-
-                for (match in liveMatches) {
-                    val matchId      = match.id ?: continue
-                    val homeTeam     = match.homeTeam?.shortName ?: match.homeTeam?.name ?: "Home"
-                    val awayTeam     = match.awayTeam?.shortName ?: match.awayTeam?.name ?: "Away"
-                    val homeScore    = match.score?.fullTime?.home ?: 0
-                    val awayScore    = match.score?.fullTime?.away ?: 0
-                    val currentScore = "$homeScore-$awayScore"
-                    val cachedScore  = prefs.getString(scoreKey(matchId), null)
-
-                    // Tỷ số thay đổi → gửi FCM live score
-                    if (cachedScore != null && cachedScore != currentScore) {
-                        Log.d(TAG, "Score changed: $matchId | $cachedScore → $currentScore")
-                        FcmV1Sender.sendLiveScore(
-                            context   = applicationContext,
-                            matchId   = matchId,
-                            homeTeam  = homeTeam,
-                            awayTeam  = awayTeam,
-                            homeScore = homeScore,
-                            awayScore = awayScore
-                        )
-                    }
-
-                    // Cập nhật cache
-                    prefs.edit()
-                        .putString(scoreKey(matchId), currentScore)
-                        .putString(statusKey(matchId), match.status ?: "")
-                        .apply()
-                }
-
-                if (liveCount > 0) LivePollingScheduler.start(applicationContext)
-                else               LivePollingScheduler.stop(applicationContext)
-            }
-            is DataResult.Error -> {
-                Log.e(TAG, "Live polling failed: ${liveResult.message}")
-                return Result.retry()
-            }
-            DataResult.Loading -> return Result.retry()
+        if (favoriteIds.isEmpty()) {
+            Log.d(TAG, "No favorite matches found, stopping polling.")
+            LivePollingScheduler.stop(applicationContext)
+            return Result.success()
         }
 
-        // ── 2. Kiểm tra trận vừa kết thúc (FINISHED) ─────────────────────────
-        checkFinishedMatches(repository, leagueId)
+        val prefs = applicationContext.getSharedPreferences("live_score_cache", Context.MODE_PRIVATE)
+        var anyLive = false
+
+        // 2. Check each favorite match individually
+        for (matchId in favoriteIds) {
+            // Using getFixtureStatistics because it directly calls getEventData without caching
+            val statsResult = repository.getFixtureStatistics(matchId)
+            
+            if (statsResult is DataResult.Success) {
+                val stats = statsResult.data
+                val status = stats.status ?: ""
+                val homeTeam = stats.homeTeam?.shortName ?: stats.homeTeam?.name ?: "Home"
+                val awayTeam = stats.awayTeam?.shortName ?: stats.awayTeam?.name ?: "Away"
+                val homeScore = stats.score?.fullTime?.home ?: 0
+                val awayScore = stats.score?.fullTime?.away ?: 0
+                
+                val currentScore = "$homeScore-$awayScore"
+                val cachedScore = prefs.getString(scoreKey(matchId), null)
+                val cachedStatus = prefs.getString(statusKey(matchId), null)
+
+                if (status == "IN_PLAY" || status == "PAUSED") {
+                    anyLive = true
+                    
+                    if (cachedScore != currentScore) {
+                        Log.d(TAG, "Score update for favorite: $matchId | $cachedScore -> $currentScore")
+                        if (cachedScore != null || homeScore > 0 || awayScore > 0) {
+                            NotificationHelper.sendLiveScoreNotification(
+                                context = applicationContext,
+                                matchId = matchId,
+                                homeTeam = homeTeam,
+                                awayTeam = awayTeam,
+                                homeScore = homeScore,
+                                awayScore = awayScore
+                            )
+                        }
+                    }
+                    
+                    prefs.edit()
+                        .putString(scoreKey(matchId), currentScore)
+                        .putString(statusKey(matchId), status)
+                        .apply()
+                        
+                } else if (status == "FINISHED") {
+                    // Match just finished
+                    if (cachedStatus == "IN_PLAY" || cachedStatus == "PAUSED" || cachedStatus == "HALF_TIME") {
+                        Log.d(TAG, "Favorite match finished: $matchId")
+                        NotificationHelper.sendMatchResultNotification(
+                            context = applicationContext,
+                            matchId = matchId,
+                            homeTeam = homeTeam,
+                            awayTeam = awayTeam,
+                            homeScore = homeScore,
+                            awayScore = awayScore,
+                            winner = null // We don't have winner easily from stats, that's fine
+                        )
+                        
+                        prefs.edit()
+                            .remove(scoreKey(matchId))
+                            .remove(statusKey(matchId))
+                            .apply()
+                    }
+                }
+            } else {
+                Log.e(TAG, "Failed to fetch stats for favorite match: $matchId")
+            }
+        }
+
+        // If there is any live match among favorites, continue polling
+        if (anyLive) {
+            Log.d(TAG, "Live matches found among favorites. Rescheduling...")
+            LivePollingScheduler.start(applicationContext)
+        } else {
+            Log.d(TAG, "No live matches among favorites. Polling can sleep until triggered.")
+            LivePollingScheduler.stop(applicationContext)
+        }
 
         return Result.success()
     }
-
-    private suspend fun checkFinishedMatches(
-        repository: com.example.soccerworld.data.FootballRepository,
-        leagueId: String
-    ) {
-        val result = repository.getAllFixtureOfLeague(
-            leagueId     = leagueId,
-            status       = "FINISHED",
-            forceRefresh = true
-        )
-        if (result !is DataResult.Success) return
-
-        val prefs = applicationContext
-            .getSharedPreferences("live_score_cache", Context.MODE_PRIVATE)
-
-        for (match in result.data.matches ?: return) {
-            val matchId      = match.id ?: continue
-            val cachedStatus = prefs.getString(statusKey(matchId), null)
-
-            // Chỉ gửi nếu trước đó đang live
-            if (cachedStatus == "IN_PLAY" || cachedStatus == "PAUSED" || cachedStatus == "HALF_TIME") {
-                val homeTeam  = match.homeTeam?.shortName ?: match.homeTeam?.name ?: "Home"
-                val awayTeam  = match.awayTeam?.shortName ?: match.awayTeam?.name ?: "Away"
-                val homeScore = match.score?.fullTime?.home ?: 0
-                val awayScore = match.score?.fullTime?.away ?: 0
-
-                Log.d(TAG, "Match finished: $matchId | $homeTeam $homeScore-$awayScore $awayTeam")
-
-                FcmV1Sender.sendMatchResult(
-                    context   = applicationContext,
-                    matchId   = matchId,
-                    homeTeam  = homeTeam,
-                    awayTeam  = awayTeam,
-                    homeScore = homeScore,
-                    awayScore = awayScore,
-                    winner    = match.score?.winner
-                )
-
-                // Xoá cache sau khi gửi kết quả
-                prefs.edit()
-                    .remove(scoreKey(matchId))
-                    .remove(statusKey(matchId))
-                    .apply()
-            }
-        }
-    }
 }
+
