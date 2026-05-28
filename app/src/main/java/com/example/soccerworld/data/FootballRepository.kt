@@ -437,6 +437,7 @@ class FootballRepository(
         val id = match.id ?: return
         if (dao.isFavorite(id)) {
             dao.deleteFavorite(id)
+            com.example.soccerworld.util.FcmTopicManager.unsubscribeFromTopic("comment_match_$id")
             return
         }
         dao.insertFavorite(
@@ -454,6 +455,7 @@ class FootballRepository(
                 savedAt = System.currentTimeMillis()
             )
         )
+        com.example.soccerworld.util.FcmTopicManager.subscribeToTopic("comment_match_$id")
     }
 
     fun observeFavorites(): Flow<List<FavoriteMatchEntity>> = dao.getAllFavorites()

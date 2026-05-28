@@ -22,6 +22,7 @@ class CustomSharedPreferences {
         private const val NOTIF_MATCH_REMINDER = "notif_match_reminder_enabled"
         private const val NOTIF_LIVE_SCORE = "notif_live_score_enabled"
         private const val NOTIF_MATCH_RESULT = "notif_match_result_enabled"
+        private const val NOTIF_MATCH_COMMENT = "notif_match_comment_enabled"
         private var sharedPreferences: SharedPreferences? = null
 
         @Volatile
@@ -167,6 +168,15 @@ class CustomSharedPreferences {
 
     fun isMatchResultEnabled(): Boolean =
         sharedPreferences?.getBoolean(NOTIF_MATCH_RESULT, true) ?: true
+
+    fun setMatchCommentEnabled(enabled: Boolean) {
+        sharedPreferences?.edit(commit = true) {
+            putBoolean(NOTIF_MATCH_COMMENT, enabled)
+        }
+    }
+
+    fun isMatchCommentEnabled(): Boolean =
+        sharedPreferences?.getBoolean(NOTIF_MATCH_COMMENT, true) ?: true
 
 
     fun getSearchHistory(): List<String> {

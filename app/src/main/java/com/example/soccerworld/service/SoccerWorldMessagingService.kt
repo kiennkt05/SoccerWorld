@@ -4,6 +4,10 @@ import android.util.Log
 import com.example.soccerworld.util.NotificationHelper
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 
 /**
  * Xử lý FCM messages khi app đang chạy (foreground) hoặc background.
@@ -47,6 +51,7 @@ class SoccerWorldMessagingService : FirebaseMessagingService() {
             "MATCH_REMINDER" -> handleMatchReminder(data)
             "LIVE_SCORE"     -> handleLiveScore(data)
             "MATCH_RESULT"   -> handleMatchResult(data)
+            "NEW_COMMENT"    -> handleNewComment(data)
             else             -> Log.w(TAG, "Unknown notification type: ${data["type"]}")
         }
     }
@@ -70,6 +75,20 @@ class SoccerWorldMessagingService : FirebaseMessagingService() {
         if (prefs.isMatchResultEnabled()) {
             com.example.soccerworld.util.FcmTopicManager
                 .subscribeToTopic(com.example.soccerworld.util.FcmTopicManager.TOPIC_MATCH_RESULT)
+        }
+
+        // Re-subscribe to comment topics for all favorite matches
+        val db = com.example.soccerworld.data.local.FootballDatabase.invoke(applicationContext)
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
+                val favorites = db.footballDao().getAllFavorites().first()
+                favorites.forEach { fav ->
+                    com.example.soccerworld.util.FcmTopicManager.subscribeToTopic("comment_match_${fav.matchId}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to re-subscribe to favorite matches comment topics on token change", e)
+            }
         }
     }
 
@@ -105,6 +124,17 @@ class SoccerWorldMessagingService : FirebaseMessagingService() {
             homeScore = data["homeScore"]?.toIntOrNull() ?: 0,
             awayScore = data["awayScore"]?.toIntOrNull() ?: 0,
             winner    = data["winner"]?.ifEmpty { null }
+        )
+    }
+
+    private fun handleNewComment(data: Map<String, String>) {
+        NotificationHelper.sendCommentNotification(
+            context       = applicationContext,
+            matchId       = data["matchId"] ?: return,
+            homeTeam      = data["homeTeam"] ?: "Home",
+            awayTeam      = data["awayTeam"] ?: "Away",
+            commenterName = data["commenterName"] ?: "Người dùng",
+            commentText   = data["commentText"] ?: ""
         )
     }
 }

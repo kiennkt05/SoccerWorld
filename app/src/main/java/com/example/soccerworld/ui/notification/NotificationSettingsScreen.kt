@@ -67,6 +67,7 @@ fun NotificationSettingsScreen(
     var matchReminderEnabled by remember { mutableStateOf(prefs.isMatchReminderEnabled()) }
     var liveScoreEnabled     by remember { mutableStateOf(prefs.isLiveScoreEnabled()) }
     var matchResultEnabled   by remember { mutableStateOf(prefs.isMatchResultEnabled()) }
+    var matchCommentEnabled  by remember { mutableStateOf(prefs.isMatchCommentEnabled()) }
 
     // Permission launcher (Android 13+)
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -260,6 +261,21 @@ fun NotificationSettingsScreen(
                         prefs.setMatchResultEnabled(on)
                         if (on) FcmTopicManager.subscribeToTopic(FcmTopicManager.TOPIC_MATCH_RESULT)
                         else    FcmTopicManager.unsubscribeFromTopic(FcmTopicManager.TOPIC_MATCH_RESULT)
+                    },
+                    showDivider = true
+                )
+
+                // 4. Match Comment
+                NotificationToggleRow(
+                    icon        = Icons.Default.Info,
+                    iconColor   = MaterialTheme.colorScheme.primary,
+                    title       = "Bình luận trận đấu yêu thích",
+                    description = "Thông báo khi có người bình luận ở trận đấu yêu thích của bạn",
+                    checked     = matchCommentEnabled,
+                    enabled     = notifPermissionGranted,
+                    onChecked   = { on ->
+                        matchCommentEnabled = on
+                        prefs.setMatchCommentEnabled(on)
                     },
                     showDivider = false
                 )

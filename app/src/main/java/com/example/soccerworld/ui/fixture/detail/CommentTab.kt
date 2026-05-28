@@ -31,8 +31,11 @@ import kotlin.math.abs
 fun CommentTab(
     fixtureId: String,
     onNavigateToLogin: () -> Unit = {},
+    homeTeamName: String = "Home",
+    awayTeamName: String = "Away",
     commentViewModel: CommentViewModel = viewModel()
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val state by commentViewModel.uiState.collectAsState()
     val currentUser = commentViewModel.currentUser
     val isLoggedIn = currentUser != null
@@ -194,7 +197,13 @@ fun CommentTab(
                         val text = inputText.trim()
                         if (text.isNotBlank() && !state.isSending) {
                             inputText = ""
-                            commentViewModel.postComment(fixtureId, text) {}
+                            commentViewModel.postComment(
+                                context = context,
+                                fixtureId = fixtureId,
+                                text = text,
+                                homeTeamName = homeTeamName,
+                                awayTeamName = awayTeamName
+                            ) {}
                         }
                     },
                     enabled = inputText.isNotBlank() && !state.isSending,

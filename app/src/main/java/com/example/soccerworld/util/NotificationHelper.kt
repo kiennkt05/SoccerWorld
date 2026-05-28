@@ -17,11 +17,13 @@ object NotificationHelper {
     const val CHANNEL_MATCH_REMINDER   = "channel_match_reminder"
     const val CHANNEL_LIVE_SCORE       = "channel_live_score"
     const val CHANNEL_MATCH_RESULT     = "channel_match_result"
+    const val CHANNEL_MATCH_COMMENT    = "channel_match_comment"
 
     // ── Notification IDs base ────────────────────────────────────────────────
     private const val NOTIF_ID_REMINDER_BASE = 1000
     private const val NOTIF_ID_LIVE_BASE     = 2000
     private const val NOTIF_ID_RESULT_BASE   = 3000
+    private const val NOTIF_ID_COMMENT_BASE  = 4000
 
     /**
      * Gọi một lần trong Application.onCreate() để đăng ký tất cả channels.
@@ -57,6 +59,16 @@ object NotificationHelper {
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Kết quả trận đấu sau khi kết thúc"
+            }
+        )
+
+        nm.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_MATCH_COMMENT,
+                "Match Comments",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Thông báo khi có bình luận mới ở trận đấu yêu thích"
             }
         )
     }
@@ -224,6 +236,54 @@ object NotificationHelper {
             .build()
 
         val notifId = NOTIF_ID_RESULT_BASE + (matchId.hashCode() and 0x0FFF)
+        NotificationManagerCompat.from(context).notify(notifId, notification)
+    }
+
+    // ── 4. Match Comment ─────────────────────────────────────────────────────
+
+    /**
+     * Gửi thông báo khi có bình luận mới ở trận đấu yêu thích.
+     */
+    fun sendCommentNotification(
+        context: Context,
+        matchId: String,
+        homeTeam: String,
+        awayTeam: String,
+        commenterName: String,
+        commentText: String
+    ) {
+        if (!areNotificationsEnabled(context)) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        val prefs = CustomSharedPreferences.invoke(context)
+        if (!prefs.isMatchCommentEnabled()) return
+
+        val intent = buildMainIntent(context)
+        val pendingIntent = PendingIntent.getActivity(
+            context, matchId.hashCode() + 3, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_MATCH_COMMENT)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("💬 Bình luận mới – $homeTeam vs $awayTeam")
+            .setContentText("$commenterName: $commentText")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("$commenterName: $commentText\n\nXem chi tiết trận đấu.")
+            )
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .build()
+
+        val notifId = NOTIF_ID_COMMENT_BASE + (matchId.hashCode() and 0x0FFF)
         NotificationManagerCompat.from(context).notify(notifId, notification)
     }
 

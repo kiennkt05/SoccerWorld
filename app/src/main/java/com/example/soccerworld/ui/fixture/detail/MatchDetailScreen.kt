@@ -207,7 +207,9 @@ fun MatchDetailContent(
                     3 -> NewsTab(newsList = aggregate?.enrichment?.news ?: emptyList())
                     4 -> CommentTab(
                         fixtureId = fixtureId,
-                        onNavigateToLogin = onNavigateToLogin
+                        onNavigateToLogin = onNavigateToLogin,
+                        homeTeamName = aggregate?.core?.homeTeam?.name ?: "Home",
+                        awayTeamName = aggregate?.core?.awayTeam?.name ?: "Away"
                     )
                     5 -> H2HTab(
                         h2hList = aggregate?.h2h ?: emptyList(),

@@ -114,6 +114,31 @@ object FcmV1Sender {
         )
     )
 
+    /**
+     * Gửi Comment FCM message tới topic "comment_match_${matchId}".
+     */
+    suspend fun sendCommentNotification(
+        context: Context,
+        matchId: String,
+        homeTeam: String,
+        awayTeam: String,
+        commenterName: String,
+        commentText: String
+    ) = sendToTopic(
+        context = context,
+        topic   = "comment_match_$matchId",
+        title   = "💬 Bình luận mới – $homeTeam vs $awayTeam",
+        body    = "$commenterName: $commentText",
+        data    = mapOf(
+            "type"          to "NEW_COMMENT",
+            "matchId"       to matchId,
+            "homeTeam"      to homeTeam,
+            "awayTeam"      to awayTeam,
+            "commenterName" to commenterName,
+            "commentText"   to commentText
+        )
+    )
+
     // ── Core send logic ──────────────────────────────────────────────────────
 
     private suspend fun sendToTopic(
@@ -203,6 +228,14 @@ object FcmV1Sender {
                 homeScore = data["homeScore"]?.toIntOrNull() ?: 0,
                 awayScore = data["awayScore"]?.toIntOrNull() ?: 0,
                 winner    = data["winner"]
+            )
+            "NEW_COMMENT" -> NotificationHelper.sendCommentNotification(
+                context       = context,
+                matchId       = data["matchId"] ?: "0",
+                homeTeam      = data["homeTeam"] ?: "Home",
+                awayTeam      = data["awayTeam"] ?: "Away",
+                commenterName = data["commenterName"] ?: "User",
+                commentText   = data["commentText"] ?: ""
             )
         }
     }

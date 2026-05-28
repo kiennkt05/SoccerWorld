@@ -55,7 +55,14 @@ class CommentViewModel : ViewModel() {
             }
     }
 
-    fun postComment(fixtureId: String, text: String, onResult: (Boolean) -> Unit) {
+    fun postComment(
+        context: android.content.Context,
+        fixtureId: String,
+        text: String,
+        homeTeamName: String,
+        awayTeamName: String,
+        onResult: (Boolean) -> Unit
+    ) {
         val user = auth.currentUser ?: run { onResult(false); return }
         if (text.isBlank()) { onResult(false); return }
 
@@ -76,6 +83,20 @@ class CommentViewModel : ViewModel() {
                 db.collection("comments").add(comment).await()
                 _uiState.value = _uiState.value.copy(isSending = false)
                 onResult(true)
+
+                // Gửi thông báo đến những người đã yêu thích trận đấu này
+                try {
+                    com.example.soccerworld.util.FcmV1Sender.sendCommentNotification(
+                        context = context,
+                        matchId = fixtureId,
+                        homeTeam = homeTeamName,
+                        awayTeam = awayTeamName,
+                        commenterName = displayName,
+                        commentText = text.trim()
+                    )
+                } catch (e: Exception) {
+                    android.util.Log.e("CommentViewModel", "Failed to send FCM comment notification", e)
+                }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isSending = false,
