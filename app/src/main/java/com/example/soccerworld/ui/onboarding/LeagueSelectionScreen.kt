@@ -11,10 +11,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.soccerworld.R
+import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.util.CustomSharedPreferences
 
 data class LeagueUI(val id: String, val name: String, val logoUrl: String)
@@ -39,7 +43,7 @@ fun LeagueSelectionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Select League", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.league_sel_title), fontWeight = FontWeight.Bold) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -55,7 +59,7 @@ fun LeagueSelectionScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Please select a league you want to follow:",
+                text = stringResource(R.string.league_sel_instruction),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 24.dp),
                 textAlign = TextAlign.Center,
@@ -113,5 +117,13 @@ fun LeagueCard(league: LeagueUI, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun LeagueSelectionScreenPreview() {
+    SoccerWorldTheme {
+        LeagueSelectionScreen(onLeagueSelected = {})
     }
 }

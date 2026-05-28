@@ -15,10 +15,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.soccerworld.R
+import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.ui.home.leaguetable.LeagueTableScreen
 import com.example.soccerworld.ui.home.topscorer.TopScorersScreen
 import com.example.soccerworld.ui.fixture.FixturesScreen
@@ -43,7 +47,11 @@ fun MatchesScreen(
     }
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Standings", "Matches", "Top Scorers")
+    val tabs = listOf(
+        stringResource(R.string.matches_tab_standings),
+        stringResource(R.string.matches_tab_matches),
+        stringResource(R.string.matches_tab_top_scorers)
+    )
 
     Column(
         modifier = Modifier
@@ -164,7 +172,7 @@ fun LeagueSelectorBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Change",
+                    text = stringResource(R.string.matches_change_btn),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -178,5 +186,13 @@ fun LeagueSelectorBar(
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MatchesScreenPreview() {
+    SoccerWorldTheme {
+        MatchesScreen()
     }
 }

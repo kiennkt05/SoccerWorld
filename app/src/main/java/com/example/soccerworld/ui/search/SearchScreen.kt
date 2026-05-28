@@ -45,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -53,7 +54,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import androidx.compose.ui.tooling.preview.Preview
 import com.example.soccerworld.R
+import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.data.remote.flashlive.PlayerSearchItemDto
 import com.example.soccerworld.data.remote.flashlive.TeamSearchItemDto
 import com.example.soccerworld.data.remote.flashlive.TournamentSearchItemDto
@@ -141,7 +144,7 @@ fun SearchScreen(
                             ) {
                                 if (state.query.isEmpty()) {
                                     Text(
-                                        text = "Search matches, competitions, team...",
+                                        text = stringResource(R.string.search_placeholder),
                                         color = Color.Gray,
                                         fontSize = 13.sp,
                                         maxLines = 1,
@@ -177,7 +180,7 @@ fun SearchScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = BrandGreenMedium)
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text("Searching...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.search_searching), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -200,7 +203,7 @@ fun SearchScreen(
                         Text("🔍", fontSize = 48.sp)
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            "No results found for\n\"${state.query}\"",
+                            stringResource(R.string.search_no_results, state.query),
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -228,7 +231,7 @@ fun SearchScreen(
                         onClick = { selectedSubTab = 0 },
                         text = {
                             Text(
-                                text = "Suggested",
+                                text = stringResource(R.string.search_tab_suggested),
                                 fontWeight = if (selectedSubTab == 0) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 13.sp
                             )
@@ -241,7 +244,7 @@ fun SearchScreen(
                         onClick = { selectedSubTab = 1 },
                         text = {
                             Text(
-                                text = "Recent",
+                                text = stringResource(R.string.search_tab_recent),
                                 fontWeight = if (selectedSubTab == 1) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 13.sp
                             )
@@ -334,7 +337,7 @@ private fun SuggestedTabContent(
         
         // 1. Top Teams
         item {
-            SuggestedHeader(title = "Top teams")
+            SuggestedHeader(title = stringResource(R.string.search_header_top_teams))
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -355,7 +358,7 @@ private fun SuggestedTabContent(
 
         // 2. Top Players
         item {
-            SuggestedHeader(title = "Top players")
+            SuggestedHeader(title = stringResource(R.string.search_header_top_players))
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -405,7 +408,7 @@ private fun SuggestedTabContent(
 
         // 3. Rankings
         item {
-            SuggestedHeader(title = "Rankings")
+            SuggestedHeader(title = stringResource(R.string.search_header_rankings))
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -420,7 +423,7 @@ private fun SuggestedTabContent(
 
         // 4. Top Competitions
         item {
-            SuggestedHeader(title = "Top competitions")
+            SuggestedHeader(title = stringResource(R.string.search_header_top_competitions))
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -441,7 +444,7 @@ private fun SuggestedTabContent(
 
         // 5. All Competitions Expandable Accordions
         item {
-            SuggestedHeader(title = "All competitions")
+            SuggestedHeader(title = stringResource(R.string.search_header_all_competitions))
         }
 
         // Vietnam expandable
@@ -555,7 +558,7 @@ private fun RecentTabContent(
     if (recentSearches.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                text = "No recent searches",
+                text = stringResource(R.string.search_no_recent),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Gray
             )
@@ -613,7 +616,7 @@ private fun RecentTabContent(
             contentAlignment = Alignment.Center
         ) {
             TextButton(onClick = onClearAll) {
-                Text("Clear search history", color = BrandGreenMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.search_clear_history), color = BrandGreenMedium, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -1027,5 +1030,13 @@ fun SearchItemCard(
             color = MaterialTheme.colorScheme.outlineVariant,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun SearchScreenPreview() {
+    SoccerWorldTheme {
+        SearchScreen()
     }
 }

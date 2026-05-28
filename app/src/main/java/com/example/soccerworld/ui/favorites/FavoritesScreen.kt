@@ -31,6 +31,7 @@ import com.example.soccerworld.ui.theme.DividerColor
 import com.example.soccerworld.ui.theme.LightBackground
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,7 +39,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
+import androidx.compose.ui.tooling.preview.Preview
 import com.example.soccerworld.R
+import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.data.local.entity.FavoriteTeamEntity
 import com.example.soccerworld.data.remote.flashlive.TeamSearchItemDto
 import com.example.soccerworld.data.remote.flashlive.SearchItemDto
@@ -83,14 +86,14 @@ fun FavoritesScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Favorites",
+                        text = stringResource(R.string.fav_title),
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
                         fontSize = 18.sp
                     )
                 }
 
-                // Sub-tabs (Events, Teams, Competitions, Athletes)
+                // Sub-tabs (Events, Teams, Players)
                 TabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = BrandGreenMedium,
@@ -102,7 +105,11 @@ fun FavoritesScreen(
                         )
                     }
                 ) {
-                    val tabs = listOf("Events", "Teams", "Competitions", "Athletes")
+                    val tabs = listOf(
+                        stringResource(R.string.fav_tab_events),
+                        stringResource(R.string.fav_tab_teams),
+                        stringResource(R.string.fav_tab_players)
+                    )
                     tabs.forEachIndexed { index, title ->
                         Tab(
                             selected = selectedTab == index,
@@ -147,8 +154,7 @@ fun FavoritesScreen(
                             )
                         }
                     )
-                    2 -> CompetitionsTabContent()
-                    3 -> AthletesTabContent()
+                    2 -> PlayersTabContent()
                 }
             }
 
@@ -195,13 +201,13 @@ private fun GuestSyncBanner(
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Sync your Favorites",
+                    text = stringResource(R.string.fav_sync_title),
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
                 Text(
-                    text = "Sign in to back up your matches and teams.",
+                    text = stringResource(R.string.fav_sync_desc),
                     color = Color.White.copy(alpha = 0.8f),
                     fontSize = 11.sp
                 )
@@ -212,7 +218,7 @@ private fun GuestSyncBanner(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Sign In", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.fav_signin), fontSize = 12.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -229,7 +235,10 @@ private fun EventsTabContent(
             CircularProgressIndicator(color = BrandGreenMedium)
         }
     } else if (state.matches.isEmpty()) {
-        FavoritesEmptyState(message = "No favorite matches yet", hint = "Tap the ☆ icon on matches to save them here.")
+        FavoritesEmptyState(
+            message = stringResource(R.string.fav_empty_events),
+            hint = stringResource(R.string.fav_empty_events_hint)
+        )
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -283,13 +292,13 @@ private fun TeamsTabContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "My Teams",
+                    text = stringResource(R.string.fav_my_teams),
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     color = Color.Black
                 )
                 Text(
-                    text = "${state.teams.size} teams",
+                    text = stringResource(R.string.fav_teams_count, state.teams.size),
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
@@ -333,7 +342,7 @@ private fun TeamsTabContent(
                                     Icon(Icons.Default.Add, contentDescription = "Add", tint = BrandGreenMedium)
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("Add Team", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BrandGreenMedium)
+                                Text(stringResource(R.string.fav_add_team), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BrandGreenMedium)
                             }
                         }
 
@@ -380,7 +389,7 @@ private fun TeamsTabContent(
         // Trending Section
         item {
             Text(
-                text = "Trending Teams",
+                text = stringResource(R.string.fav_trending_teams),
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 color = Color.Black,
@@ -493,16 +502,13 @@ private fun FavoritedTeamGridItem(
     }
 }
 
-// ── Competitions Tab Content ─────────────────────────────────────────────────
+// ── Players Tab Content ─────────────────────────────────────────────────────
 @Composable
-private fun CompetitionsTabContent() {
-    FavoritesEmptyState(message = "No favorite competitions yet", hint = "Follow your favorite leagues in matches screen to see updates.")
-}
-
-// ── Athletes Tab Content ─────────────────────────────────────────────────────
-@Composable
-private fun AthletesTabContent() {
-    FavoritesEmptyState(message = "No favorite athletes yet", hint = "Search and star soccer players to view them here.")
+private fun PlayersTabContent() {
+    FavoritesEmptyState(
+        message = stringResource(R.string.fav_empty_players),
+        hint = stringResource(R.string.fav_empty_players_hint)
+    )
 }
 
 // ── Search & Add Team Bottom Sheet ──────────────────────────────────────────
@@ -551,7 +557,7 @@ private fun AddTeamBottomSheet(
                 .padding(horizontal = 16.dp)
         ) {
             Text(
-                text = "Add team to favorites",
+                text = stringResource(R.string.fav_add_title),
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 modifier = Modifier.padding(bottom = 12.dp)
@@ -561,7 +567,7 @@ private fun AddTeamBottomSheet(
                 value = query,
                 onValueChange = { query = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Search club name...") },
+                placeholder = { Text(stringResource(R.string.fav_search_placeholder)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp)
@@ -585,7 +591,7 @@ private fun AddTeamBottomSheet(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No clubs found matching \"$query\"", color = Color.Gray)
+                    Text(stringResource(R.string.fav_search_no_results, query), color = Color.Gray)
                 }
             } else {
                 LazyColumn(
@@ -700,14 +706,14 @@ private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(20.dp))
             Text(
-                text = "Login Required",
+                text = stringResource(R.string.fav_login_required),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "You need to sign in to save and sync\nyour favorite matches & teams.",
+                text = stringResource(R.string.fav_login_required_desc),
                 fontSize = 12.sp,
                 color = Color.Gray,
                 textAlign = TextAlign.Center
@@ -718,8 +724,16 @@ private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = BrandGreenMedium)
             ) {
-                Text("Sign In", fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.fav_signin), fontWeight = FontWeight.Bold)
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun FavoritesScreenPreview() {
+    SoccerWorldTheme {
+        FavoritesScreen()
     }
 }

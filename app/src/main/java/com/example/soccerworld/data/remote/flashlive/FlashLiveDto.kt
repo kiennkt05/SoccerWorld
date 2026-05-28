@@ -35,7 +35,7 @@ data class StandingRow(
 data class TopScorerRow(
     @SerializedName("TS_RANK") val rank: Int? = null,
     @SerializedName("TS_PLAYER_ID") val playerId: String? = null,
-    @SerializedName("TS_PLAYER_NAME") val playerName: String? = null,
+    @SerializedName("TS_PLAYER_NAME_PA") val playerName: String? = null,
     @SerializedName("TS_PLAYER_GOALS") val goals: Int? = null,
     @SerializedName("TS_PLAYER_ASISTS") val assists: Int? = null,
     @SerializedName("TS_PLAYER_TEAM") val teamId: String? = null,

@@ -1,0 +1,166 @@
+<resources>
+    <string name="app_name">SoccerWorld</string>
+
+    <string name="settings">Cài đặt</string>
+    <string name="teams">Đội bóng</string>
+    <string name="fixture">Lịch thi đấu</string>
+    <string name="standings">Bảng xếp hạng</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Xin chào blank fragment</string>
+    <string name="player_nationalatity">Quốc tịch</string>
+    <string name="player_birth_country">Quốc gia sinh</string>
+    <string name="player_birth_place">Nơi sinh</string>
+    <string name="player_position">Vị trí</string>
+    <string name="player_age">Tuổi</string>
+    <string name="player_weight">Cân nặng</string>
+    <string name="player_height">Chiều cao</string>
+    <string name="player_name">Cristiano Ronaldo</string>
+
+    <!-- Chatbot -->
+    <string name="chatbot_name">Trợ lý bóng đá</string>
+    <string name="chatbot_model">llama-3.3-70b-versatile</string>
+    <string name="chatbot_input_hint">Hỏi về bóng đá…</string>
+    <string name="chatbot_welcome_message">Xin chào! Tôi là trợ lý bóng đá của bạn. Hãy hỏi tôi bất cứ điều gì về bóng đá — lịch sử, luật chơi, thống kê, đội bóng hoặc cầu thủ!</string>
+    <string name="chatbot_system_prompt">Bạn là một chuyên gia phân tích bóng đá (AI Agent). Bạn LUÔN phải gọi các công cụ (tools) để lấy dữ liệu thực tế (bảng xếp hạng, lịch sử đối đầu, phong độ) trước khi trả lời. Khi đã có dữ liệu, hãy phân tích chi tiết, trích dẫn số liệu cụ thể và trình bày rõ ràng từng phần (ví dụ: Phong độ, Đối đầu, Nhận định). Hãy trả lời bằng tiếng Việt trừ khi người dùng dùng ngôn ngữ khác.</string>
+    <string name="chatbot_error_network">Không thể kết nối. Vui lòng kiểm tra lại kết nối mạng.</string>
+    <string name="chatbot_error_api">Đã xảy ra lỗi. Vui lòng thử lại.</string>
+    <string name="chatbot_error_rate_limit">Trợ lý ảo đang được sử dụng quá thường xuyên. Vui lòng chờ vài giây và thử lại.</string>
+    <string name="chatbot_error_no_api_key">Chưa cấu hình khóa API.</string>
+    <string name="chatbot_clear_history">Xóa trò chuyện</string>
+    <string name="chatbot_clear_confirm_title">Xóa lịch sử trò chuyện?</string>
+    <string name="chatbot_clear_confirm_message">Tất cả các tin nhắn sẽ bị xóa. Hành động này không thể hoàn tác.</string>
+    <string name="chatbot_clear_confirm_yes">Xóa</string>
+    <string name="chatbot_clear_confirm_no">Hủy</string>
+    <string name="chatbot_typing">Đang suy nghĩ…</string>
+    <string name="chatbot_content_description_fab">Mở trợ lý trò chuyện</string>
+    <string name="chatbot_content_description_send">Gửi tin nhắn</string>
+    <string name="chatbot_content_description_close">Đóng trò chuyện</string>
+
+    <!-- Navigation Tabs -->
+    <string name="nav_matches">Trận đấu</string>
+    <string name="nav_search">Tìm kiếm</string>
+    <string name="nav_favorites">Yêu thích</string>
+    <string name="nav_profile">Cá nhân</string>
+
+    <!-- Profile Screen -->
+    <string name="profile_title">Cá nhân</string>
+    <string name="profile_help">Trợ giúp</string>
+    <string name="profile_settings">Cài đặt</string>
+    <string name="profile_guest_user">Người dùng khách</string>
+    <string name="profile_signin_sync">Đăng nhập để đồng bộ dữ liệu</string>
+    <string name="profile_member_since">Thành viên từ tháng 5, 2026</string>
+    <string name="profile_guest_account">Tài khoản khách</string>
+    <string name="profile_tab_overview">Tổng quan</string>
+    <string name="profile_tab_predictions">Dự đoán</string>
+    <string name="profile_support_help_title">Hỗ trợ &amp; Trợ giúp</string>
+    <string name="profile_support_help_desc">Chào mừng đến với SoccerWorld! Tại đây bạn có thể theo dõi các trận đấu trực tiếp, xem số liệu thống kê, lưu câu lạc bộ yêu thích và trò chuyện với trợ lý AI bóng đá để hỏi thông tin đội bóng.</string>
+    <string name="profile_close">Đóng</string>
+    <string name="profile_signout_title">Đăng xuất</string>
+    <string name="profile_signout_confirm">Bạn có chắc chắn muốn đăng xuất tài khoản?</string>
+    <string name="profile_cancel">Hủy</string>
+    <string name="profile_quick_links">Liên kết nhanh</string>
+    <string name="profile_change_league">Thay đổi giải đấu</string>
+    <string name="profile_active_league">Đang chọn: %1$s</string>
+    <string name="profile_notification_settings">Cài đặt thông báo</string>
+    <string name="profile_notification_desc">Quản lý cảnh báo &amp; nhắc nhở FCM</string>
+    <string name="profile_support">Hỗ trợ</string>
+    <string name="profile_faq">Câu hỏi thường gặp</string>
+    <string name="profile_faq_desc">Tìm hiểu cách sử dụng SoccerWorld</string>
+    <string name="profile_send_feedback">Gửi phản hồi</string>
+    <string name="profile_feedback_desc">Giúp cải thiện trải nghiệm của bạn</string>
+    <string name="profile_play_now">Chơi ngay</string>
+    <string name="profile_predictions_title">Dự đoán của tôi</string>
+    <string name="profile_predicted_label">Dự đoán: %1$s</string>
+    <string name="profile_change_league_desc">Chọn giải đấu để theo dõi</string>
+    <string name="profile_signin_google">Đăng nhập bằng Google</string>
+
+    <!-- Language Settings -->
+    <string name="settings_app_language">Ngôn ngữ ứng dụng</string>
+    <string name="settings_app_language_desc">Thay đổi ngôn ngữ ứng dụng En/Vi</string>
+    <string name="settings_select_language">Chọn ngôn ngữ</string>
+
+    <!-- Favorites Screen -->
+    <string name="fav_title">Yêu thích</string>
+    <string name="fav_tab_events">Trận đấu</string>
+    <string name="fav_tab_teams">Đội bóng</string>
+    <string name="fav_tab_players">Cầu thủ</string>
+    <string name="fav_sync_title">Đồng bộ mục Yêu thích</string>
+    <string name="fav_sync_desc">Đăng nhập để sao lưu các trận đấu và đội bóng của bạn.</string>
+    <string name="fav_signin">Đăng nhập</string>
+    <string name="fav_empty_events">Chưa có trận đấu yêu thích nào</string>
+    <string name="fav_empty_events_hint">Nhấp vào biểu tượng ☆ trên trận đấu để lưu tại đây.</string>
+    <string name="fav_my_teams">Đội bóng của tôi</string>
+    <string name="fav_teams_count">%1$d đội bóng</string>
+    <string name="fav_add_team">Thêm đội bóng</string>
+    <string name="fav_trending_teams">Đội bóng thịnh hành</string>
+    <string name="fav_empty_players">Chưa có cầu thủ yêu thích nào</string>
+    <string name="fav_empty_players_hint">Tìm kiếm và gắn sao cầu thủ bóng đá để xem tại đây.</string>
+    <string name="fav_add_title">Thêm đội bóng vào yêu thích</string>
+    <string name="fav_search_placeholder">Tìm kiếm tên câu lạc bộ...</string>
+    <string name="fav_search_no_results">Không tìm thấy câu lạc bộ nào khớp với \"%1$s\"</string>
+    <string name="fav_login_required">Yêu cầu đăng nhập</string>
+    <string name="fav_login_required_desc">Bạn cần đăng nhập để lưu và đồng bộ\ncác trận đấu &amp; đội bóng yêu thích.</string>
+
+    <!-- Onboarding / League Selection -->
+    <string name="league_sel_title">Chọn giải đấu</string>
+    <string name="league_sel_instruction">Vui lòng chọn giải đấu bạn muốn theo dõi:</string>
+
+    <!-- Notification Settings -->
+    <string name="notif_title">Cài đặt thông báo</string>
+    <string name="notif_stay_up_to_date">Cập nhật liên tục</string>
+    <string name="notif_manage_alerts">Quản lý cảnh báo trận đấu của bạn</string>
+    <string name="notif_disabled_title">Thông báo đã bị tắt</string>
+    <string name="notif_disabled_desc">Bật thông báo trong cài đặt hệ thống để nhận cảnh báo.</string>
+    <string name="notif_enable">Bật</string>
+    <string name="notif_section_alert_types">LOẠI CẢNH BÁO</string>
+    <string name="notif_match_reminder">Nhắc nhở trận đấu</string>
+    <string name="notif_match_reminder_desc">Nhắc nhở 15 phút trước khi trận yêu thích bắt đầu</string>
+    <string name="notif_live_score">Cập nhật tỉ số trực tiếp</string>
+    <string name="notif_live_score_desc">Thông báo ngay khi có bàn thắng trong trận đang diễn ra</string>
+    <string name="notif_match_result">Kết quả trận đấu</string>
+    <string name="notif_match_result_desc">Nhận kết quả cuối trận ngay sau khi trận kết thúc</string>
+    <string name="notif_bg_note">Thông báo hoạt động ở nền. Tỉ số trực tiếp được cập nhật mỗi 30 giây khi trận đấu đang diễn ra. Nhắc nhở được kiểm tra mỗi 15 phút.</string>
+
+    <!-- Matches Screen -->
+    <string name="matches_tab_standings">Bảng xếp hạng</string>
+    <string name="matches_tab_matches">Lịch thi đấu</string>
+    <string name="matches_tab_top_scorers">Vua phá lưới</string>
+    <string name="matches_change_btn">Thay đổi</string>
+
+    <!-- Search Screen -->
+    <string name="search_placeholder">Tìm kiếm trận đấu, giải đấu, đội bóng...</string>
+    <string name="search_searching">Đang tìm kiếm...</string>
+    <string name="search_no_results">Không tìm thấy kết quả nào cho\n\"%1$s\"</string>
+    <string name="search_tab_suggested">Gợi ý</string>
+    <string name="search_tab_recent">Gần đây</string>
+    <string name="search_no_recent">Không có tìm kiếm gần đây</string>
+    <string name="search_clear_history">Xóa lịch sử tìm kiếm</string>
+    <string name="search_header_top_teams">Đội bóng hàng đầu</string>
+    <string name="search_header_top_players">Cầu thủ hàng đầu</string>
+    <string name="search_header_rankings">Bảng xếp hạng</string>
+    <string name="search_header_top_competitions">Giải đấu hàng đầu</string>
+    <string name="search_header_all_competitions">Tất cả giải đấu</string>
+
+    <!-- Player Details Screen -->
+    <string name="player_tab_details">Chi tiết</string>
+    <string name="player_tab_matches">Trận đấu</string>
+    <string name="player_tab_career">Sự nghiệp</string>
+    <string name="player_sec_club_pos">Câu lạc bộ &amp; Vị trí</string>
+    <string name="player_sec_personal">Thông tin cá nhân</string>
+    <string name="player_sec_valuation">Giá trị &amp; Hợp đồng</string>
+    <string name="player_lbl_current_club">Câu lạc bộ hiện tại</string>
+    <string name="player_lbl_role_pos">Vai trò / Vị trí</string>
+    <string name="player_lbl_full_name">Họ và tên</string>
+    <string name="player_lbl_dob">Ngày sinh</string>
+    <string name="player_lbl_nationality">Quốc tịch</string>
+    <string name="player_lbl_age">Tuổi</string>
+    <string name="player_lbl_valuation">Giá trị chuyển nhượng</string>
+    <string name="player_lbl_contract_ends">Hết hạn hợp đồng</string>
+    <string name="player_age_value">%1$d tuổi</string>
+    <string name="player_no_matches">Không có trận đấu nào</string>
+    <string name="player_finished">Đã kết thúc</string>
+    <string name="player_scheduled">Lịch thi đấu</string>
+    <string name="player_no_status_matches">Không có trận đấu %1$s nào</string>
+
+</resources>

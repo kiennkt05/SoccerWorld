@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -87,7 +88,11 @@ fun PlayerDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val playerData = uiState.playerData
 
-    val tabs = listOf("Details", "Matches", "Career")
+    val tabs = listOf(
+        stringResource(R.string.player_tab_details),
+        stringResource(R.string.player_tab_matches),
+        stringResource(R.string.player_tab_career)
+    )
     var selectedTab by remember { mutableStateOf(0) }
 
     val activePosition = remember(playerData, playerInfo) {
@@ -389,7 +394,7 @@ private fun DetailsTab(
             ) {
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Text(
-                        "Club & Position",
+                        stringResource(R.string.player_sec_club_pos),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -398,12 +403,12 @@ private fun DetailsTab(
                     
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Column(Modifier.weight(1f)) {
-                            ClubInfoItem("Current Club", playerData?.parentName ?: playerData?.teamName ?: "—", playerData?.teamImage)
+                            ClubInfoItem(stringResource(R.string.player_lbl_current_club), playerData?.parentName ?: playerData?.teamName ?: "—", playerData?.teamImage)
                             // Spacer(Modifier.height(12.dp))
                             // InfoItem("Preferred Layout", playerData?.layout ?: "—")
                         }
                         Column(Modifier.weight(1f)) {
-                            InfoItem("Role / Position", displayPosition)
+                            InfoItem(stringResource(R.string.player_lbl_role_pos), displayPosition)
                             // Spacer(Modifier.height(12.dp))
                             // val sport = if (playerData?.sportId == 1) "Football" else "—"
                             // InfoItem("Sport", sport)
@@ -421,7 +426,7 @@ private fun DetailsTab(
             ) {
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Text(
-                        "Personal Profile",
+                        stringResource(R.string.player_sec_personal),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -430,15 +435,15 @@ private fun DetailsTab(
                     
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Column(Modifier.weight(1f)) {
-                            InfoItem("Full Name", playerData?.name ?: playerInfo.name)
+                            InfoItem(stringResource(R.string.player_lbl_full_name), playerData?.name ?: playerInfo.name)
                             Spacer(Modifier.height(12.dp))
-                            InfoItem("Date of Birth", birthdayFormatted ?: "—")
+                            InfoItem(stringResource(R.string.player_lbl_dob), birthdayFormatted ?: "—")
                         }
                         Column(Modifier.weight(1f)) {
-                            FlagInfoItem("Nationality", playerData?.countryName ?: playerInfo.nationality ?: "—", countryFlagResId)
+                            FlagInfoItem(stringResource(R.string.player_lbl_nationality), playerData?.countryName ?: playerInfo.nationality ?: "—", countryFlagResId)
                             Spacer(Modifier.height(7.5.dp))
-                            val ageText = if (calculatedAge != null) "$calculatedAge years old" else "—"
-                            InfoItem("Age", ageText)
+                            val ageText = if (calculatedAge != null) stringResource(R.string.player_age_value, calculatedAge) else "—"
+                            InfoItem(stringResource(R.string.player_lbl_age), ageText)
                         }
                     }
                 }
@@ -453,7 +458,7 @@ private fun DetailsTab(
             ) {
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Text(
-                        "Valuation & Contract",
+                        stringResource(R.string.player_sec_valuation),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
@@ -462,7 +467,7 @@ private fun DetailsTab(
                     
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Column(Modifier.weight(1f)) {
-                            InfoItem("Valuation", playerData?.pmv ?: "—")
+                            InfoItem(stringResource(R.string.player_lbl_valuation), playerData?.pmv ?: "—")
                         }
                         Column(Modifier.weight(1f)) {
                             val pceFormatted = remember(playerData?.pce) {
@@ -472,7 +477,7 @@ private fun DetailsTab(
                                     sdf.format(Date(time * 1000L))
                                 } else "—"
                             }
-                            InfoItem("Contract Ends", pceFormatted)
+                            InfoItem(stringResource(R.string.player_lbl_contract_ends), pceFormatted)
                         }
                     }
                 }
@@ -551,7 +556,7 @@ private fun PlayerMatchesTab(uiState: PlayerDetailUiState, playerData: PlayerDat
                 Text("⚽", fontSize = 40.sp)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    uiState.matchesError ?: "No matches found",
+                    stringResource(R.string.player_no_matches),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 32.dp)
@@ -559,7 +564,7 @@ private fun PlayerMatchesTab(uiState: PlayerDetailUiState, playerData: PlayerDat
             }
         }
         uiState.matches.isEmpty() -> Box(Modifier.fillMaxSize(), Alignment.Center) {
-            Text("No matches available", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(stringResource(R.string.player_no_matches), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         else -> {
             var activeFilter by remember { mutableStateOf("Finished") }
@@ -603,6 +608,7 @@ private fun PlayerMatchesTab(uiState: PlayerDetailUiState, playerData: PlayerDat
                 ) {
                     filters.forEach { f ->
                         val selected = activeFilter == f
+                        val labelText = if (f == "Finished") stringResource(R.string.player_finished) else stringResource(R.string.player_scheduled)
                         Box(
                             modifier = Modifier
                                 .weight(1f)
@@ -616,7 +622,7 @@ private fun PlayerMatchesTab(uiState: PlayerDetailUiState, playerData: PlayerDat
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                f,
+                                labelText,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
@@ -627,7 +633,8 @@ private fun PlayerMatchesTab(uiState: PlayerDetailUiState, playerData: PlayerDat
 
                 if (grouped.isEmpty()) {
                     Box(Modifier.fillMaxSize(), Alignment.Center) {
-                        Text("No $activeFilter matches", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        val filterText = if (activeFilter == "Finished") stringResource(R.string.player_finished).lowercase(Locale.getDefault()) else stringResource(R.string.player_scheduled).lowercase(Locale.getDefault())
+                        Text(stringResource(R.string.player_no_status_matches, filterText), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
                     LazyColumn(
@@ -1668,5 +1675,26 @@ fun PlayerCareerTabPreview() {
         Surface(color = MaterialTheme.colorScheme.background) {
             PlayerCareerTab(uiState = sampleState)
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PlayerDetailScreenPreview() {
+    val samplePlayerInfo = PlayerDetailInfo(
+        id = "WGOY4FSt",
+        name = "Cristiano Ronaldo",
+        position = "Forward",
+        dateOfBirth = "1985-02-05",
+        nationality = "Portugal",
+        jerseyNumber = 7,
+        imageUrl = "https://www.flashscore.com/res/image/data/nsF9bZdM-bTK8dxEL.png",
+        flagId = null
+    )
+    SoccerWorldTheme {
+        PlayerDetailScreen(
+            playerInfo = samplePlayerInfo,
+            onBack = {}
+        )
     }
 }

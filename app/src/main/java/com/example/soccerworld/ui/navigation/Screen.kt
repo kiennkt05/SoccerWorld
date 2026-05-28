@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.soccerworld.R
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -25,9 +26,9 @@ sealed class Screen(val route: String) {
     object NotificationSettings : Screen("notification_settings")
 }
 
-sealed class BottomNavItem(val route: String, val title: String, val icon: ImageVector) {
-    object Matches : BottomNavItem("matches", "Matches", Icons.Default.DateRange)
-    object Search : BottomNavItem("search", "Search", Icons.Default.Search)
-    object Favorites : BottomNavItem("favorites", "Favorites", Icons.Default.Favorite)
-    object Profile : BottomNavItem("profile", "Profile", Icons.Default.Person)
+sealed class BottomNavItem(val route: String, val titleResId: Int, val icon: ImageVector) {
+    object Matches : BottomNavItem("matches", R.string.nav_matches, Icons.Default.DateRange)
+    object Search : BottomNavItem("search", R.string.nav_search, Icons.Default.Search)
+    object Favorites : BottomNavItem("favorites", R.string.nav_favorites, Icons.Default.Favorite)
+    object Profile : BottomNavItem("profile", R.string.nav_profile, Icons.Default.Person)
 }

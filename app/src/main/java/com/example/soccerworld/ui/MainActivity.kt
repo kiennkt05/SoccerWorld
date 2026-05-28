@@ -10,10 +10,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import android.content.Context
 import com.example.soccerworld.ui.navigation.AppNavigation
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
+import com.example.soccerworld.util.CustomSharedPreferences
+import com.example.soccerworld.util.LocaleHelper
 
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        val prefs = CustomSharedPreferences.invoke(newBase)
+        val lang = prefs.getLanguage()
+        val context = LocaleHelper.wrapContext(newBase, lang)
+        super.attachBaseContext(context)
+    }
 
     // Launcher xin quyền POST_NOTIFICATIONS (Android 13+)
     private val notificationPermissionLauncher = registerForActivityResult(

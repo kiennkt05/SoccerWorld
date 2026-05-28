@@ -2,9 +2,9 @@ package com.example.soccerworld.ui.main
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -17,12 +17,9 @@ import com.example.soccerworld.ui.matches.MatchesScreen
 import com.example.soccerworld.ui.navigation.Screen
 import com.example.soccerworld.ui.search.SearchScreen
 import com.example.soccerworld.ui.profile.ProfileScreen
-import com.example.soccerworld.ui.player.PlayerDetailInfo
 import com.example.soccerworld.ui.navigation.BottomNavItem
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import com.example.soccerworld.data.ChatRepository
 import com.example.soccerworld.data.local.FootballDatabase
 import com.example.soccerworld.data.remote.groq.GroqApiClient
@@ -33,19 +30,27 @@ import com.example.soccerworld.util.ViewModelFactory
 import com.example.soccerworld.data.agent.ToolExecutor
 import com.example.soccerworld.util.Injection
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.geometry.Offset
-import com.example.soccerworld.ui.theme.AccentEmerald
+import androidx.compose.ui.unit.dp
 import com.example.soccerworld.ui.theme.TextSecondary
+import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.util.CustomSharedPreferences
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
-    val navController = rememberNavController()
     val authViewModel: AuthViewModel = viewModel()
-    
+    MainScreenContent(
+        rootNavController = rootNavController,
+        authViewModel = authViewModel
+    )
+}
+
+@Composable
+fun MainScreenContent(
+    rootNavController: NavHostController,
+    authViewModel: AuthViewModel?
+) {
+    val navController = rememberNavController()
     var showChat by remember { mutableStateOf(false) }
     
     val items = listOf(
@@ -66,11 +71,12 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
 
                 items.forEach { item ->
                     val selected = currentRoute == item.route
+                    val itemTitle = stringResource(id = item.titleResId)
                     NavigationBarItem(
-                        icon = { Icon(item.icon, contentDescription = item.title) },
+                        icon = { Icon(item.icon, contentDescription = itemTitle) },
                         label = { 
                             Text(
-                                text = item.title,
+                                text = itemTitle,
                                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                             ) 
                         },
@@ -150,25 +156,29 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
                 )
             }
             composable(BottomNavItem.Profile.route) {
-                ProfileScreen(
-                    onChangeLeague = {
-                        rootNavController.navigate(Screen.LeagueSelection.route) {
-                            popUpTo(Screen.Main.route) { inclusive = true }
-                        }
-                    },
-                    onNavigateToLogin = {
-                        rootNavController.navigate(Screen.Login.route)
-                    },
-                    onNavigateToNotificationSettings = {
-                        rootNavController.navigate(Screen.NotificationSettings.route)
-                    },
-                    authViewModel = authViewModel
-                )
+                if (authViewModel != null) {
+                    ProfileScreen(
+                        onChangeLeague = {
+                            rootNavController.navigate(Screen.LeagueSelection.route) {
+                                popUpTo(Screen.Main.route) { inclusive = true }
+                            }
+                        },
+                        onNavigateToLogin = {
+                            rootNavController.navigate(Screen.Login.route)
+                        },
+                        onNavigateToNotificationSettings = {
+                            rootNavController.navigate(Screen.NotificationSettings.route)
+                        },
+                        authViewModel = authViewModel
+                    )
+                } else {
+                    Text("Profile Screen (Preview Mode)", modifier = Modifier.padding(16.dp))
+                }
             }
         }
     }
 
-    if (showChat) {
+    if (showChat && !LocalInspectionMode.current) {
         val context = LocalContext.current
         val db = FootballDatabase.invoke(context)
         val footballRepo = remember { Injection.provideFootballRepository(context) }
@@ -179,6 +189,17 @@ fun MainScreen(rootNavController: NavHostController = rememberNavController()) {
         ChatBottomSheet(
             viewModel = chatViewModel,
             onDismiss = { showChat = false }
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun MainScreenPreview() {
+    SoccerWorldTheme {
+        MainScreenContent(
+            rootNavController = rememberNavController(),
+            authViewModel = null
         )
     }
 }

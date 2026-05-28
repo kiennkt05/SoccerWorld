@@ -129,6 +129,16 @@ class CustomSharedPreferences {
 
     fun hasSelectedLeague(): Boolean = getLeagueId() != null
 
+    fun saveLanguage(lang: String) {
+        sharedPreferences?.edit(commit = true) {
+            putString("app_language", lang)
+        }
+    }
+
+    fun getLanguage(): String {
+        return sharedPreferences?.getString("app_language", "en") ?: "en"
+    }
+
     // ── Notification Settings ────────────────────────────────────────────────
 
     fun setMatchReminderEnabled(enabled: Boolean) {

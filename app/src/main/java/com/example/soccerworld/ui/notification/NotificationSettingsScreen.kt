@@ -33,10 +33,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.soccerworld.R
+import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.ui.theme.AccentEmerald
 import com.example.soccerworld.ui.theme.AccentNeonOrange
 import com.example.soccerworld.ui.theme.BrandGreenMedium
@@ -76,7 +80,7 @@ fun NotificationSettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Notification Settings",
+                        stringResource(R.string.notif_title),
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -125,13 +129,13 @@ fun NotificationSettingsScreen(
                     }
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        "Stay Up to Date",
+                        stringResource(R.string.notif_stay_up_to_date),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White
                     )
                     Text(
-                        "Manage your match alerts",
+                        stringResource(R.string.notif_manage_alerts),
                         fontSize = 13.sp,
                         color = Color.White.copy(alpha = 0.7f)
                     )
@@ -168,12 +172,12 @@ fun NotificationSettingsScreen(
                         Spacer(Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "Notifications Disabled",
+                                stringResource(R.string.notif_disabled_title),
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
                             Text(
-                                "Enable notifications in system settings to receive alerts.",
+                                stringResource(R.string.notif_disabled_desc),
                                 style  = MaterialTheme.typography.bodySmall,
                                 color  = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.8f)
                             )
@@ -190,7 +194,7 @@ fun NotificationSettingsScreen(
                                 }
                             }
                         ) {
-                            Text("Enable", fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.notif_enable), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -199,7 +203,7 @@ fun NotificationSettingsScreen(
             Spacer(Modifier.height(8.dp))
 
             // ── Notification types ────────────────────────────────────────────
-            SectionHeader("ALERT TYPES")
+            SectionHeader(stringResource(R.string.notif_section_alert_types))
 
             Card(
                 modifier = Modifier
@@ -213,8 +217,8 @@ fun NotificationSettingsScreen(
                 NotificationToggleRow(
                     icon        = Icons.Default.Schedule,
                     iconColor   = BrandGreenMedium,
-                    title       = "Match Reminder",
-                    description = "Nhắc nhở 15 phút trước khi trận yêu thích bắt đầu",
+                    title       = stringResource(R.string.notif_match_reminder),
+                    description = stringResource(R.string.notif_match_reminder_desc),
                     checked     = matchReminderEnabled,
                     enabled     = notifPermissionGranted,
                     onChecked   = { on ->
@@ -230,8 +234,8 @@ fun NotificationSettingsScreen(
                 NotificationToggleRow(
                     icon        = Icons.Default.SportsSoccer,
                     iconColor   = AccentEmerald,
-                    title       = "Live Score Update",
-                    description = "Thông báo ngay khi có bàn thắng trong trận đang diễn ra",
+                    title       = stringResource(R.string.notif_live_score),
+                    description = stringResource(R.string.notif_live_score_desc),
                     checked     = liveScoreEnabled,
                     enabled     = notifPermissionGranted,
                     onChecked   = { on ->
@@ -247,8 +251,8 @@ fun NotificationSettingsScreen(
                 NotificationToggleRow(
                     icon        = Icons.Default.Notifications,
                     iconColor   = AccentNeonOrange,
-                    title       = "Match Result",
-                    description = "Nhận kết quả cuối trận ngay sau khi trận kết thúc",
+                    title       = stringResource(R.string.notif_match_result),
+                    description = stringResource(R.string.notif_match_result_desc),
                     checked     = matchResultEnabled,
                     enabled     = notifPermissionGranted,
                     onChecked   = { on ->
@@ -285,9 +289,7 @@ fun NotificationSettingsScreen(
                     )
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        text  = "Thông báo hoạt động ở background. " +
-                                "Live score được cập nhật mỗi 30 giây khi có trận đang diễn ra. " +
-                                "Match Reminder được kiểm tra mỗi 15 phút.",
+                        text  = stringResource(R.string.notif_bg_note),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Start
@@ -388,5 +390,13 @@ private fun NotificationToggleRow(
                 color    = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
             )
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun NotificationSettingsScreenPreview() {
+    SoccerWorldTheme {
+        NotificationSettingsScreen()
     }
 }
