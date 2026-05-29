@@ -10,6 +10,9 @@ import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,11 +42,24 @@ fun MatchesScreen(
     val sharedPrefs = remember { CustomSharedPreferences.invoke(context) }
     var refreshKey by remember { mutableIntStateOf(0) }
 
-    val currentLeagueId by remember(refreshKey) {
-        derivedStateOf { sharedPrefs.getLeagueId() ?: "PL" }
+    val currentLeague by remember(refreshKey) {
+        derivedStateOf { sharedPrefs.getLeague() }
     }
-    val currentLeagueInfo = remember(currentLeagueId) {
-        popularLeagues.find { it.id == currentLeagueId }
+    val currentLeagueName = currentLeague?.name ?: "Unknown League"
+    val currentLeagueLogo = popularLeagues.find { it.id == currentLeague?.stageId }?.logoUrl
+        ?: currentLeague?.image
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                refreshKey++
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -60,8 +76,9 @@ fun MatchesScreen(
     ) {
         // ── Flat League Selector Bar (M3 Clean Style) ──
         LeagueSelectorBar(
-            leagueName = currentLeagueInfo?.name ?: currentLeagueId,
-            leagueLogoUrl = currentLeagueInfo?.logoUrl,
+            leagueName = currentLeagueName,
+            leagueLogoUrl = currentLeagueLogo,
+            countryName = currentLeague?.countryName,
             onChangeLeague = onChangeLeague
         )
 
@@ -100,7 +117,7 @@ fun MatchesScreen(
         Box(modifier = Modifier.weight(1f)) {
             when (selectedTabIndex) {
                 0 -> LeagueTableScreen(key = refreshKey, onTeamClick = onTeamClick)
-                1 -> FixturesScreen(onMatchClick = onMatchClick)
+                1 -> FixturesScreen(key = refreshKey, onMatchClick = onMatchClick)
                 2 -> TopScorersScreen(key = refreshKey)
             }
         }
@@ -111,6 +128,7 @@ fun MatchesScreen(
 fun LeagueSelectorBar(
     leagueName: String,
     leagueLogoUrl: String?,
+    countryName: String?,
     onChangeLeague: () -> Unit
 ) {
     Row(
@@ -154,11 +172,13 @@ fun LeagueSelectorBar(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            Text(
-                text = "England · 2025/26",
-                fontSize = 11.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (!countryName.isNullOrEmpty()) {
+                Text(
+                    text = countryName,
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         // Change button

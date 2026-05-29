@@ -88,9 +88,11 @@ fun ProfileScreen(
         ?: stringResource(R.string.profile_guest_user)
     val email = firebaseUser?.email ?: stringResource(R.string.profile_signin_sync)
 
-    val leagueId = sharedPrefs.getLeagueId() ?: "PL"
-    val leagueInfo = popularLeagues.find { it.id == leagueId }
-    val leagueName = leagueInfo?.name ?: leagueId
+    val currentLeague = sharedPrefs.getLeague()
+    val leagueId = currentLeague?.stageId ?: "PL"
+    val currentLeagueName = currentLeague?.name ?: "Unknown League"
+    val currentLeagueLogo = popularLeagues.find { it.id == leagueId }?.logoUrl
+        ?: "https://crests.football-data.org/PL.png"
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var showSettingsSheet by remember { mutableStateOf(false) }
@@ -210,7 +212,7 @@ fun ProfileScreen(
                 if (selectedTab == 0) {
                     OverviewTab(
                         isLoggedIn = isLoggedIn,
-                        leagueName = leagueName,
+                        leagueName = currentLeagueName,
                         onChangeLeague = onChangeLeague,
                         onNavigateToLogin = onNavigateToLogin,
                         onNavigateToNotificationSettings = onNavigateToNotificationSettings

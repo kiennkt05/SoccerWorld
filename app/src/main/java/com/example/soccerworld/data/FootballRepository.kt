@@ -69,6 +69,7 @@ import com.example.soccerworld.model.team.Team as TeamModel
 import com.example.soccerworld.model.team.TeamResponse
 import com.example.soccerworld.model.topscorer.TopScorerEntity
 import com.example.soccerworld.util.Constant
+import com.example.soccerworld.util.FlashLiveLeague
 import com.example.soccerworld.util.CustomSharedPreferences
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -95,11 +96,10 @@ class FootballRepository(
     private val teamPlayersCache = mutableMapOf<String, PlayerResponse>()
     private val matchDetailCache = mutableMapOf<String, MatchDetailAggregate>()
 
-    fun getSelectedLeagueId(): String = customPreferences.getLeagueId() ?: "PL"
+    fun getSelectedLeague(): FlashLiveLeague = customPreferences.getLeague() ?: Constant.FLASHLIVE_LEAGUES["PL"]!!
 
-    suspend fun getLeagueTable(leagueId: String): DataResult<LeagueTableResponse> {
-        val league = Constant.league(leagueId)
-            ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
+    suspend fun getLeagueTable(league: FlashLiveLeague): DataResult<LeagueTableResponse> {
+        val leagueId = league.stageId
         val updateTime = customPreferences.getStandingsTime() ?: 0L
         val now = System.currentTimeMillis()
         val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
@@ -115,25 +115,27 @@ class FootballRepository(
             }
         }
         return safeApiCall {
-            val rows = apiService
+            val standingsList = apiService
                 .getStandings(Constant.LOCALE, "overall", league.stageId, league.seasonId)
-                .data?.firstOrNull()?.rows.orEmpty()
-                .map { row ->
-                    val goals = parseGoals(row.goals)
-                    Table(
-                        position = row.ranking,
-                        team = Team(id = row.teamId, name = row.teamName, shortName = row.teamName, crest = row.teamImagePath),
-                        playedGames = row.matchesPlayed,
-                        won = row.wins,
-                        draw = row.draws,
-                        lost = row.losses,
-                        points = row.points,
-                        goalsFor = goals.first,
-                        goalsAgainst = goals.second,
-                        goalDifference = (goals.first ?: 0) - (goals.second ?: 0)
-                    )
-                }
-            LeagueTableResponse(standings = listOf(Standing(type = "TOTAL", table = rows))).also {
+                .data?.map { block ->
+                    val rows = block.rows.orEmpty().map { row ->
+                        val goals = parseGoals(row.goals)
+                        Table(
+                            position = row.ranking,
+                            team = Team(id = row.teamId, name = row.teamName, shortName = row.teamName, crest = row.teamImagePath),
+                            playedGames = row.matchesPlayed,
+                            won = row.wins,
+                            draw = row.draws,
+                            lost = row.losses,
+                            points = row.points,
+                            goalsFor = goals.first,
+                            goalsAgainst = goals.second,
+                            goalDifference = (goals.first ?: 0) - (goals.second ?: 0)
+                        )
+                    }
+                    Standing(type = "TOTAL", group = block.group, table = rows)
+                } ?: emptyList()
+            LeagueTableResponse(standings = standingsList).also {
                 leagueTableCache[leagueId] = it
                 customPreferences.saveStandingsTime(now)
                 dao.upsertStandingsCache(
@@ -147,9 +149,8 @@ class FootballRepository(
         }
     }
 
-    suspend fun getTopScorers(leagueId: String): DataResult<List<TopScorerEntity>> {
-        val league = Constant.league(leagueId)
-            ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
+    suspend fun getTopScorers(league: FlashLiveLeague): DataResult<List<TopScorerEntity>> {
+        val leagueId = league.stageId
         val updateTime = customPreferences.getTopScorersTime() ?: 0L
         val now = System.currentTimeMillis()
         val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
@@ -181,7 +182,7 @@ class FootballRepository(
         }
     }
 
-    private suspend fun fetchTopScorerRows(stageId: String, seasonId: String): List<com.example.soccerworld.data.remote.flashlive.TopScorerRow> {
+    private suspend fun fetchTopScorerRows(stageId: String, seasonId: String?): List<com.example.soccerworld.data.remote.flashlive.TopScorerRow> {
         val primaryResponse = apiService.getTopScorers(
             locale = Constant.LOCALE,
             type = "top_scores",
@@ -204,9 +205,8 @@ class FootballRepository(
         }
     }
 
-    suspend fun getAllTeamsOfLeague(leagueId: String): DataResult<TeamResponse> {
-        val league = Constant.league(leagueId)
-            ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
+    suspend fun getAllTeamsOfLeague(league: FlashLiveLeague): DataResult<TeamResponse> {
+        val leagueId = league.stageId
         val updateTime = customPreferences.getTeamsTime() ?: 0L
         val now = System.currentTimeMillis()
         val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
@@ -303,7 +303,7 @@ class FootballRepository(
     }
 
     suspend fun getAllFixtureOfLeague(
-        leagueId: String,
+        league: FlashLiveLeague,
         dateFrom: String? = null,
         dateTo: String? = null,
         stage: String? = null,
@@ -311,8 +311,7 @@ class FootballRepository(
         matchday: Int? = null,
         forceRefresh: Boolean = false
     ): DataResult<FixtureResponse> {
-        val league = Constant.league(leagueId)
-            ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
+        val leagueId = league.stageId
         val updateTime = customPreferences.getFixturesTime() ?: 0L
         val now = System.currentTimeMillis()
         val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
@@ -362,11 +361,10 @@ class FootballRepository(
     }
 
     suspend fun loadMoreFixtures(
-        leagueId: String,
+        league: FlashLiveLeague,
         currentPage: Int
     ): DataResult<List<Matche>> {
-        val league = Constant.league(leagueId)
-            ?: return DataResult.Error(ErrorType.NOT_FOUND, "Unsupported league code: $leagueId")
+        val leagueId = league.stageId
 
         return safeApiCall {
             val events = mutableListOf<FlashLiveEvent>()

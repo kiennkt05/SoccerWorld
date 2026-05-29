@@ -35,9 +35,9 @@
             viewModelScope.launch {
                 _uiState.update { it.copy(isLoading = true, error = null) }
 
-                val leagueId = repository.getSelectedLeagueId()
+                val league = repository.getSelectedLeague()
 
-                when (val result = repository.getTopScorers(leagueId)) {
+                when (val result = repository.getTopScorers(league)) {
                     is DataResult.Success -> {
                         val imageUrls = repository.preloadPlayerMediaInParallel(result.data)
                         _uiState.update {

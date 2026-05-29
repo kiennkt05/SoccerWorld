@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 data class LeagueTableUiState(
     val isLoading: Boolean = true,
     // LƯU Ý: Thay 'Any' bằng cái class Table (hoặc StandingItem) mà Plugin sinh ra cho bạn nhé
-    val tableList: List<Table?>? = emptyList(),
+    val standings: List<com.example.soccerworld.model.leaguetable.Standing> = emptyList(),
     val error: String? = null
 )
 
@@ -34,11 +34,11 @@ class LeagueTableViewModel(private val repository: FootballRepository) : ViewMod
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            val leagueId = repository.getSelectedLeagueId()
-            when (val result = repository.getLeagueTable(leagueId)) {
+            val league = repository.getSelectedLeague()
+            when (val result = repository.getLeagueTable(league)) {
                 is DataResult.Success -> {
-                    val data = result.data.standings?.firstOrNull()?.table ?: emptyList()
-                    _uiState.update { it.copy(isLoading = false, tableList = data) }
+                    val data = result.data.standings?.filterNotNull() ?: emptyList()
+                    _uiState.update { it.copy(isLoading = false, standings = data) }
                 }
                 is DataResult.Error -> {
                     _uiState.update { it.copy(isLoading = false, error = result.message ?: "Error loading standings") }

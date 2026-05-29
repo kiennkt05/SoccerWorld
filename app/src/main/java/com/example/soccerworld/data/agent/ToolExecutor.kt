@@ -21,12 +21,16 @@ class ToolExecutor(private val repository: FootballRepository) {
                 }
                 "get_league_standings" -> {
                     val leagueId = args.get("league_id")?.asString ?: return errorStr("Missing league_id")
-                    formatResult(repository.getLeagueTable(leagueId), maxArraySize = 40)
+                    val league = com.example.soccerworld.util.Constant.FLASHLIVE_LEAGUES[leagueId]
+                        ?: com.example.soccerworld.util.FlashLiveLeague(leagueId, null, leagueId)
+                    formatResult(repository.getLeagueTable(league), maxArraySize = 40)
                 }
                 "get_fixtures" -> {
                     val leagueId = args.get("league_id")?.asString ?: return errorStr("Missing league_id")
                     val status = args.get("status")?.asString
-                    formatResult(repository.getAllFixtureOfLeague(leagueId, status = status), maxArraySize = 10)
+                    val league = com.example.soccerworld.util.Constant.FLASHLIVE_LEAGUES[leagueId]
+                        ?: com.example.soccerworld.util.FlashLiveLeague(leagueId, null, leagueId)
+                    formatResult(repository.getAllFixtureOfLeague(league, status = status), maxArraySize = 10)
                 }
                 "get_head_to_head" -> {
                     val fixtureId = args.get("fixture_id")?.asString ?: return errorStr("Missing fixture_id")
@@ -45,7 +49,9 @@ class ToolExecutor(private val repository: FootballRepository) {
                 }
                 "get_top_scorers" -> {
                     val leagueId = args.get("league_id")?.asString ?: return errorStr("Missing league_id")
-                    formatResult(repository.getTopScorers(leagueId), maxArraySize = 15)
+                    val league = com.example.soccerworld.util.Constant.FLASHLIVE_LEAGUES[leagueId]
+                        ?: com.example.soccerworld.util.FlashLiveLeague(leagueId, null, leagueId)
+                    formatResult(repository.getTopScorers(league), maxArraySize = 15)
                 }
                 "get_team_transfers" -> {
                     val teamId = args.get("team_id")?.asString ?: return errorStr("Missing team_id")

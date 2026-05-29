@@ -61,9 +61,9 @@ class FixtureViewModel(private val repository: FootballRepository) : ViewModel()
     fun getAllFixtureOfLeague(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, currentPage = 1, hasMorePages = true) }
-            val leagueId = repository.getSelectedLeagueId()
+            val league = repository.getSelectedLeague()
 
-            when (val result = repository.getAllFixtureOfLeague(leagueId = leagueId, forceRefresh = forceRefresh)) {
+            when (val result = repository.getAllFixtureOfLeague(league = league, forceRefresh = forceRefresh)) {
                 is DataResult.Success -> {
                     val presentation = withContext(Dispatchers.Default) {
                         buildPresentation(result.data.matches.orEmpty(), _uiState.value.selectedTab)
@@ -130,14 +130,14 @@ class FixtureViewModel(private val repository: FootballRepository) : ViewModel()
         lastLoadMoreTime = now
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingMore = true) }
-            val leagueId = repository.getSelectedLeagueId()
+            val league = repository.getSelectedLeague()
             val nextPage = _uiState.value.currentPage + 1
             if (nextPage > MAX_TOTAL_PAGES) {
                 _uiState.update { it.copy(isLoadingMore = false, hasMorePages = false) }
                 return@launch
             }
             
-            when (val result = repository.loadMoreFixtures(leagueId, nextPage)) {
+            when (val result = repository.loadMoreFixtures(league, nextPage)) {
                 is DataResult.Success -> {
                     val newMatches = result.data
                     if (newMatches.isEmpty()) {

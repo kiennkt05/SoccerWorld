@@ -36,12 +36,12 @@ fun HomeScreen(
 
     var refreshKey by remember { mutableIntStateOf(0) }
 
-    val currentLeagueId by remember(refreshKey) {
-        derivedStateOf { sharedPrefs.getLeagueId() ?: "PL" }
+    val currentLeague by remember(refreshKey) {
+        derivedStateOf { sharedPrefs.getLeague() }
     }
-    val currentLeagueInfo = remember(currentLeagueId) {
-        popularLeagues.find { it.id == currentLeagueId }
-    }
+    val currentLeagueName = currentLeague?.name ?: "Unknown League"
+    val currentLeagueLogo = popularLeagues.find { it.id == currentLeague?.stageId }?.logoUrl
+        ?: "https://crests.football-data.org/PL.png" // default logo for dynamic leagues
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Standings", "Top Scorers")
@@ -50,8 +50,8 @@ fun HomeScreen(
 
         // ── Compact League Bar ─────────────────────────────────────────
         CompactLeagueBar(
-            leagueName = currentLeagueInfo?.name ?: currentLeagueId,
-            leagueLogoUrl = currentLeagueInfo?.logoUrl,
+            leagueName = currentLeagueName,
+            leagueLogoUrl = currentLeagueLogo,
             onChangeLeague = onChangeLeague
         )
 

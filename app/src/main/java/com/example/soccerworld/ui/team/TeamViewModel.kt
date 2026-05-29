@@ -32,9 +32,9 @@ class TeamViewModel(private val repository: FootballRepository) : ViewModel() {
     fun getAllTeamsOfLeague() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            val leagueId = repository.getSelectedLeagueId()
+            val league = repository.getSelectedLeague()
 
-            when (val result = repository.getAllTeamsOfLeague(leagueId)) {
+            when (val result = repository.getAllTeamsOfLeague(league)) {
                 is DataResult.Success -> {
                     val data = result.data.teams ?: emptyList()
                     _uiState.update { it.copy(isLoading = false, teamsList = data) }

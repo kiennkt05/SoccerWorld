@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.preference.PreferenceManager
+import com.google.gson.Gson
 
 class CustomSharedPreferences {
 
@@ -117,18 +118,29 @@ class CustomSharedPreferences {
         return sharedPreferences?.getLong("${MATCH_DETAIL_TIME_PREFIX}${fixtureId}", 0)
     }
 
-    fun saveLeagueId(leagueId: String) {
+    fun saveLeague(league: FlashLiveLeague) {
         sharedPreferences?.edit(commit = true) {
-            putString(LEAGUE_ID, leagueId)
+            putString("SELECTED_LEAGUE_OBJ", Gson().toJson(league))
         }
     }
 
-    fun getLeagueId(): String? {
+    fun getLeague(): FlashLiveLeague? {
+        val json = sharedPreferences?.getString("SELECTED_LEAGUE_OBJ", null)
+        if (json != null) {
+            try {
+                return Gson().fromJson(json, FlashLiveLeague::class.java)
+            } catch (e: Exception) {
+                // fallback
+            }
+        }
+        
+        // Migration from old string LEAGUE_ID
         val raw = sharedPreferences?.getString(LEAGUE_ID, null) ?: return null
-        return normalizeLeagueCode(raw)
+        val normalized = normalizeLeagueCode(raw) ?: return null
+        return Constant.FLASHLIVE_LEAGUES[normalized]
     }
 
-    fun hasSelectedLeague(): Boolean = getLeagueId() != null
+    fun hasSelectedLeague(): Boolean = getLeague() != null
 
     fun saveLanguage(lang: String) {
         sharedPreferences?.edit(commit = true) {

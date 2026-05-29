@@ -33,6 +33,8 @@ import com.example.soccerworld.ui.theme.LightBackground
 import com.example.soccerworld.ui.theme.DividerColor
 import com.example.soccerworld.ui.player.PlayerDetailInfo
 import com.example.soccerworld.util.CustomSharedPreferences
+import com.example.soccerworld.util.Constant
+import com.example.soccerworld.util.FlashLiveLeague
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -55,6 +57,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.em
 import com.example.soccerworld.R
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.data.remote.flashlive.PlayerSearchItemDto
@@ -70,7 +73,7 @@ import com.example.soccerworld.util.ViewModelFactory
 fun SearchScreen(
     onTeamClick: (String) -> Unit = {},
     onPlayerClick: (PlayerDetailInfo) -> Unit = {},
-    onCompetitionClick: (String) -> Unit = {}
+    onCompetitionClick: (com.example.soccerworld.util.FlashLiveLeague) -> Unit = {}
 ) {
     val context = LocalContext.current
     val sharedPrefs = remember { CustomSharedPreferences.invoke(context) }
@@ -268,11 +271,11 @@ fun SearchScreen(
                             recentSearches.addAll(sharedPrefs.getSearchHistory())
                             onPlayerClick(playerInfo)
                         },
-                        onCompetitionClick = { code, name ->
-                            sharedPrefs.addSearchQuery(name)
+                        onCompetitionClick = { league ->
+                            sharedPrefs.addSearchQuery(league.name)
                             recentSearches.clear()
                             recentSearches.addAll(sharedPrefs.getSearchHistory())
-                            onCompetitionClick(code)
+                            onCompetitionClick(league)
                         }
                     )
                 } else {
@@ -312,6 +315,12 @@ fun SearchScreen(
                         recentSearches.clear()
                         recentSearches.addAll(sharedPrefs.getSearchHistory())
                         onPlayerClick(playerInfo)
+                    },
+                    onCompetitionClick = { league ->
+                        sharedPrefs.addSearchQuery(league.name)
+                        recentSearches.clear()
+                        recentSearches.addAll(sharedPrefs.getSearchHistory())
+                        onCompetitionClick(league)
                     }
                 )
             }
@@ -324,7 +333,7 @@ fun SearchScreen(
 private fun SuggestedTabContent(
     onTeamClick: (String, String) -> Unit,
     onPlayerClick: (PlayerDetailInfo) -> Unit,
-    onCompetitionClick: (String, String) -> Unit
+    onCompetitionClick: (FlashLiveLeague) -> Unit
 ) {
     val expandedStates = remember { mutableStateMapOf("Vietnam" to false, "World" to false, "Europe" to false) }
 
@@ -343,10 +352,10 @@ private fun SuggestedTabContent(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 val teams = listOf(
-                    Triple("66", "Manchester United", "https://crests.football-data.org/66.png"),
-                    Triple("vietnam_team", "Vietnam", "https://images.flashscore.info/image/r_4/vietnam-4V0l10a5.png"),
-                    Triple("86", "Real Madrid", "https://crests.football-data.org/86.png"),
-                    Triple("81", "FC Barcelona", "https://crests.football-data.org/81.png")
+                    Triple("ppjDR086", "Manchester United", "https://crests.football-data.org/66.png"),
+                    Triple("CjhkPw0k", "Paris Saint-Germain", "https://crests.football-data.org/524.png"),
+                    Triple("W8mj7MDD", "Real Madrid", "https://crests.football-data.org/86.png"),
+                    Triple("SKbpVP5K", "FC Barcelona", "https://crests.football-data.org/81.png")
                 )
                 items(teams, key = { it.first }) { (id, name, logo) ->
                     SuggestedCard(name = name, logo = logo) {
@@ -407,19 +416,19 @@ private fun SuggestedTabContent(
         }
 
         // 3. Rankings
-        item {
-            SuggestedHeader(title = stringResource(R.string.search_header_rankings))
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                items(2) { index ->
-                    val name = if (index == 0) "FIFA Rankings" else "UEFA Rankings"
-                    val icon = if (index == 0) Icons.Default.Public else Icons.Default.Star
-                    SuggestedRankingCard(name = name, icon = icon) {}
-                }
-            }
-        }
+//        item {
+//            SuggestedHeader(title = stringResource(R.string.search_header_rankings))
+//            LazyRow(
+//                contentPadding = PaddingValues(horizontal = 16.dp),
+//                horizontalArrangement = Arrangement.spacedBy(10.dp)
+//            ) {
+//                items(2) { index ->
+//                    val name = if (index == 0) "FIFA Rankings" else "UEFA Rankings"
+//                    val icon = if (index == 0) Icons.Default.Public else Icons.Default.Star
+//                    SuggestedRankingCard(name = name, icon = icon) {}
+//                }
+//            }
+//        }
 
         // 4. Top Competitions
         item {
@@ -429,14 +438,14 @@ private fun SuggestedTabContent(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 val comps = listOf(
-                    Triple("CL", "UEFA Champions League", "https://crests.football-data.org/CL.png"),
-                    Triple("CL", "UEFA Europa League", "https://crests.football-data.org/CL.png"),
-                    Triple("PL", "Premier League", "https://crests.football-data.org/PL.png"),
-                    Triple("PD", "LaLiga", "https://crests.football-data.org/PD.png")
+                    Constant.FLASHLIVE_LEAGUES["CL"]!! to "https://crests.football-data.org/CL.png",
+                    Constant.FLASHLIVE_LEAGUES["EL"]!! to "https://crests.football-data.org/CL.png",
+                    Constant.FLASHLIVE_LEAGUES["PL"]!! to "https://crests.football-data.org/PL.png",
+                    Constant.FLASHLIVE_LEAGUES["PD"]!! to "https://crests.football-data.org/PD.png"
                 )
-                items(comps) { (code, name, logo) ->
-                    SuggestedCard(name = name, logo = logo) {
-                        onCompetitionClick(code, name)
+                items(comps) { (league, logo) ->
+                    SuggestedCard(name = league.name, logo = logo) {
+                        onCompetitionClick(league)
                     }
                 }
             }
@@ -447,40 +456,40 @@ private fun SuggestedTabContent(
             SuggestedHeader(title = stringResource(R.string.search_header_all_competitions))
         }
 
-        // Vietnam expandable
-        item {
-            ExpandableCategoryRow(
-                title = "Vietnam",
-                icon = Icons.Default.SportsSoccer,
-                badge = null,
-                isExpanded = expandedStates["Vietnam"] == true,
-                onToggle = { expandedStates["Vietnam"] = !(expandedStates["Vietnam"] == true) }
-            )
-            AnimatedVisibility(
-                visible = expandedStates["Vietnam"] == true,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
-            ) {
-                Column(modifier = Modifier.background(Color.White)) {
-                    Text(
-                        text = "V-League 1",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onCompetitionClick("PL", "V-League 1") } // Demo redirect
-                            .padding(horizontal = 32.dp, vertical = 12.dp)
-                    )
-                }
-            }
-        }
+//        // Vietnam expandable
+//        item {
+//            ExpandableCategoryRow(
+//                title = "Vietnam",
+//                icon = Icons.Default.SportsSoccer,
+//                badge = null,
+//                isExpanded = expandedStates["Vietnam"] == true,
+//                onToggle = { expandedStates["Vietnam"] = !(expandedStates["Vietnam"] == true) }
+//            )
+//            AnimatedVisibility(
+//                visible = expandedStates["Vietnam"] == true,
+//                enter = fadeIn() + expandVertically(),
+//                exit = fadeOut() + shrinkVertically()
+//            ) {
+//                Column(modifier = Modifier.background(Color.White)) {
+//                    Text(
+//                        text = "V-League 1",
+//                        fontSize = 14.sp,
+//                        fontWeight = FontWeight.Medium,
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .clickable { onCompetitionClick("PL", "V-League 1") } // Demo redirect
+//                            .padding(horizontal = 32.dp, vertical = 12.dp)
+//                    )
+//                }
+//            }
+//        }
 
         // World expandable
         item {
             ExpandableCategoryRow(
                 title = "World",
                 icon = Icons.Default.Public,
-                badge = "1/7",
+                badge = null,
                 badgeColor = AccentNeonMint,
                 isExpanded = expandedStates["World"] == true,
                 onToggle = { expandedStates["World"] = !(expandedStates["World"] == true) }
@@ -491,15 +500,19 @@ private fun SuggestedTabContent(
                 exit = fadeOut() + shrinkVertically()
             ) {
                 Column(modifier = Modifier.background(Color.White)) {
-                    val items = listOf("FIFA World Cup", "Club World Cup", "FIFA Confederations Cup")
-                    items.forEach { name ->
+                    val items = listOf(
+                        Constant.FLASHLIVE_LEAGUES["WC"]!!,
+                        Constant.FLASHLIVE_LEAGUES["CWC"]!!,
+                        Constant.FLASHLIVE_LEAGUES["FCC"]!!
+                    )
+                    items.forEach { league ->
                         Text(
-                            text = name,
+                            text = league.name,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onCompetitionClick("CL", name) } // Demo redirect
+                                .clickable { onCompetitionClick(league) }
                                 .padding(horizontal = 32.dp, vertical = 12.dp)
                         )
                         HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
@@ -513,7 +526,7 @@ private fun SuggestedTabContent(
             ExpandableCategoryRow(
                 title = "Europe",
                 icon = Icons.Default.Star,
-                badge = "3",
+                badge = null,
                 badgeColor = BrandGreenMedium,
                 isExpanded = expandedStates["Europe"] == true,
                 onToggle = { expandedStates["Europe"] = !(expandedStates["Europe"] == true) }
@@ -525,18 +538,21 @@ private fun SuggestedTabContent(
             ) {
                 Column(modifier = Modifier.background(Color.White)) {
                     val items = listOf(
-                        "UEFA Champions League" to "CL",
-                        "UEFA Europa League" to "CL",
-                        "UEFA Conference League" to "CL"
+                        Constant.FLASHLIVE_LEAGUES["CL"]!!,
+                        Constant.FLASHLIVE_LEAGUES["PL"]!!,
+                        Constant.FLASHLIVE_LEAGUES["PD"]!!,
+                        Constant.FLASHLIVE_LEAGUES["BL1"]!!,
+                        Constant.FLASHLIVE_LEAGUES["SA"]!!,
+                        Constant.FLASHLIVE_LEAGUES["FL1"]!!
                     )
-                    items.forEach { (name, code) ->
+                    items.forEach { league ->
                         Text(
-                            text = name,
+                            text = league.name,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onCompetitionClick(code, name) }
+                                .clickable { onCompetitionClick(league) }
                                 .padding(horizontal = 32.dp, vertical = 12.dp)
                         )
                         HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
@@ -663,6 +679,7 @@ private fun SuggestedCard(name: String, logo: String, onClick: () -> Unit) {
             Text(
                 text = name,
                 fontSize = 11.sp,
+                lineHeight = 1.2.em,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black,
                 textAlign = TextAlign.Center,
@@ -829,7 +846,8 @@ private fun ExpandableCategoryRow(
 private fun SearchResultList(
     results: List<SearchItemDto>,
     onTeamClick: (String, String) -> Unit,
-    onPlayerClick: (PlayerDetailInfo) -> Unit
+    onPlayerClick: (PlayerDetailInfo) -> Unit,
+    onCompetitionClick: (com.example.soccerworld.util.FlashLiveLeague) -> Unit
 ) {
     val teams = results.filterIsInstance<TeamSearchItemDto>()
     val players = results.filterIsInstance<PlayerSearchItemDto>()
@@ -843,7 +861,7 @@ private fun SearchResultList(
         if (teams.isNotEmpty()) {
             item { GroupHeader(title = "Clubs", icon = Icons.Default.AccountBox, count = teams.size) }
             items(teams) { item ->
-                SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick)
+                SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick, onCompetitionClick = onCompetitionClick)
             }
         }
 
@@ -851,7 +869,7 @@ private fun SearchResultList(
         if (players.isNotEmpty()) {
             item { GroupHeader(title = "Players", icon = Icons.Default.Person, count = players.size) }
             items(players) { item ->
-                SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick)
+                SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick, onCompetitionClick = onCompetitionClick)
             }
         }
 
@@ -859,7 +877,7 @@ private fun SearchResultList(
         if (tournaments.isNotEmpty()) {
             item { GroupHeader(title = "Tournaments", icon = Icons.Default.Star, count = tournaments.size) }
             items(tournaments) { item ->
-                SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick)
+                SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick, onCompetitionClick = onCompetitionClick)
             }
         }
     }
@@ -902,11 +920,13 @@ private fun GroupHeader(title: String, icon: ImageVector, count: Int) {
 fun SearchItemCard(
     item: SearchItemDto,
     onTeamClick: (String, String) -> Unit,
-    onPlayerClick: (PlayerDetailInfo) -> Unit
+    onPlayerClick: (PlayerDetailInfo) -> Unit,
+    onCompetitionClick: (com.example.soccerworld.util.FlashLiveLeague) -> Unit
 ) {
     val imageUrl = when (item) {
         is TeamSearchItemDto -> item.image
         is PlayerSearchItemDto -> item.image
+        is TournamentSearchItemDto -> item.image
         else -> null
     }
     val name = when (item) {
@@ -953,6 +973,20 @@ fun SearchItemCard(
                             teamId = null
                         )
                         onPlayerClick(playerInfo)
+                    }
+                    is TournamentSearchItemDto -> {
+                        val stageId = item.tournamentStageIds?.firstOrNull() ?: item.id
+                        val seasonId = item.tournamentId
+                        val additionalStageIds = item.tournamentStageIds?.drop(1) ?: emptyList()
+                        val league = com.example.soccerworld.util.FlashLiveLeague(
+                            stageId = stageId,
+                            seasonId = seasonId,
+                            name = item.name,
+                            additionalStageIds = additionalStageIds,
+                            countryName = item.countryName,
+                            image = item.image
+                        )
+                        onCompetitionClick(league)
                     }
                     else -> {}
                 }

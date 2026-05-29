@@ -38,7 +38,7 @@
     <string name="chatbot_content_description_close">Close chat</string>
 
     <!-- Navigation Tabs -->
-    <string name="nav_matches">Matches</string>
+    <string name="nav_matches">League</string>
     <string name="nav_search">Search</string>
     <string name="nav_favorites">Favorites</string>
     <string name="nav_profile">Profile</string>

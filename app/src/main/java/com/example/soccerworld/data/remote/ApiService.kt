@@ -29,7 +29,7 @@ interface ApiService {
         @Query("locale") locale: String,
         @Query("standing_type") type: String,
         @Query("tournament_stage_id") stageId: String,
-        @Query("tournament_season_id") seasonId: String,
+        @Query("tournament_season_id") seasonId: String? = null,
         @Query("page") page: Int? = null
     ): StandingsResponse
 
@@ -38,7 +38,7 @@ interface ApiService {
         @Query("locale") locale: String,
         @Query("standing_type") type: String = "top_scores",
         @Query("tournament_stage_id") stageId: String,
-        @Query("tournament_season_id") seasonId: String
+        @Query("tournament_season_id") seasonId: String? = null
     ): TopScorersResponse
 
     @GET("/v1/events/list")

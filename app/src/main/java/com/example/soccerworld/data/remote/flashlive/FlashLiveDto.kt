@@ -12,6 +12,7 @@ data class TopScorersResponse(
 )
 
 data class StandingBlock(
+    @SerializedName("GROUP") val group: String? = null,
     @SerializedName("ROWS") val rows: List<StandingRow>? = null
 )
 
@@ -307,7 +308,10 @@ data class TournamentSearchItemDto(
     @SerializedName("TYPE") override val type: String = "tournament",
     @SerializedName("SPORT_ID") override val sportId: Int? = null,
     @SerializedName("NAME") val name: String,
-    @SerializedName("COUNTRY_NAME") val countryName: String? = null
+    @SerializedName("IMAGE") val image: String? = null,
+    @SerializedName("COUNTRY_NAME") val countryName: String? = null,
+    @SerializedName("TOURNAMENT_ID") val tournamentId: String? = null,
+    @SerializedName("TOURNAMENT_STAGE_IDS_WITH_STATS_DATA") val tournamentStageIds: List<String>? = null
 ) : SearchItemDto
 
 data class MultiSearchResponse(

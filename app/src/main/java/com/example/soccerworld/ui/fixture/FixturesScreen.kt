@@ -47,12 +47,18 @@ import androidx.compose.ui.tooling.preview.Preview
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @Composable
-fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
+fun FixturesScreen(key: Int = 0, onMatchClick: (String) -> Unit = {}) {
     val context = LocalContext.current
     val viewModel: FixtureViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideFootballRepository(context))
     )
     val state by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(key) {
+        if (key > 0) {
+            viewModel.getAllFixtureOfLeague(forceRefresh = true)
+        }
+    }
 
     FixturesContent(
         state = state,

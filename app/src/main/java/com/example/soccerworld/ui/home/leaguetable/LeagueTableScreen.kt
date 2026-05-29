@@ -98,22 +98,22 @@ fun LeagueTableContent(state: LeagueTableUiState, onTeamClick: (String) -> Unit 
             }
         }
         else -> {
-            val safeList = remember(state.tableList) {
-                (state.tableList ?: emptyList()).filterNotNull()
-            }
+            val standings = state.standings
             val context = LocalContext.current
             val imageSizePx = with(LocalDensity.current) { 28.dp.roundToPx() }
 
             // Prefetch images
-            LaunchedEffect(safeList) {
+            LaunchedEffect(standings) {
                 val imageLoader = context.imageLoader
-                androidx.compose.runtime.snapshotFlow { safeList }
-                    .collect { items ->
-                        items.forEach { item ->
-                            val crest = item.team?.crest
-                            if (!crest.isNullOrBlank()) {
-                                val request = ImageRequest.Builder(context).data(crest).build()
-                                imageLoader.enqueue(request)
+                androidx.compose.runtime.snapshotFlow { standings }
+                    .collect { currentStandings ->
+                        currentStandings.forEach { standing ->
+                            standing.table?.filterNotNull()?.forEach { item ->
+                                val crest = item.team?.crest
+                                if (!crest.isNullOrBlank()) {
+                                    val request = ImageRequest.Builder(context).data(crest).build()
+                                    imageLoader.enqueue(request)
+                                }
                             }
                         }
                     }
@@ -125,24 +125,49 @@ fun LeagueTableContent(state: LeagueTableUiState, onTeamClick: (String) -> Unit 
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentPadding = PaddingValues(start = 0.dp, end = 0.dp, top = 0.dp, bottom = 88.dp)
             ) {
-                // Header row
-                item(key = "header", contentType = "header") {
-                    TableHeaderRow()
-                }
+                standings.forEach { standing ->
+                    val groupName = standing.group?.toString()
+                    val itemsList = standing.table?.filterNotNull() ?: emptyList()
 
-                items(
-                    items = safeList,
-                    key = { item -> item.team?.id ?: item.position ?: item.hashCode() },
-                    contentType = { "team_row" }
-                ) { item ->
-                    TeamRow(
-                        item = item,
-                        highlightedTeamId = highlightedTeamId,
-                        onTeamClick = onTeamClick,
-                        onTeamLongClick = { teamId ->
-                            highlightedTeamId = if (highlightedTeamId == teamId) null else teamId
+                    if (itemsList.isNotEmpty()) {
+                        if (!groupName.isNullOrEmpty() && standings.size > 1) {
+                            item(key = "group_header_$groupName", contentType = "group_header") {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                        .padding(start = 16.dp, top = 24.dp, bottom = 8.dp)
+                                ) {
+                                    Text(
+                                        text = groupName,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSystemInDarkTheme()) Color.White else Color.Black
+                                    )
+                                }
+                            }
                         }
-                    )
+
+                        // Header row
+                        item(key = "header_${groupName ?: "main"}", contentType = "header") {
+                            TableHeaderRow()
+                        }
+
+                        items(
+                            items = itemsList,
+                            key = { item -> "${groupName}_${item.team?.id ?: item.position ?: item.hashCode()}" },
+                            contentType = { "team_row" }
+                        ) { item ->
+                            TeamRow(
+                                item = item,
+                                highlightedTeamId = highlightedTeamId,
+                                onTeamClick = onTeamClick,
+                                onTeamLongClick = { teamId ->
+                                    highlightedTeamId = if (highlightedTeamId == teamId) null else teamId
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -360,7 +385,7 @@ fun PreviewLeagueTableSuccess() {
 
     val fakeState = LeagueTableUiState(
         isLoading = false,
-        tableList = fakeData,
+        standings = listOf(com.example.soccerworld.model.leaguetable.Standing(type = "TOTAL", table = fakeData)),
         error = null
     )
 

@@ -74,8 +74,9 @@ fun LeagueSelectionScreen(
             ) {
                 items(popularLeagues) { league ->
                     LeagueCard(league = league) {
-                        // Lưu ID vào SharedPreferences
-                        sharedPreferences.saveLeagueId(league.id)
+                        val flashLiveLeague = com.example.soccerworld.util.Constant.FLASHLIVE_LEAGUES[league.id]
+                            ?: com.example.soccerworld.util.FlashLiveLeague(stageId = league.id, name = league.name)
+                        sharedPreferences.saveLeague(flashLiveLeague)
                         // Điều hướng sang màn hình chính
                         onLeagueSelected()
                     }

@@ -704,7 +704,7 @@ fun TeamStandingsTab(teamId: String) {
             }
         }
         else -> {
-            val list = state.tableList?.filterNotNull() ?: emptyList()
+            val list = state.standings.flatMap { it.table?.filterNotNull() ?: emptyList() }
             if (list.isEmpty()) {
                 Box(Modifier.fillMaxSize(), Alignment.Center) {
                     Text("No standings found", color = MaterialTheme.colorScheme.onSurfaceVariant)

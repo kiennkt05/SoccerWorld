@@ -132,8 +132,8 @@ fun MainScreenContent(
                         rootNavController.currentBackStackEntry?.savedStateHandle?.set("player_info", playerInfo)
                         rootNavController.navigate(Screen.PlayerDetail.createRoute(playerInfo.id))
                     },
-                    onCompetitionClick = { leagueCode ->
-                        CustomSharedPreferences(context).saveLeagueId(leagueCode)
+                    onCompetitionClick = { league ->
+                        CustomSharedPreferences(context).saveLeague(league)
                         navController.navigate(BottomNavItem.Matches.route) {
                             popUpTo(navController.graph.startDestinationId) { saveState = true }
                             launchSingleTop = true
