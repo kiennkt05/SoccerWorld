@@ -62,6 +62,9 @@ interface FootballDao {
     @Query("DELETE FROM favorite_matches WHERE matchId = :matchId")
     suspend fun deleteFavorite(matchId: String)
 
+    @Query("UPDATE favorite_matches SET status = :status, homeScore = :homeScore, awayScore = :awayScore WHERE matchId = :matchId")
+    suspend fun updateFavoriteMatchScoreAndStatus(matchId: String, status: String?, homeScore: Int?, awayScore: Int?)
+
     @Query("SELECT * FROM favorite_matches ORDER BY savedAt DESC")
     fun getAllFavorites(): Flow<List<FavoriteMatchEntity>>
 

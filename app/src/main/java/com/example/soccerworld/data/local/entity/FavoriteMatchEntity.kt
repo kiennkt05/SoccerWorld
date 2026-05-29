@@ -15,5 +15,7 @@ data class FavoriteMatchEntity(
     val awayTeamName: String?,
     val awayTeamCrest: String?,
     val status: String?,
+    val homeScore: Int?,
+    val awayScore: Int?,
     val savedAt: Long
 )

@@ -45,6 +45,12 @@ class FavoritesViewModel(
                             id = fav.awayTeamId,
                             name = fav.awayTeamName,
                             crest = fav.awayTeamCrest
+                        ),
+                        score = com.example.soccerworld.model.fixture.Score(
+                            fullTime = com.example.soccerworld.model.fixture.FullTime(
+                                home = fav.homeScore,
+                                away = fav.awayScore
+                            )
                         )
                     )
                 }
@@ -53,11 +59,25 @@ class FavoritesViewModel(
                 _uiState.value = state
             }
         }
+        
+        syncFavoriteMatches()
+    }
+    
+    private fun syncFavoriteMatches() {
+        viewModelScope.launch {
+            repository.syncFavoriteMatches()
+        }
     }
 
     fun toggleFavoriteTeam(teamId: String, name: String, logoUrl: String?, countryName: String?) {
         viewModelScope.launch {
             repository.toggleFavoriteTeam(teamId, name, logoUrl, countryName)
+        }
+    }
+
+    fun toggleFavoriteMatch(match: Matche) {
+        viewModelScope.launch {
+            repository.toggleFavorite(match)
         }
     }
 }

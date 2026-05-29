@@ -143,7 +143,11 @@ fun FavoritesScreen(
                 LoginRequiredState(onNavigateToLogin = onNavigateToLogin)
             } else {
                 when (selectedTab) {
-                    0 -> EventsTabContent(state = state, onMatchClick = onMatchClick)
+                    0 -> EventsTabContent(
+                        state = state,
+                        onMatchClick = onMatchClick,
+                        onToggleFavoriteMatch = { match -> viewModel.toggleFavoriteMatch(match) }
+                    )
                     1 -> TeamsTabContent(
                         state = state,
                         onAddClick = { showAddTeamSheet = true },
@@ -231,7 +235,8 @@ private fun GuestSyncBanner(
 @Composable
 private fun EventsTabContent(
     state: FavoritesUiState,
-    onMatchClick: (String) -> Unit
+    onMatchClick: (String) -> Unit,
+    onToggleFavoriteMatch: (com.example.soccerworld.model.fixture.Matche) -> Unit
 ) {
     if (state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -244,7 +249,7 @@ private fun EventsTabContent(
         )
     } else {
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
@@ -256,8 +261,9 @@ private fun EventsTabContent(
                 FixtureCard(
                     match = match,
                     isFavorite = true,
-                    onToggleFavorite = { },
-                    onClick = { onMatchClick(match.id ?: "") }
+                    onToggleFavorite = { onToggleFavoriteMatch(match) },
+                    onClick = { onMatchClick(match.id ?: "") },
+                    showDateForFinished = true
                 )
             }
         }

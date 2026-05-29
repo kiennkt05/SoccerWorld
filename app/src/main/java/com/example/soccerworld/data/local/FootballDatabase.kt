@@ -30,7 +30,7 @@ import com.example.soccerworld.model.topscorer.TopScorerEntity
         FavoriteTeamEntity::class,
         FavoritePlayerEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = false
 )
 abstract class FootballDatabase : RoomDatabase() {
@@ -204,6 +204,13 @@ abstract class FootballDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE favorite_matches ADD COLUMN homeScore INTEGER")
+                db.execSQL("ALTER TABLE favorite_matches ADD COLUMN awayScore INTEGER")
+            }
+        }
+
         @Volatile
         private var instance: FootballDatabase? = null
         private val lock = Any()
@@ -218,7 +225,7 @@ abstract class FootballDatabase : RoomDatabase() {
             context.applicationContext,
             FootballDatabase::class.java,
             "footballdatabase"
-        ).addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
+        ).addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_13_14)
             .fallbackToDestructiveMigration()
             .build()
     }

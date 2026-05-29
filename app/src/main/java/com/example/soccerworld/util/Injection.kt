@@ -10,9 +10,10 @@ object Injection {
 
     // Hàm này làm nhiệm vụ lắp ráp các phụ kiện và xuất xưởng Repository
     fun provideFootballRepository(context: Context): FootballRepository {
+        val appContext = context.applicationContext
         val apiService = ApiClient.api
-        val dao = FootballDatabase.invoke(context).footballDao()
-        val customPreferences = CustomSharedPreferences.invoke(context)
-        return FootballRepository(apiService, dao, customPreferences)
+        val dao = FootballDatabase.invoke(appContext).footballDao()
+        val customPreferences = CustomSharedPreferences.invoke(appContext)
+        return FootballRepository(appContext, apiService, dao, customPreferences)
     }
 }

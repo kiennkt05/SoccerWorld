@@ -9,6 +9,12 @@ import com.example.soccerworld.data.local.entity.FavoriteTeamEntity
 import com.example.soccerworld.data.local.entity.FavoritePlayerEntity
 import com.example.soccerworld.data.local.entity.MatchDetailCacheEntity
 import com.example.soccerworld.data.local.entity.StandingsCacheEntity
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import com.example.soccerworld.data.local.entity.TeamPlayersCacheEntity
 import com.example.soccerworld.data.local.entity.TeamsCacheEntity
 import com.example.soccerworld.data.model.DataResult
@@ -76,8 +82,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-
 class FootballRepository(
+    private val context: android.content.Context,
     private val apiService: ApiService,
     private val dao: FootballDao,
     private val customPreferences: CustomSharedPreferences
@@ -438,6 +444,7 @@ class FootballRepository(
         if (dao.isFavorite(id)) {
             dao.deleteFavorite(id)
             com.example.soccerworld.util.FcmTopicManager.unsubscribeFromTopic("comment_match_$id")
+            com.example.soccerworld.work.LivePollingScheduler.stopForMatchId(context, id)
             return
         }
         dao.insertFavorite(
@@ -452,10 +459,53 @@ class FootballRepository(
                 awayTeamName = match.awayTeam?.name,
                 awayTeamCrest = match.awayTeam?.crest,
                 status = match.status,
+                homeScore = match.score?.fullTime?.home,
+                awayScore = match.score?.fullTime?.away,
                 savedAt = System.currentTimeMillis()
             )
         )
         com.example.soccerworld.util.FcmTopicManager.subscribeToTopic("comment_match_$id")
+        
+        // Start polling for this specific match based on its status
+        if (match.status == "IN_PLAY" || match.status == "PAUSED") {
+            com.example.soccerworld.work.LivePollingScheduler.startForMatchId(context, id, 0L)
+        } else if (match.status == "SCHEDULED" || match.status == "TIMED") {
+            val delayMs = calculateDelayMs(match.utcDate)
+            val fifteenMinsMs = 15 * 60 * 1000L
+            val wakeUpIn = if (delayMs > fifteenMinsMs) delayMs - fifteenMinsMs else delayMs
+            com.example.soccerworld.work.LivePollingScheduler.startForMatchId(context, id, wakeUpIn)
+        }
+    }
+
+    private fun calculateDelayMs(utcDateString: String?): Long {
+        if (utcDateString == null) return 60_000L // Default 1 min if null
+        return try {
+            val format = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US)
+            format.timeZone = java.util.TimeZone.getTimeZone("UTC")
+            val date = format.parse(utcDateString)
+            if (date != null) {
+                val delay = date.time - System.currentTimeMillis()
+                if (delay < 0) 60_000L else delay
+            } else {
+                60_000L
+            }
+        } catch (e: Exception) {
+            60_000L
+        }
+    }
+
+    suspend fun syncFavoriteMatches() {
+        val favorites = dao.getAllFavorites().first()
+        for (fav in favorites) {
+            val statsResult = getFixtureStatistics(fav.matchId)
+            if (statsResult is DataResult.Success) {
+                val stats = statsResult.data
+                val status = stats.status ?: fav.status
+                val homeScore = stats.score?.fullTime?.home
+                val awayScore = stats.score?.fullTime?.away
+                dao.updateFavoriteMatchScoreAndStatus(fav.matchId, status, homeScore, awayScore)
+            }
+        }
     }
 
     fun observeFavorites(): Flow<List<FavoriteMatchEntity>> = dao.getAllFavorites()
@@ -628,35 +678,53 @@ class FootballRepository(
                 else -> DataResult.Error(ErrorType.UNKNOWN, "Failed to load core match detail")
             }
         }
-        val h2hResult = getAllH2hItems(fixtureId)
-        val h2hList = (h2hResult as? DataResult.Success)?.data?.matches ?: emptyList()
+        val status = coreResult.data.status ?: "FINISHED"
+        val isLive = status == "IN_PLAY" || status == "PAUSED" || status == "LIVE" || status == "HALFTIME"
+        val hasCachedFullData = cachedData != null && cachedData.enrichment != null && cachedData.h2h.isNotEmpty()
+
+        val h2hList = if (isLive && hasCachedFullData) {
+            cachedData!!.h2h
+        } else {
+            val h2hResult = getAllH2hItems(fixtureId)
+            (h2hResult as? DataResult.Success)?.data?.matches ?: emptyList()
+        }
+
         val enrichmentResult = safeApiCall {
             val summary = try {
                 apiService.getEventSummary(Constant.LOCALE, fixtureId)
             } catch (e: Exception) {
                 EventSummaryResponse()
             }
-            val stats = try {
-                apiService.getEventStats(Constant.LOCALE, fixtureId)
-            } catch (e: Exception) {
-                EventStatsResponse()
+            
+            if (isLive && hasCachedFullData) {
+                val partialEnrichment = mapFlashLiveDetail(fixtureId, summary, EventStatsResponse(), EventHighlightResponse(), LineupsResponse(), EventNewsResponse())
+                cachedData!!.enrichment!!.copy(
+                    events = partialEnrichment.events,
+                    lastUpdated = partialEnrichment.lastUpdated
+                )
+            } else {
+                val stats = try {
+                    apiService.getEventStats(Constant.LOCALE, fixtureId)
+                } catch (e: Exception) {
+                    EventStatsResponse()
+                }
+                val highlights = try {
+                    apiService.getEventHighlights(Constant.LOCALE, fixtureId)
+                } catch (e: Exception) {
+                    EventHighlightResponse()
+                }
+                val lineups = try {
+                    apiService.getEventLineups(Constant.LOCALE, fixtureId)
+                } catch (e: Exception) {
+                    LineupsResponse()
+                }
+                val news = try {
+                    apiService.getEventNews(Constant.LOCALE, fixtureId)
+                } catch (e: Exception) {
+                    EventNewsResponse()
+                }
+                mapFlashLiveDetail(fixtureId, summary, stats, highlights, lineups, news)
             }
-            val highlights = try {
-                apiService.getEventHighlights(Constant.LOCALE, fixtureId)
-            } catch (e: Exception) {
-                EventHighlightResponse()
-            }
-            val lineups = try {
-                apiService.getEventLineups(Constant.LOCALE, fixtureId)
-            } catch (e: Exception) {
-                LineupsResponse()
-            }
-            val news = try {
-                apiService.getEventNews(Constant.LOCALE, fixtureId)
-            } catch (e: Exception) {
-                EventNewsResponse()
-            }
-            mapFlashLiveDetail(fixtureId, summary, stats, highlights, lineups, news)
         }
         val enrichment = (enrichmentResult as? DataResult.Success)?.data
         val aggregate = MatchDetailAggregate(core = coreResult.data, h2h = h2hList, enrichment = enrichment)

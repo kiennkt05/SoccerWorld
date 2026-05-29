@@ -14,14 +14,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -36,10 +29,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.soccerworld.R
-import com.example.soccerworld.model.fixture.Matche
+import com.example.soccerworld.model.fixture.*
 import com.example.soccerworld.ui.theme.*
-import com.example.soccerworld.ui.components.MatchDisplayModel
-import com.example.soccerworld.ui.components.MatchScoreRow
+import com.example.soccerworld.ui.components.MatchRow
 import com.example.soccerworld.ui.components.SectionHeader
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
@@ -51,6 +43,7 @@ import kotlinx.coroutines.FlowPreview
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
+import androidx.compose.ui.tooling.preview.Preview
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @Composable
@@ -61,23 +54,33 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
     )
     val state by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(state.hasLiveMatches) {
-        if (state.hasLiveMatches) {
-            Log.d("FixturesScreen", "LivePolling started")
-            LivePollingScheduler.start(context)
-        } else {
-            Log.d("FixturesScreen", "LivePolling stopped")
-            LivePollingScheduler.stop(context)
-        }
-    }
+    FixturesContent(
+        state = state,
+        onTabSelected = { viewModel.onTabSelected(it) },
+        onToggleTournamentExpanded = { viewModel.toggleTournamentExpanded(it) },
+        onToggleFavorite = { viewModel.toggleFavorite(it) },
+        onLoadMoreMatches = { viewModel.loadMoreMatches() },
+        onMatchClick = onMatchClick
+    )
+}
 
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
+@Composable
+fun FixturesContent(
+    state: FixtureUiState,
+    onTabSelected: (String) -> Unit,
+    onToggleTournamentExpanded: (TournamentInfo) -> Unit,
+    onToggleFavorite: (Matche) -> Unit,
+    onLoadMoreMatches: () -> Unit,
+    onMatchClick: (String) -> Unit
+) {
     if (state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = SofascoreBlue)
         }
     } else if (state.error != null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text = state.error ?: "Error loading fixtures", color = MaterialTheme.colorScheme.error)
+            Text(text = state.error, color = MaterialTheme.colorScheme.error)
         }
     } else {
         val groupedForSelected = remember(state.tournamentGroups, state.selectedTab) {
@@ -119,7 +122,7 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
                     if (lastVisibleIndex >= 0 && currentTotalItems > 0) {
                         val threshold = (currentTotalItems * 0.8).toInt()
                         if (lastVisibleIndex >= threshold && !currentIsLoadingMore && currentHasMorePages) {
-                            viewModel.loadMoreMatches()
+                            onLoadMoreMatches()
                         }
                     }
                 }
@@ -146,7 +149,7 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
                 state.availableTabs.forEach { tab ->
                     Tab(
                         selected = state.selectedTab == tab,
-                        onClick = { viewModel.onTabSelected(tab) },
+                        onClick = { onTabSelected(tab) },
                         text = {
                             Text(
                                 text = formatTabTitle(tab),
@@ -161,7 +164,7 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
             }
 
             LazyColumn(
-                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
                 state = listState
             ) {
                 groupedForSelected.forEach { (tournament, matches) ->
@@ -171,7 +174,7 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
                             title = tournament.name ?: "Unknown League",
                             flagUrl = tournament.emblemUrl,
                             isExpanded = isExpanded,
-                            onToggle = { viewModel.toggleTournamentExpanded(tournament) }
+                            onToggle = { onToggleTournamentExpanded(tournament) }
                         )
                     }
                     if (isExpanded) {
@@ -183,7 +186,7 @@ fun FixturesScreen(onMatchClick: (String) -> Unit = {}) {
                             FixtureCard(
                                 match = match,
                                 isFavorite = state.favoriteIds.contains(match.id ?: ""),
-                                onToggleFavorite = { viewModel.toggleFavorite(match) },
+                                onToggleFavorite = { onToggleFavorite(match) },
                                 onClick = { onMatchClick(match.id ?: "") }
                             )
                         }
@@ -217,73 +220,24 @@ fun FixtureCard(
     match: Matche,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
+    showDateForFinished: Boolean = false
 ) {
-    val displayModel = remember(match) { mapToDisplayModel(match) }
+    val activeFilter = remember(match.status) {
+        when (match.status) {
+            "IN_PLAY", "PAUSED" -> "Live"
+            "FINISHED" -> "Finished"
+            else -> "Scheduled"
+        }
+    }
     
-    MatchScoreRow(
-        match = displayModel,
-        onClick = onClick,
-        actionIcon = {
-            IconButton(
-                onClick = onToggleFavorite,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Star,
-                    contentDescription = "Toggle favorite",
-                    tint = if (isFavorite) FavoriteGold else MaterialTheme.colorScheme.outlineVariant,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
+    MatchRow(
+        match = match,
+        activeFilter = activeFilter,
+        isFavorite = isFavorite,
+        onClick = { onClick() },
+        onToggleFavorite = onToggleFavorite
     )
-}
-
-private fun mapToDisplayModel(match: Matche): MatchDisplayModel {
-    val isLive = match.status == "IN_PLAY" || match.status == "PAUSED"
-    return MatchDisplayModel(
-        id = match.id ?: "",
-        timeText = formatTime(match.utcDate),
-        statusText = when (match.status) {
-            "PAUSED" -> "HT"
-            "IN_PLAY" -> "Live"
-            "FINISHED" -> "FT"
-            else -> ""
-        },
-        isLive = isLive,
-        homeTeamName = match.homeTeam?.shortName ?: match.homeTeam?.name ?: "TBD",
-        homeTeamCrest = match.homeTeam?.crest,
-        awayTeamName = match.awayTeam?.shortName ?: match.awayTeam?.name ?: "TBD",
-        awayTeamCrest = match.awayTeam?.crest,
-        homeScore = match.score?.fullTime?.home,
-        awayScore = match.score?.fullTime?.away,
-        isFinishedOrLive = match.status == "FINISHED" || isLive
-    )
-}
-
-private fun formatTime(utcString: String?): String {
-    if (utcString.isNullOrEmpty()) return ""
-    return try {
-        val date = INPUT_FORMATTER.get()?.parse(utcString)
-        date?.let { OUTPUT_FORMATTER.get()?.format(it) } ?: utcString
-    } catch (_: Exception) {
-        utcString
-    }
-}
-
-private val INPUT_FORMATTER = object : ThreadLocal<SimpleDateFormat>() {
-    override fun initialValue(): SimpleDateFormat {
-        return SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-    }
-}
-
-private val OUTPUT_FORMATTER = object : ThreadLocal<SimpleDateFormat>() {
-    override fun initialValue(): SimpleDateFormat {
-        return SimpleDateFormat("HH:mm", Locale.US)
-    }
 }
 
 private fun formatTabTitle(tab: String): String {
@@ -292,5 +246,44 @@ private fun formatTabTitle(tab: String): String {
         "SCHEDULED" -> "Scheduled"
         "FINISHED" -> "Finished"
         else -> tab
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun FixturesScreenPreview() {
+    val sampleTournament = TournamentInfo(
+        id = "PL",
+        name = "Premier League",
+        emblemUrl = "https://crests.football-data.org/PL.png"
+    )
+    val sampleMatch = Matche(
+        id = "1",
+        utcDate = "2023-10-27T18:30:00Z",
+        status = "FINISHED",
+        homeTeam = HomeTeam(id = "1", name = "Arsenal FC", crest = "https://crests.football-data.org/57.png"),
+        awayTeam = AwayTeam(id = "2", name = "Chelsea FC", crest = "https://crests.football-data.org/61.png"),
+        score = Score(fullTime = FullTime(home = 2, away = 1))
+    )
+    
+    val state = FixtureUiState(
+        isLoading = false,
+        availableTabs = listOf("IN_PLAY", "SCHEDULED", "FINISHED"),
+        selectedTab = "FINISHED",
+        tournamentGroups = mapOf(
+            "FINISHED" to mapOf(sampleTournament to listOf(sampleMatch))
+        ),
+        expandedTournaments = setOf(sampleTournament)
+    )
+    
+    SoccerWorldTheme {
+        FixturesContent(
+            state = state,
+            onTabSelected = {},
+            onToggleTournamentExpanded = {},
+            onToggleFavorite = {},
+            onLoadMoreMatches = {},
+            onMatchClick = {}
+        )
     }
 }
