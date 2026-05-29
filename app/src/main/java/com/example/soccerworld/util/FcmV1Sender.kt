@@ -185,13 +185,15 @@ object FcmV1Sender {
                 .post(payload.toString().toRequestBody("application/json".toMediaType()))
                 .build()
 
-            val response = httpClient.newCall(request).execute()
-            val success  = response.isSuccessful
-            if (success) {
-                Log.d(TAG, "FCM sent OK → topic=$topic")
-            } else {
-                Log.e(TAG, "FCM error ${response.code}: ${response.body?.string()}")
-                showLocalFallback(context, data)
+            val success = httpClient.newCall(request).execute().use { response ->
+                val isSuccess = response.isSuccessful
+                if (isSuccess) {
+                    Log.d(TAG, "FCM sent OK → topic=$topic")
+                } else {
+                    Log.e(TAG, "FCM error ${response.code}: ${response.body?.string()}")
+                    showLocalFallback(context, data)
+                }
+                isSuccess
             }
             success
         } catch (e: Exception) {

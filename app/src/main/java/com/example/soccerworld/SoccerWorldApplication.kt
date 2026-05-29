@@ -22,8 +22,8 @@ class SoccerWorldApplication : Application(), ImageLoaderFactory {
         //    FirebaseMessagingService.onNewToken() sẽ re-subscribe khi token refresh
         FcmTopicManager.subscribeAll()
 
-        // 3. Bắt đầu periodic worker nhắc trận yêu thích
-        MatchReminderScheduler.start(this)
+        // 3. Bắt đầu periodic worker nhắc trận yêu thích (Ngừng sử dụng vì đã có SingleMatchWorker)
+        MatchReminderScheduler.stop(this)
     }
 
     override fun newImageLoader(): ImageLoader {
