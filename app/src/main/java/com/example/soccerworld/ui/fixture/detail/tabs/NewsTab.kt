@@ -66,7 +66,7 @@ fun NewsCard(item: MatchNews) {
                 }
             },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
@@ -110,7 +110,7 @@ fun NewsCard(item: MatchNews) {
                     text = item.title ?: "",
                     fontSize = 13.5.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                     lineHeight = 18.sp

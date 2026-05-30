@@ -12,25 +12,26 @@ import android.app.Activity
 import androidx.core.view.WindowCompat
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.mutableStateOf
 
-// ── Dark scheme: Premium Deep Forest & Neon Mint Accents ──────────────────
+// ── Dark scheme: Ocean Slate (Option B) ──────────────────
 private val DarkColorScheme = darkColorScheme(
-    primary              = Color(0xFF66BB6A),   // Soft green-mint for high legibility on dark
-    onPrimary            = Color(0xFF072117),   // Deep forest green contrast
-    primaryContainer     = BrandGreenDark,
-    onPrimaryContainer   = Color(0xFFE8F5E9),
-    secondary            = Color(0xFF81C784),   // Soft sage green
-    onSecondary          = Color(0xFF072117),
-    secondaryContainer   = DarkSurfaceVar,
-    onSecondaryContainer = TextOnDark,
-    background           = DarkBackground,
-    onBackground         = TextOnDark,
-    surface              = DarkSurface,
-    onSurface            = TextOnDark,
-    surfaceVariant       = DarkSurfaceVar,
-    onSurfaceVariant     = TextSecondary,
-    outline              = Color(0xFF1C2C24),   // Soft slate green border
-    outlineVariant       = Color(0xFF121D18),
+    primary              = Color(0xFF38BDF8),   // Ocean Blue
+    onPrimary            = Color(0xFF0F131A),   // Deep slate contrast
+    primaryContainer     = Color(0xFF1E293B),
+    onPrimaryContainer   = Color(0xFFE2E8F0),
+    secondary            = Color(0xFF0EA5E9),
+    onSecondary          = Color.White,
+    secondaryContainer   = Color(0xFF151B26),
+    onSecondaryContainer = Color(0xFFF1F5F9),
+    background           = Color(0xFF0F131A),   // Deep Slate Blue background
+    onBackground         = Color(0xFFF1F5F9),   // Ice white text
+    surface              = Color(0xFF151B26),   // Slightly elevated card surface
+    onSurface            = Color(0xFFF1F5F9),   // Ice white text
+    surfaceVariant       = Color(0xFF1E293B),
+    onSurfaceVariant     = Color(0xFF94A3B8),
+    outline              = Color(0xFF232C3F),   // Division outlines
+    outlineVariant       = Color(0xFF1A2230),
     error                = LiveRed,
     onError              = Color.White
 )
@@ -57,9 +58,17 @@ private val LightColorScheme = lightColorScheme(
     onError              = Color.White
 )
 
+object ThemeConfig {
+    val appThemeState = mutableStateOf("system")
+}
+
 @Composable
 fun SoccerWorldTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = when (ThemeConfig.appThemeState.value) {
+        "light" -> false
+        "dark" -> true
+        else -> isSystemInDarkTheme()
+    },
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -68,7 +77,7 @@ fun SoccerWorldTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = BrandGreenDark.toArgb() // Beautiful deep forest status bar
+            window.statusBarColor = if (darkTheme) Color(0xFF0F131A).toArgb() else BrandGreenDark.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }
@@ -84,3 +93,4 @@ fun SoccerWorldTheme(
         )
     }
 }
+

@@ -152,6 +152,17 @@ class CustomSharedPreferences {
         return sharedPreferences?.getString("app_language", "en") ?: "en"
     }
 
+    fun saveTheme(theme: String) {
+        sharedPreferences?.edit(commit = true) {
+            putString("app_theme", theme)
+        }
+    }
+
+    fun getTheme(): String {
+        return sharedPreferences?.getString("app_theme", "system") ?: "system"
+    }
+
+
     // ── Notification Settings ────────────────────────────────────────────────
 
     fun setMatchReminderEnabled(enabled: Boolean) {

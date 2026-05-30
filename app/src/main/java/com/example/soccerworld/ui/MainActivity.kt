@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
+import com.example.soccerworld.ui.theme.ThemeConfig
 import com.example.soccerworld.util.CustomSharedPreferences
 import com.example.soccerworld.util.LocaleHelper
 import com.example.soccerworld.work.LivePollingScheduler
@@ -37,6 +38,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Load initial theme setting
+        val prefs = CustomSharedPreferences.invoke(this)
+        ThemeConfig.appThemeState.value = prefs.getTheme()
+
 
         // Xin quyền thông báo tự động cho Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

@@ -123,8 +123,8 @@ fun SearchScreen(
                         .weight(1f)
                         .padding(end = 8.dp)
                         .height(40.dp)
-                        .background(Color.White, CircleShape),
-                    textStyle = TextStyle(color = Color.Black, fontSize = 14.sp),
+                        .background(MaterialTheme.colorScheme.surface, CircleShape),
+                    textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp),
                     singleLine = true,
                     cursorBrush = SolidColor(BrandGreenMedium),
                     decorationBox = { innerTextField ->
@@ -220,7 +220,7 @@ fun SearchScreen(
                 // Tab layout
                 TabRow(
                     selectedTabIndex = selectedSubTab,
-                    containerColor = Color.White,
+                    containerColor = MaterialTheme.colorScheme.surface,
                     contentColor = BrandGreenMedium,
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
@@ -340,7 +340,7 @@ private fun SuggestedTabContent(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(LightBackground),
+            .background(MaterialTheme.colorScheme.background),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         
@@ -499,7 +499,7 @@ private fun SuggestedTabContent(
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
-                Column(modifier = Modifier.background(Color.White)) {
+                Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
                     val items = listOf(
                         Constant.FLASHLIVE_LEAGUES["WC"]!!,
                         Constant.FLASHLIVE_LEAGUES["CWC"]!!,
@@ -536,7 +536,7 @@ private fun SuggestedTabContent(
                 enter = fadeIn() + expandVertically(),
                 exit = fadeOut() + shrinkVertically()
             ) {
-                Column(modifier = Modifier.background(Color.White)) {
+                Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
                     val items = listOf(
                         Constant.FLASHLIVE_LEAGUES["CL"]!!,
                         Constant.FLASHLIVE_LEAGUES["PL"]!!,
@@ -585,13 +585,13 @@ private fun RecentTabContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(LightBackground)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             shape = RoundedCornerShape(12.dp)
         ) {
             Column {
@@ -608,7 +608,7 @@ private fun RecentTabContent(
                         Text(
                             text = query,
                             fontSize = 14.sp,
-                            color = Color.Black,
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(
@@ -659,7 +659,7 @@ private fun SuggestedCard(name: String, logo: String, onClick: () -> Unit) {
             .height(110.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(
@@ -667,21 +667,30 @@ private fun SuggestedCard(name: String, logo: String, onClick: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            AsyncImage(
-                model = logo,
-                contentDescription = name,
+            Box(
                 modifier = Modifier
                     .size(44.dp)
-                    .padding(bottom = 6.dp),
-                placeholder = painterResource(id = R.drawable.ic_ball),
-                error = painterResource(id = R.drawable.ic_ball)
-            )
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.White)
+                    .padding(4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = logo,
+                    contentDescription = name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                    placeholder = painterResource(id = R.drawable.ic_ball),
+                    error = painterResource(id = R.drawable.ic_ball)
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = name,
                 fontSize = 11.sp,
                 lineHeight = 1.2.em,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -699,7 +708,7 @@ private fun SuggestedPlayerCard(name: String, photo: String, onClick: () -> Unit
             .height(115.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(
@@ -728,7 +737,7 @@ private fun SuggestedPlayerCard(name: String, photo: String, onClick: () -> Unit
                 text = name,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -746,7 +755,7 @@ private fun SuggestedRankingCard(name: String, icon: ImageVector, onClick: () ->
             .height(100.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, DividerColor)
     ) {
         Column(
@@ -773,7 +782,7 @@ private fun SuggestedRankingCard(name: String, icon: ImageVector, onClick: () ->
                 text = name,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -797,7 +806,7 @@ private fun ExpandableCategoryRow(
             .padding(horizontal = 16.dp, vertical = 2.dp)
             .clickable { onToggle() },
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(0.5.dp, DividerColor)
     ) {
         Row(
@@ -812,7 +821,7 @@ private fun ExpandableCategoryRow(
                 text = title,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
 
@@ -991,7 +1000,7 @@ fun SearchItemCard(
                     else -> {}
                 }
             }
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -1003,14 +1012,16 @@ fun SearchItemCard(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(CircleShape)
-                    .background(typeColor.copy(alpha = 0.08f)),
+                    .background(if (!imageUrl.isNullOrBlank()) Color.White else typeColor.copy(alpha = 0.08f))
+                    .padding(if (!imageUrl.isNullOrBlank()) 4.dp else 0.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (!imageUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = imageUrl,
                         contentDescription = null,
-                        modifier = Modifier.size(38.dp),
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit,
                         placeholder = painterResource(id = R.drawable.ic_ball),
                         error = painterResource(id = R.drawable.ic_ball),
                         fallback = painterResource(id = R.drawable.ic_ball)
@@ -1032,7 +1043,7 @@ fun SearchItemCard(
                     text = name,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

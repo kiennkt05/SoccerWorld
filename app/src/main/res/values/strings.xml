@@ -79,6 +79,13 @@
     <string name="settings_app_language">App Language</string>
     <string name="settings_app_language_desc">Change app language En/Vi</string>
     <string name="settings_select_language">Select Language</string>
+    <string name="settings_app_theme">App Theme</string>
+    <string name="settings_app_theme_desc">Select light or dark theme</string>
+    <string name="settings_select_theme">Select Theme</string>
+    <string name="theme_system">System default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+
 
     <!-- Favorites Screen -->
     <string name="fav_title">Favorites</string>

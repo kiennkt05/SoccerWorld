@@ -111,7 +111,7 @@ fun H2HTab(
 
         groupedMatches.forEach { (compName, matchesList) ->
             item(key = compName) {
-                Column(modifier = Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(12.dp))) {
+                Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))) {
                     // Tournament Header
                     Row(
                         modifier = Modifier
@@ -138,7 +138,7 @@ fun H2HTab(
                             text = compName,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextDark,
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -156,7 +156,7 @@ fun H2HTab(
                 key = { index, match -> "h2h_${match.utcDate ?: match.hashCode()}_$index" },
                 contentType = { _, _ -> "h2h_match" }
             ) { index, match ->
-                Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
+                Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
                     H2HMatchRow(
                         match = match,
                         homeTeam = homeTeam,
@@ -297,7 +297,7 @@ private fun H2HMatchRow(
                     text = cleanHomeName,
                     fontSize = 13.sp,
                     fontWeight = if (isHomeCurrent) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isHomeCurrent) TextDark else TextSecondary,
+                    color = if (isHomeCurrent) MaterialTheme.colorScheme.onSurface else TextSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -333,7 +333,7 @@ private fun H2HMatchRow(
                     text = cleanAwayName,
                     fontSize = 13.sp,
                     fontWeight = if (isAwayCurrent) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isAwayCurrent) TextDark else TextSecondary,
+                    color = if (isAwayCurrent) MaterialTheme.colorScheme.onSurface else TextSecondary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -351,14 +351,14 @@ private fun H2HMatchRow(
                 text = "$homeGoals",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextDark,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(vertical = 2.dp)
             )
             Text(
                 text = "$awayGoals",
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextDark,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(vertical = 2.dp)
             )
         }

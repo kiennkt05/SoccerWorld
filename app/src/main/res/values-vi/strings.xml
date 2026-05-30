@@ -79,6 +79,13 @@
     <string name="settings_app_language">Ngôn ngữ ứng dụng</string>
     <string name="settings_app_language_desc">Thay đổi ngôn ngữ ứng dụng En/Vi</string>
     <string name="settings_select_language">Chọn ngôn ngữ</string>
+    <string name="settings_app_theme">Giao diện ứng dụng</string>
+    <string name="settings_app_theme_desc">Chọn giao diện sáng hoặc tối</string>
+    <string name="settings_select_theme">Chọn giao diện</string>
+    <string name="theme_system">Mặc định hệ thống</string>
+    <string name="theme_light">Sáng</string>
+    <string name="theme_dark">Tối</string>
+
 
     <!-- Favorites Screen -->
     <string name="fav_title">Yêu thích</string>

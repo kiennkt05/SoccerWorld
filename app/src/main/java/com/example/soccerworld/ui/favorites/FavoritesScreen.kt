@@ -44,6 +44,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.soccerworld.R
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.data.local.entity.FavoriteTeamEntity
+import com.example.soccerworld.data.local.entity.FavoritePlayerEntity
+import androidx.compose.ui.layout.ContentScale
 import com.example.soccerworld.data.remote.flashlive.TeamSearchItemDto
 import com.example.soccerworld.data.remote.flashlive.SearchItemDto
 import com.example.soccerworld.ui.fixture.FixtureCard
@@ -136,7 +138,7 @@ fun FavoritesScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(LightBackground)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             if (!isLoggedIn && selectedTab == 0) {
                 // Keep the matches list locked if user is a guest, but let them interact with Teams locally
@@ -161,7 +163,18 @@ fun FavoritesScreen(
                             )
                         }
                     )
-                    2 -> PlayersTabContent()
+                    2 -> PlayersTabContent(
+                        state = state,
+                        onToggleFavorite = { player ->
+                            viewModel.toggleFavoritePlayer(
+                                playerId = player.playerId,
+                                name = player.name,
+                                imageUrl = player.imageUrl,
+                                nationality = player.nationality,
+                                position = player.position
+                            )
+                        }
+                    )
                 }
             }
 
@@ -513,11 +526,92 @@ private fun FavoritedTeamGridItem(
 
 // ── Players Tab Content ─────────────────────────────────────────────────────
 @Composable
-private fun PlayersTabContent() {
-    FavoritesEmptyState(
-        message = stringResource(R.string.fav_empty_players),
-        hint = stringResource(R.string.fav_empty_players_hint)
-    )
+private fun PlayersTabContent(
+    state: FavoritesUiState,
+    onToggleFavorite: (FavoritePlayerEntity) -> Unit
+) {
+    if (state.isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = BrandGreenMedium)
+        }
+    } else if (state.players.isEmpty()) {
+        FavoritesEmptyState(
+            message = stringResource(R.string.fav_empty_players),
+            hint = stringResource(R.string.fav_empty_players_hint)
+        )
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(
+                items = state.players,
+                key = { it.playerId },
+                contentType = { "favorite_player" }
+            ) { player ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, DividerColor),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(CircleShape)
+                                .background(DividerColor),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            AsyncImage(
+                                model = player.imageUrl,
+                                contentDescription = player.name,
+                                modifier = Modifier.fillMaxSize().clip(CircleShape),
+                                contentScale = ContentScale.Crop,
+                                placeholder = painterResource(id = R.drawable.ic_ball),
+                                error = painterResource(id = R.drawable.ic_ball)
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.width(14.dp))
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = player.name,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            val details = listOfNotNull(player.position, player.nationality).joinToString(" • ")
+                            if (details.isNotBlank()) {
+                                Text(
+                                    text = details,
+                                    fontSize = 11.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                        
+                        IconButton(
+                            onClick = { onToggleFavorite(player) }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = "Unfavorite",
+                                tint = AccentNeonOrange
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // ── Search & Add Team Bottom Sheet ──────────────────────────────────────────
@@ -615,7 +709,7 @@ private fun AddTeamBottomSheet(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(Color.White, RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
                                     .padding(horizontal = 12.dp, vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -628,7 +722,7 @@ private fun AddTeamBottomSheet(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(item.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                    Text(item.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                                     Text(item.countryName ?: "Club", fontSize = 11.sp, color = Color.Gray)
                                 }
                                 IconButton(
@@ -678,7 +772,7 @@ private fun FavoritesEmptyState(message: String, hint: String) {
                 text = message,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
@@ -718,7 +812,7 @@ private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
                 text = stringResource(R.string.fav_login_required),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = MaterialTheme.colorScheme.onBackground
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(

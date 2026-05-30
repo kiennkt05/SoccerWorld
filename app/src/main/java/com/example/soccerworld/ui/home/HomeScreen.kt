@@ -118,14 +118,16 @@ private fun CompactLeagueBar(
             modifier = Modifier
                 .size(32.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color.White.copy(alpha = 0.08f)),
+                .background(Color.White)
+                .padding(4.dp),
             contentAlignment = Alignment.Center
         ) {
             if (leagueLogoUrl != null) {
                 AsyncImage(
                     model = leagueLogoUrl,
                     contentDescription = leagueName,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
                 )
             } else {
                 Icon(

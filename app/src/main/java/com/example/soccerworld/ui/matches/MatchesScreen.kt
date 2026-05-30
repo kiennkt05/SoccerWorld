@@ -143,14 +143,16 @@ fun LeagueSelectorBar(
             modifier = Modifier
                 .size(36.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
+                .background(Color.White)
+                .padding(4.dp),
             contentAlignment = Alignment.Center
         ) {
             if (leagueLogoUrl != null) {
                 AsyncImage(
                     model = leagueLogoUrl,
                     contentDescription = leagueName,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Fit
                 )
             } else {
                 Icon(

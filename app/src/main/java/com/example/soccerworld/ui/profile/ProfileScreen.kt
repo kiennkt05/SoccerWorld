@@ -22,7 +22,9 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.*
+import com.example.soccerworld.ui.theme.ThemeConfig
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -99,6 +101,7 @@ fun ProfileScreen(
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showHelpDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         refreshTrigger++
@@ -178,12 +181,12 @@ fun ProfileScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(LightBackground)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             // Profile Tabs (Overview / Predictions)
             TabRow(
                 selectedTabIndex = selectedTab,
-                containerColor = Color.White,
+                containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = BrandGreenMedium,
                 indicator = { tabPositions ->
                     TabRowDefaults.SecondaryIndicator(
@@ -243,21 +246,17 @@ fun ProfileScreen(
         SettingsBottomSheet(
             onDismiss = { showSettingsSheet = false },
             isLoggedIn = isLoggedIn,
-            onChangeLeague = {
-                showSettingsSheet = false
-                onChangeLeague()
-            },
             onNavigateToLogin = {
                 showSettingsSheet = false
                 onNavigateToLogin()
             },
-            onNavigateToNotificationSettings = {
-                showSettingsSheet = false
-                onNavigateToNotificationSettings()
-            },
             onChangeLanguage = {
                 showSettingsSheet = false
                 showLanguageDialog = true
+            },
+            onChangeTheme = {
+                showSettingsSheet = false
+                showThemeDialog = true
             },
             onLogout = {
                 showSettingsSheet = false
@@ -322,6 +321,54 @@ fun ProfileScreen(
         )
     }
 
+    // Theme Choice Dialog
+    if (showThemeDialog) {
+        val currentTheme = ThemeConfig.appThemeState.value
+        val options = listOf(
+            "system" to stringResource(R.string.theme_system),
+            "light" to stringResource(R.string.theme_light),
+            "dark" to stringResource(R.string.theme_dark)
+        )
+        AlertDialog(
+            onDismissRequest = { showThemeDialog = false },
+            title = { Text(stringResource(R.string.settings_select_theme), fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    options.forEach { (value, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    sharedPrefs.saveTheme(value)
+                                    ThemeConfig.appThemeState.value = value
+                                    showThemeDialog = false
+                                }
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = currentTheme == value,
+                                onClick = {
+                                    sharedPrefs.saveTheme(value)
+                                    ThemeConfig.appThemeState.value = value
+                                    showThemeDialog = false
+                                },
+                                colors = RadioButtonDefaults.colors(selectedColor = BrandGreenMedium)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(text = label)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showThemeDialog = false }) {
+                    Text(stringResource(R.string.profile_close), color = BrandGreenMedium)
+                }
+            }
+        )
+    }
+
     // Logout Confirmation Dialog
     if (showLogoutDialog) {
         AlertDialog(
@@ -367,7 +414,7 @@ private fun OverviewTab(
         // Quick Links Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             border = BorderStroke(1.dp, DividerColor)
         ) {
             Column {
@@ -402,7 +449,7 @@ private fun OverviewTab(
         // Support & Help Card
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             border = BorderStroke(1.dp, DividerColor)
         ) {
             Column {
@@ -515,7 +562,7 @@ private fun PredictionsTab() {
                 text = stringResource(R.string.profile_predictions_title),
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
         }
@@ -523,7 +570,7 @@ private fun PredictionsTab() {
         items(mockPredictions) { (match, prediction, status) ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, DividerColor),
                 shape = RoundedCornerShape(10.dp)
             ) {
@@ -585,10 +632,9 @@ private fun PredictionsTab() {
 private fun SettingsBottomSheet(
     onDismiss: () -> Unit,
     isLoggedIn: Boolean,
-    onChangeLeague: () -> Unit,
     onNavigateToLogin: () -> Unit,
-    onNavigateToNotificationSettings: () -> Unit,
     onChangeLanguage: () -> Unit,
+    onChangeTheme: () -> Unit,
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
@@ -609,30 +655,6 @@ private fun SettingsBottomSheet(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            // Settings items
-            ProfileMenuRow(
-                icon = Icons.Default.SportsSoccer,
-                title = stringResource(R.string.profile_change_league),
-                subtitle = stringResource(R.string.profile_change_league_desc),
-                iconColor = BrandGreenMedium,
-                onClick = onChangeLeague
-            )
-
-            HorizontalDivider(color = DividerColor)
-
-            ProfileMenuRow(
-                icon = Icons.Default.Notifications,
-                title = stringResource(R.string.profile_notification_settings),
-                subtitle = stringResource(R.string.profile_notification_desc),
-                iconColor = AccentNeonOrange,
-                onClick = {
-                    onDismiss()
-                    onNavigateToNotificationSettings()
-                }
-            )
-
-            HorizontalDivider(color = DividerColor)
-
             // Language Selector Row
             ProfileMenuRow(
                 icon = Icons.Default.Public,
@@ -643,6 +665,22 @@ private fun SettingsBottomSheet(
             )
 
             HorizontalDivider(color = DividerColor)
+
+            // Theme Selector Row
+            ProfileMenuRow(
+                icon = Icons.Default.Palette,
+                title = stringResource(R.string.settings_app_theme),
+                subtitle = when (ThemeConfig.appThemeState.value) {
+                    "light" -> stringResource(R.string.theme_light)
+                    "dark" -> stringResource(R.string.theme_dark)
+                    else -> stringResource(R.string.theme_system)
+                },
+                iconColor = Color(0xFFE91E63),
+                onClick = onChangeTheme
+            )
+
+            HorizontalDivider(color = DividerColor)
+
 
             if (isLoggedIn) {
                 Row(

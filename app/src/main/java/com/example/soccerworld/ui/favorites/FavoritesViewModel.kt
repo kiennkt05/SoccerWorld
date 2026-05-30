@@ -3,6 +3,7 @@ package com.example.soccerworld.ui.favorites
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.soccerworld.data.FootballRepository
+import com.example.soccerworld.data.local.entity.FavoritePlayerEntity
 import com.example.soccerworld.data.local.entity.FavoriteTeamEntity
 import com.example.soccerworld.model.fixture.AwayTeam
 import com.example.soccerworld.model.fixture.HomeTeam
@@ -16,7 +17,8 @@ import kotlinx.coroutines.launch
 data class FavoritesUiState(
     val isLoading: Boolean = true,
     val matches: List<Matche> = emptyList(),
-    val teams: List<FavoriteTeamEntity> = emptyList()
+    val teams: List<FavoriteTeamEntity> = emptyList(),
+    val players: List<FavoritePlayerEntity> = emptyList()
 )
 
 class FavoritesViewModel(
@@ -29,8 +31,9 @@ class FavoritesViewModel(
         viewModelScope.launch {
             combine(
                 repository.observeFavorites(),
-                repository.getAllFavoriteTeams()
-            ) { favorites, teams ->
+                repository.getAllFavoriteTeams(),
+                repository.observeFavoritePlayers()
+            ) { favorites, teams, players ->
                 val mappedMatches = favorites.map { fav ->
                     Matche(
                         id = fav.matchId,
@@ -54,7 +57,7 @@ class FavoritesViewModel(
                         )
                     )
                 }
-                FavoritesUiState(isLoading = false, matches = mappedMatches, teams = teams)
+                FavoritesUiState(isLoading = false, matches = mappedMatches, teams = teams, players = players)
             }.collect { state ->
                 _uiState.value = state
             }
@@ -72,6 +75,12 @@ class FavoritesViewModel(
     fun toggleFavoriteTeam(teamId: String, name: String, logoUrl: String?, countryName: String?) {
         viewModelScope.launch {
             repository.toggleFavoriteTeam(teamId, name, logoUrl, countryName)
+        }
+    }
+
+    fun toggleFavoritePlayer(playerId: String, name: String, imageUrl: String?, nationality: String?, position: String?) {
+        viewModelScope.launch {
+            repository.toggleFavoritePlayer(playerId, name, imageUrl, nationality, position)
         }
     }
 

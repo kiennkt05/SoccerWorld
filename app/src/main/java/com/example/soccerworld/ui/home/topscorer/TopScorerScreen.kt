@@ -1,8 +1,11 @@
 package com.example.soccerworld.ui.home.topscorer
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.example.soccerworld.ui.theme.FavoriteGold
 import com.example.soccerworld.ui.theme.TextSecondary
 import androidx.compose.material3.*
@@ -13,12 +16,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -104,49 +111,93 @@ fun TopScorerRow(rank: Int, item: TopScorerEntity, playerImageUrl: String?) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(vertical = 12.dp, horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Rank
-            Text(
-                text = "$rank",
-                fontWeight = FontWeight.Bold,
-                color = if (rank == 1) FavoriteGold else MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.width(24.dp)
-            )
+            // Rank Badge
+            val rankBgColor = when (rank) {
+                1 -> FavoriteGold
+                2 -> Color(0xFFB8B8B8) // Silver
+                3 -> Color(0xFFCD7F32) // Bronze
+                else -> Color.Transparent
+            }
+            val rankTextColor = when (rank) {
+                1, 2, 3 -> Color.White
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(CircleShape)
+                    .background(rankBgColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "$rank",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.sp,
+                    color = rankTextColor,
+                    textAlign = TextAlign.Center
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(14.dp))
 
-            AsyncImage(
-                model = imageRequest,
-                contentDescription = item.playerName,
-                modifier = Modifier.size(36.dp),
-                contentScale = ContentScale.Crop,
-                placeholder = fallbackPainter,
-                error = fallbackPainter,
-                fallback = fallbackPainter
-            )
-            Spacer(modifier = Modifier.width(12.dp))
+            // Player Avatar (Circular Box)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = imageRequest,
+                    contentDescription = item.playerName,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                    placeholder = fallbackPainter,
+                    error = fallbackPainter,
+                    fallback = fallbackPainter
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(14.dp))
 
-            // Name & Team
+            // Name & Team with spacing
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.playerName,
                     fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.bodyMedium
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = item.teamName,
                     color = TextSecondary,
-                    style = MaterialTheme.typography.bodySmall
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 12.sp
                 )
             }
 
-            // Goals
-            Text(
-                text = "${item.goals} Goals",
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Goals Stack (Prominent easy-to-scan design)
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "${item.goals}",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "goals",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+            }
         }
         HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
     }

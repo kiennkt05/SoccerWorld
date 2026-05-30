@@ -90,7 +90,7 @@ fun StatsTab(stages: List<EventStatsStage>) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AppBackground)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         // 1. Top Stage Toggle (ALL / 1ST / 2ND)
         StageToggleBar(
@@ -111,14 +111,14 @@ fun StatsTab(stages: List<EventStatsStage>) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color.White, RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
                             .padding(top = 16.dp, start = 16.dp, end = 16.dp)
                     ) {
                         Text(
                             text = group.groupLabel ?: "",
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp,
-                            color = TextDark,
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp),
@@ -135,7 +135,7 @@ fun StatsTab(stages: List<EventStatsStage>) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color.White)
+                            .background(MaterialTheme.colorScheme.surface)
                             .padding(horizontal = 16.dp)
                     ) {
                         StatProgressRow(stat = stat)
@@ -147,7 +147,7 @@ fun StatsTab(stages: List<EventStatsStage>) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 12.dp)
-                            .background(Color.White, RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))
+                            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))
                             .padding(bottom = 16.dp)
                     ) {
                         // Footer padding for the card illusion
@@ -255,7 +255,7 @@ private fun StatProgressRow(stat: EventStatsItem) {
                 Text(
                     text = homeStr,
                     fontSize = 14.sp,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -283,7 +283,7 @@ private fun StatProgressRow(stat: EventStatsItem) {
                 Text(
                     text = awayStr,
                     fontSize = 14.sp,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.End,
                     modifier = Modifier.weight(1f)
                 )

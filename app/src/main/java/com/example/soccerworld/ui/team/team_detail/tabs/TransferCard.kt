@@ -1,16 +1,20 @@
 package com.example.soccerworld.ui.team.team_detail.tabs
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Card
@@ -51,7 +55,7 @@ fun TransferCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
         shape = RoundedCornerShape(8.dp), // Slightly sharper corners matching the web UI
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), // Very subtle shadow
         onClick = onClick
     ) {
@@ -69,7 +73,7 @@ fun TransferCard(
                     text = transfer.player?.value ?: "Unknown",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextDark // Crisp dark text
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -90,7 +94,7 @@ fun TransferCard(
                     Text(
                         text = transfer.player?.countryName ?: "Unknown",
                         fontSize = 14.sp,
-                        color = TextSecondary // Muted gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -103,7 +107,7 @@ fun TransferCard(
                     Icon(
                         imageVector = Icons.Filled.ChevronRight,
                         contentDescription = "To",
-                        tint = Color(0xFF999999),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                         modifier = Modifier
                             .padding(horizontal = 2.dp)
                             .size(16.dp)
@@ -116,7 +120,7 @@ fun TransferCard(
                     Text(
                         text = formatDate(transfer.transferDate),
                         fontSize = 14.sp,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -139,18 +143,28 @@ private fun BadgeImage(url: String?) {
             painter = painterResource(id = R.drawable.ic_ball),
             contentDescription = null,
             modifier = Modifier.size(20.dp), // Scaled down to match the capture
-            tint = Color.LightGray
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
         )
         return
     }
-    AsyncImage(
-        model = url,
-        contentDescription = null,
-        modifier = Modifier.size(20.dp), // Scaled down to match the capture
-        placeholder = painterResource(id = R.drawable.ic_ball),
-        error = painterResource(id = R.drawable.ic_ball),
-        fallback = painterResource(id = R.drawable.ic_ball)
-    )
+    androidx.compose.foundation.layout.Box(
+        modifier = Modifier
+            .size(22.dp)
+            .clip(CircleShape)
+            .background(Color.White)
+            .padding(2.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        AsyncImage(
+            model = url,
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = androidx.compose.ui.layout.ContentScale.Fit,
+            placeholder = painterResource(id = R.drawable.ic_ball),
+            error = painterResource(id = R.drawable.ic_ball),
+            fallback = painterResource(id = R.drawable.ic_ball)
+        )
+    }
 }
 
 private fun formatDate(timestamp: Long?): String {
