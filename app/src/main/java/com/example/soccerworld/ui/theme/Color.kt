@@ -73,4 +73,14 @@ data class SoccerColors(
     val awayColor: Color = AccentNeonOrange
 )
 
-val LocalSoccerColors = androidx.compose.runtime.compositionLocalOf { SoccerColors() }
+val LightSoccerColors = SoccerColors()
+val DarkSoccerColors = SoccerColors(
+    zoneChampionsLeague = Color(0xFF64B5F6), // Lighter Blue for UCL
+    zoneEuropaLeague = Color(0xFFFFB74D), // Lighter Orange for UEL
+    zoneConferenceLeague = Color(0xFF81C784), // Lighter Green for UECL
+    zoneRelegation = Color(0xFFE57373), // Lighter Red for Relegation
+    winnerText = Color.White,
+    loserText = Color.LightGray
+)
+
+val LocalSoccerColors = androidx.compose.runtime.compositionLocalOf { LightSoccerColors }

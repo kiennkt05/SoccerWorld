@@ -101,7 +101,7 @@ fun NewsCard(item: MatchNews) {
                     Text(
                         text = formattedTime,
                         fontSize = 10.sp,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 

@@ -1,10 +1,10 @@
 package com.example.soccerworld.ui.search
 
+import android.content.res.Configuration
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -23,18 +23,10 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.SportsSoccer
-import com.example.soccerworld.ui.theme.TextOnDark
-import com.example.soccerworld.ui.theme.TextDark
 import com.example.soccerworld.ui.theme.TextSecondary
 import com.example.soccerworld.ui.theme.BrandGreenMedium
 import com.example.soccerworld.ui.theme.AccentNeonOrange
 import com.example.soccerworld.ui.theme.AccentNeonMint
-import com.example.soccerworld.ui.theme.LightBackground
-import com.example.soccerworld.ui.theme.DividerColor
-import com.example.soccerworld.ui.player.PlayerDetailInfo
-import com.example.soccerworld.util.CustomSharedPreferences
-import com.example.soccerworld.util.Constant
-import com.example.soccerworld.util.FlashLiveLeague
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -65,6 +57,10 @@ import com.example.soccerworld.data.remote.flashlive.TeamSearchItemDto
 import com.example.soccerworld.data.remote.flashlive.TournamentSearchItemDto
 import com.example.soccerworld.data.remote.flashlive.UnknownSearchItemDto
 import com.example.soccerworld.data.remote.flashlive.SearchItemDto
+import com.example.soccerworld.ui.player.PlayerDetailInfo
+import com.example.soccerworld.util.CustomSharedPreferences
+import com.example.soccerworld.util.Constant
+import com.example.soccerworld.util.FlashLiveLeague
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 
@@ -82,12 +78,59 @@ fun SearchScreen(
     )
     val state by viewModel.uiState.collectAsState()
     
-    var selectedSubTab by remember { mutableIntStateOf(0) }
     val recentSearches = remember {
         mutableStateListOf<String>().apply {
             addAll(sharedPrefs.getSearchHistory())
         }
     }
+
+    SearchScreenContent(
+        state = state,
+        recentSearches = recentSearches,
+        onSearchQueryChanged = viewModel::onSearchQueryChanged,
+        onTeamClick = { id, name ->
+            sharedPrefs.addSearchQuery(name)
+            recentSearches.clear()
+            recentSearches.addAll(sharedPrefs.getSearchHistory())
+            onTeamClick(id)
+        },
+        onPlayerClick = { playerInfo ->
+            sharedPrefs.addSearchQuery(playerInfo.name)
+            recentSearches.clear()
+            recentSearches.addAll(sharedPrefs.getSearchHistory())
+            onPlayerClick(playerInfo)
+        },
+        onCompetitionClick = { league ->
+            sharedPrefs.addSearchQuery(league.name)
+            recentSearches.clear()
+            recentSearches.addAll(sharedPrefs.getSearchHistory())
+            onCompetitionClick(league)
+        },
+        onClearRecent = {
+            sharedPrefs.clearSearchHistory()
+            recentSearches.clear()
+        },
+        onRemoveRecent = { item ->
+            sharedPrefs.removeSearchQuery(item)
+            recentSearches.clear()
+            recentSearches.addAll(sharedPrefs.getSearchHistory())
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchScreenContent(
+    state: SearchUiState,
+    recentSearches: List<String>,
+    onSearchQueryChanged: (String) -> Unit,
+    onTeamClick: (String, String) -> Unit,
+    onPlayerClick: (PlayerDetailInfo) -> Unit,
+    onCompetitionClick: (FlashLiveLeague) -> Unit,
+    onClearRecent: () -> Unit,
+    onRemoveRecent: (String) -> Unit
+) {
+    var selectedSubTab by remember { mutableIntStateOf(0) }
 
     Column(modifier = Modifier.fillMaxSize()) {
 
@@ -95,7 +138,7 @@ fun SearchScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(BrandGreenMedium)
+                .background(MaterialTheme.colorScheme.surface)
                 .statusBarsPadding()
                 .padding(horizontal = 8.dp, vertical = 12.dp),
             contentAlignment = Alignment.CenterStart
@@ -106,27 +149,27 @@ fun SearchScreen(
             ) {
                 IconButton(onClick = { 
                     if (state.query.isNotEmpty()) {
-                        viewModel.onSearchQueryChanged("") 
+                        onSearchQueryChanged("") 
                     }
                 }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = Color.White
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
                 BasicTextField(
                     value = state.query,
-                    onValueChange = viewModel::onSearchQueryChanged,
+                    onValueChange = onSearchQueryChanged,
                     modifier = Modifier
                         .weight(1f)
                         .padding(end = 8.dp)
                         .height(40.dp)
-                        .background(MaterialTheme.colorScheme.surface, CircleShape),
-                    textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp),
+                        .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+                    textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp),
                     singleLine = true,
-                    cursorBrush = SolidColor(BrandGreenMedium),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     decorationBox = { innerTextField ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -158,7 +201,7 @@ fun SearchScreen(
                             }
                             if (state.query.isNotEmpty()) {
                                 IconButton(
-                                    onClick = { viewModel.onSearchQueryChanged("") },
+                                    onClick = { onSearchQueryChanged("") },
                                     modifier = Modifier.size(24.dp)
                                 ) {
                                     Icon(
@@ -181,7 +224,7 @@ fun SearchScreen(
             state.isLoading -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = BrandGreenMedium)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(stringResource(R.string.search_searching), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -221,11 +264,11 @@ fun SearchScreen(
                 TabRow(
                     selectedTabIndex = selectedSubTab,
                     containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = BrandGreenMedium,
+                    contentColor = MaterialTheme.colorScheme.primary,
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
                             modifier = Modifier.tabIndicatorOffset(tabPositions[selectedSubTab]),
-                            color = BrandGreenMedium
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 ) {
@@ -239,7 +282,7 @@ fun SearchScreen(
                                 fontSize = 13.sp
                             )
                         },
-                        selectedContentColor = BrandGreenMedium,
+                        selectedContentColor = MaterialTheme.colorScheme.primary,
                         unselectedContentColor = Color.Gray
                     )
                     Tab(
@@ -252,50 +295,25 @@ fun SearchScreen(
                                 fontSize = 13.sp
                             )
                         },
-                        selectedContentColor = BrandGreenMedium,
+                        selectedContentColor = MaterialTheme.colorScheme.primary,
                         unselectedContentColor = Color.Gray
                     )
                 }
 
                 if (selectedSubTab == 0) {
                     SuggestedTabContent(
-                        onTeamClick = { id, name ->
-                            sharedPrefs.addSearchQuery(name)
-                            recentSearches.clear()
-                            recentSearches.addAll(sharedPrefs.getSearchHistory())
-                            onTeamClick(id)
-                        },
-                        onPlayerClick = { playerInfo ->
-                            sharedPrefs.addSearchQuery(playerInfo.name)
-                            recentSearches.clear()
-                            recentSearches.addAll(sharedPrefs.getSearchHistory())
-                            onPlayerClick(playerInfo)
-                        },
-                        onCompetitionClick = { league ->
-                            sharedPrefs.addSearchQuery(league.name)
-                            recentSearches.clear()
-                            recentSearches.addAll(sharedPrefs.getSearchHistory())
-                            onCompetitionClick(league)
-                        }
+                        onTeamClick = onTeamClick,
+                        onPlayerClick = onPlayerClick,
+                        onCompetitionClick = onCompetitionClick
                     )
                 } else {
                     RecentTabContent(
                         recentSearches = recentSearches,
                         onItemClick = { query ->
-                            sharedPrefs.addSearchQuery(query)
-                            recentSearches.clear()
-                            recentSearches.addAll(sharedPrefs.getSearchHistory())
-                            viewModel.onSearchQueryChanged(query)
+                            onSearchQueryChanged(query)
                         },
-                        onClearAll = {
-                            sharedPrefs.clearSearchHistory()
-                            recentSearches.clear()
-                        },
-                        onRemoveItem = { item ->
-                            sharedPrefs.removeSearchQuery(item)
-                            recentSearches.clear()
-                            recentSearches.addAll(sharedPrefs.getSearchHistory())
-                        }
+                        onClearAll = onClearRecent,
+                        onRemoveItem = onRemoveRecent
                     )
                 }
             }
@@ -304,24 +322,9 @@ fun SearchScreen(
             else -> {
                 SearchResultList(
                     results = state.results,
-                    onTeamClick = { id, name ->
-                        sharedPrefs.addSearchQuery(name)
-                        recentSearches.clear()
-                        recentSearches.addAll(sharedPrefs.getSearchHistory())
-                        onTeamClick(id)
-                    },
-                    onPlayerClick = { playerInfo ->
-                        sharedPrefs.addSearchQuery(playerInfo.name)
-                        recentSearches.clear()
-                        recentSearches.addAll(sharedPrefs.getSearchHistory())
-                        onPlayerClick(playerInfo)
-                    },
-                    onCompetitionClick = { league ->
-                        sharedPrefs.addSearchQuery(league.name)
-                        recentSearches.clear()
-                        recentSearches.addAll(sharedPrefs.getSearchHistory())
-                        onCompetitionClick(league)
-                    }
+                    onTeamClick = onTeamClick,
+                    onPlayerClick = onPlayerClick,
+                    onCompetitionClick = onCompetitionClick
                 )
             }
         }
@@ -515,7 +518,7 @@ private fun SuggestedTabContent(
                                 .clickable { onCompetitionClick(league) }
                                 .padding(horizontal = 32.dp, vertical = 12.dp)
                         )
-                        HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
+                        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                     }
                 }
             }
@@ -527,7 +530,7 @@ private fun SuggestedTabContent(
                 title = "Europe",
                 icon = Icons.Default.Star,
                 badge = null,
-                badgeColor = BrandGreenMedium,
+                badgeColor = MaterialTheme.colorScheme.primary,
                 isExpanded = expandedStates["Europe"] == true,
                 onToggle = { expandedStates["Europe"] = !(expandedStates["Europe"] == true) }
             )
@@ -555,7 +558,7 @@ private fun SuggestedTabContent(
                                 .clickable { onCompetitionClick(league) }
                                 .padding(horizontal = 32.dp, vertical = 12.dp)
                         )
-                        HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
+                        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                     }
                 }
             }
@@ -619,7 +622,7 @@ private fun RecentTabContent(
                         }
                     }
                     if (index < recentSearches.size - 1) {
-                        HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
+                        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                     }
                 }
             }
@@ -632,7 +635,7 @@ private fun RecentTabContent(
             contentAlignment = Alignment.Center
         ) {
             TextButton(onClick = onClearAll) {
-                Text(stringResource(R.string.search_clear_history), color = BrandGreenMedium, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.search_clear_history), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -646,7 +649,7 @@ private fun SuggestedHeader(title: String) {
         text = title,
         fontSize = 14.sp,
         fontWeight = FontWeight.Bold,
-        color = BrandGreenMedium,
+        color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 10.dp)
     )
 }
@@ -660,7 +663,7 @@ private fun SuggestedCard(name: String, logo: String, onClick: () -> Unit) {
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, DividerColor)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -709,7 +712,7 @@ private fun SuggestedPlayerCard(name: String, photo: String, onClick: () -> Unit
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, DividerColor)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -720,7 +723,7 @@ private fun SuggestedPlayerCard(name: String, photo: String, onClick: () -> Unit
                 modifier = Modifier
                     .size(54.dp)
                     .clip(CircleShape)
-                    .background(DividerColor),
+                    .background(MaterialTheme.colorScheme.outlineVariant),
                 contentAlignment = Alignment.Center
             ) {
                 AsyncImage(
@@ -756,7 +759,7 @@ private fun SuggestedRankingCard(name: String, icon: ImageVector, onClick: () ->
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, DividerColor)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -767,13 +770,13 @@ private fun SuggestedRankingCard(name: String, icon: ImageVector, onClick: () ->
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(BrandGreenMedium.copy(alpha = 0.1f)),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = BrandGreenMedium,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -807,7 +810,7 @@ private fun ExpandableCategoryRow(
             .clickable { onToggle() },
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(0.5.dp, DividerColor)
+        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
         Row(
             modifier = Modifier
@@ -856,37 +859,69 @@ private fun SearchResultList(
     results: List<SearchItemDto>,
     onTeamClick: (String, String) -> Unit,
     onPlayerClick: (PlayerDetailInfo) -> Unit,
-    onCompetitionClick: (com.example.soccerworld.util.FlashLiveLeague) -> Unit
+    onCompetitionClick: (FlashLiveLeague) -> Unit
 ) {
     val teams = results.filterIsInstance<TeamSearchItemDto>()
     val players = results.filterIsInstance<PlayerSearchItemDto>()
     val tournaments = results.filterIsInstance<TournamentSearchItemDto>()
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         contentPadding = PaddingValues(vertical = 8.dp)
     ) {
         // Teams section
         if (teams.isNotEmpty()) {
-            item { GroupHeader(title = "Clubs", icon = Icons.Default.AccountBox, count = teams.size) }
-            items(teams) { item ->
-                SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick, onCompetitionClick = onCompetitionClick)
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column {
+                        GroupHeader(title = "Clubs", icon = Icons.Default.AccountBox, count = teams.size)
+                        teams.forEach { item ->
+                            SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick, onCompetitionClick = onCompetitionClick)
+                        }
+                    }
+                }
             }
         }
 
         // Players section
         if (players.isNotEmpty()) {
-            item { GroupHeader(title = "Players", icon = Icons.Default.Person, count = players.size) }
-            items(players) { item ->
-                SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick, onCompetitionClick = onCompetitionClick)
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column {
+                        GroupHeader(title = "Players", icon = Icons.Default.Person, count = players.size)
+                        players.forEach { item ->
+                            SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick, onCompetitionClick = onCompetitionClick)
+                        }
+                    }
+                }
             }
         }
 
         // Tournaments section
         if (tournaments.isNotEmpty()) {
-            item { GroupHeader(title = "Tournaments", icon = Icons.Default.Star, count = tournaments.size) }
-            items(tournaments) { item ->
-                SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick, onCompetitionClick = onCompetitionClick)
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column {
+                        GroupHeader(title = "Tournaments", icon = Icons.Default.Star, count = tournaments.size)
+                        tournaments.forEach { item ->
+                            SearchItemCard(item = item, onTeamClick = onTeamClick, onPlayerClick = onPlayerClick, onCompetitionClick = onCompetitionClick)
+                        }
+                    }
+                }
             }
         }
     }
@@ -894,7 +929,7 @@ private fun SearchResultList(
 
 @Composable
 private fun GroupHeader(title: String, icon: ImageVector, count: Int) {
-    val primary = BrandGreenMedium
+    val primary = MaterialTheme.colorScheme.primary
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -930,7 +965,7 @@ fun SearchItemCard(
     item: SearchItemDto,
     onTeamClick: (String, String) -> Unit,
     onPlayerClick: (PlayerDetailInfo) -> Unit,
-    onCompetitionClick: (com.example.soccerworld.util.FlashLiveLeague) -> Unit
+    onCompetitionClick: (FlashLiveLeague) -> Unit
 ) {
     val imageUrl = when (item) {
         is TeamSearchItemDto -> item.image
@@ -957,7 +992,7 @@ fun SearchItemCard(
         else -> Icons.Default.Search
     }
     val typeColor = when (item) {
-        is TeamSearchItemDto -> BrandGreenMedium
+        is TeamSearchItemDto -> MaterialTheme.colorScheme.primary
         is PlayerSearchItemDto -> AccentNeonOrange
         is TournamentSearchItemDto -> AccentNeonMint
         else -> Color.Gray
@@ -987,7 +1022,7 @@ fun SearchItemCard(
                         val stageId = item.tournamentStageIds?.firstOrNull() ?: item.id
                         val seasonId = item.tournamentId
                         val additionalStageIds = item.tournamentStageIds?.drop(1) ?: emptyList()
-                        val league = com.example.soccerworld.util.FlashLiveLeague(
+                        val league = FlashLiveLeague(
                             stageId = stageId,
                             seasonId = seasonId,
                             name = item.name,
@@ -1050,7 +1085,7 @@ fun SearchItemCard(
                 Text(
                     text = subtitle,
                     fontSize = 12.sp,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1083,5 +1118,64 @@ fun SearchItemCard(
 fun SearchScreenPreview() {
     SoccerWorldTheme {
         SearchScreen()
+    }
+}
+
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, name = "Search Screen - Results - Dark Mode")
+@Composable
+fun SearchScreenResultsDarkModePreview() {
+    val sampleResults = listOf(
+        TeamSearchItemDto(id = "1", name = "Arsenal", countryName = "England", image = "https://crests.football-data.org/57.png"),
+        PlayerSearchItemDto(id = "2", name = "Martin Ødegaard", countryName = "Norway", image = null),
+        TournamentSearchItemDto(
+            id = "3", 
+            name = "Premier League", 
+            countryName = "England", 
+            image = null, 
+            tournamentId = "PL",
+            tournamentStageIds = listOf("stage1")
+        )
+    )
+    val state = SearchUiState(
+        query = "Arsenal",
+        results = sampleResults,
+        isLoading = false
+    )
+
+    SoccerWorldTheme(darkTheme = true) {
+        SearchScreenContent(
+            state = state,
+            recentSearches = emptyList(),
+            onSearchQueryChanged = {},
+            onTeamClick = { _, _ -> },
+            onPlayerClick = { _ -> },
+            onCompetitionClick = { _ -> },
+            onClearRecent = {},
+            onRemoveRecent = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, name = "Search Screen - Empty - Dark Mode")
+@Composable
+fun SearchScreenEmptyDarkModePreview() {
+    val state = SearchUiState(
+        query = "",
+        results = emptyList(),
+        isLoading = false
+    )
+    val recentSearches = listOf("Real Madrid", "Lionel Messi", "Champions League")
+
+    SoccerWorldTheme(darkTheme = true) {
+        SearchScreenContent(
+            state = state,
+            recentSearches = recentSearches,
+            onSearchQueryChanged = {},
+            onTeamClick = { _, _ -> },
+            onPlayerClick = { _ -> },
+            onCompetitionClick = { _ -> },
+            onClearRecent = {},
+            onRemoveRecent = {}
+        )
     }
 }

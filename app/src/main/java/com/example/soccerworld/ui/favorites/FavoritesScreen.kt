@@ -1,13 +1,11 @@
 package com.example.soccerworld.ui.favorites
 
+import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,8 +25,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import com.example.soccerworld.ui.theme.AccentNeonOrange
 import com.example.soccerworld.ui.theme.BrandGreenMedium
-import com.example.soccerworld.ui.theme.DividerColor
-import com.example.soccerworld.ui.theme.LightBackground
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
@@ -48,8 +44,13 @@ import com.example.soccerworld.data.local.entity.FavoritePlayerEntity
 import androidx.compose.ui.layout.ContentScale
 import com.example.soccerworld.data.remote.flashlive.TeamSearchItemDto
 import com.example.soccerworld.data.remote.flashlive.SearchItemDto
+import com.example.soccerworld.model.fixture.AwayTeam
+import com.example.soccerworld.model.fixture.FullTime
+import com.example.soccerworld.model.fixture.HomeTeam
+import com.example.soccerworld.model.fixture.Matche
+import com.example.soccerworld.model.fixture.Score
+import com.example.soccerworld.ui.components.MatchRow
 import com.example.soccerworld.ui.fixture.FixtureCard
-import com.example.soccerworld.ui.theme.BrandGreenLight
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
@@ -62,8 +63,6 @@ fun FavoritesScreen(
     onMatchClick: (String) -> Unit = {},
     onNavigateToLogin: () -> Unit = {},
     onTeamClick: (String) -> Unit = {},
-    // Added isLoggedIn as a parameter with a default value that checks LocalInspectionMode
-    // to prevent FirebaseAuth from crashing in the Android Studio Preview.
     isLoggedIn: Boolean = if (LocalInspectionMode.current) false else FirebaseAuth.getInstance().currentUser != null
 ) {
     val context = LocalContext.current
@@ -71,7 +70,50 @@ fun FavoritesScreen(
         factory = ViewModelFactory(Injection.provideFootballRepository(context))
     )
     val state by viewModel.uiState.collectAsState()
-    
+
+    FavoritesScreenContent(
+        state = state,
+        isLoggedIn = isLoggedIn,
+        onMatchClick = onMatchClick,
+        onNavigateToLogin = onNavigateToLogin,
+        onTeamClick = onTeamClick,
+        onToggleFavoriteMatch = { match -> viewModel.toggleFavoriteMatch(match) },
+        onToggleFavoriteTeam = { team ->
+            viewModel.toggleFavoriteTeam(
+                teamId = team.teamId,
+                name = team.name,
+                logoUrl = team.logoUrl,
+                countryName = team.countryName
+            )
+        },
+        onToggleFavoritePlayer = { player ->
+            viewModel.toggleFavoritePlayer(
+                playerId = player.playerId,
+                name = player.name,
+                imageUrl = player.imageUrl,
+                nationality = player.nationality,
+                position = player.position
+            )
+        },
+        onSearchToggleFavoriteTeam = { id, name, logo, country ->
+            viewModel.toggleFavoriteTeam(id, name, logo, country)
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FavoritesScreenContent(
+    state: FavoritesUiState,
+    isLoggedIn: Boolean,
+    onMatchClick: (String) -> Unit,
+    onNavigateToLogin: () -> Unit,
+    onTeamClick: (String) -> Unit,
+    onToggleFavoriteMatch: (Matche) -> Unit,
+    onToggleFavoriteTeam: (FavoriteTeamEntity) -> Unit,
+    onToggleFavoritePlayer: (FavoritePlayerEntity) -> Unit,
+    onSearchToggleFavoriteTeam: (String, String, String?, String?) -> Unit
+) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var showAddTeamSheet by remember { mutableStateOf(false) }
 
@@ -81,7 +123,7 @@ fun FavoritesScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(BrandGreenMedium)
+                    .background(MaterialTheme.colorScheme.surface)
                     .statusBarsPadding()
             ) {
                 // Header Title
@@ -94,7 +136,7 @@ fun FavoritesScreen(
                     Text(
                         text = stringResource(R.string.fav_title),
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 18.sp
                     )
                 }
@@ -102,11 +144,12 @@ fun FavoritesScreen(
                 // Sub-tabs (Events, Teams, Players)
                 TabRow(
                     selectedTabIndex = selectedTab,
-                    contentColor = Color.White,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary,
                     indicator = { tabPositions ->
                         TabRowDefaults.SecondaryIndicator(
                             modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                            color = BrandGreenMedium
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 ) {
@@ -119,14 +162,14 @@ fun FavoritesScreen(
                         Tab(
                             selected = selectedTab == index,
                             onClick = { selectedTab = index },
-                            text = { 
+                            text = {
                                 Text(
-                                    text = title, 
+                                    text = title,
                                     fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Medium,
                                     fontSize = 13.sp
-                                ) 
+                                )
                             },
-                            selectedContentColor = BrandGreenMedium,
+                            selectedContentColor = MaterialTheme.colorScheme.primary,
                             unselectedContentColor = Color.Gray
                         )
                     }
@@ -141,44 +184,27 @@ fun FavoritesScreen(
                 .background(MaterialTheme.colorScheme.background)
         ) {
             if (!isLoggedIn && selectedTab == 0) {
-                // Keep the matches list locked if user is a guest, but let them interact with Teams locally
                 LoginRequiredState(onNavigateToLogin = onNavigateToLogin)
             } else {
                 when (selectedTab) {
                     0 -> EventsTabContent(
                         state = state,
                         onMatchClick = onMatchClick,
-                        onToggleFavoriteMatch = { match -> viewModel.toggleFavoriteMatch(match) }
+                        onToggleFavoriteMatch = onToggleFavoriteMatch
                     )
                     1 -> TeamsTabContent(
                         state = state,
                         onAddClick = { showAddTeamSheet = true },
                         onTeamClick = onTeamClick,
-                        onToggleFavorite = { team ->
-                            viewModel.toggleFavoriteTeam(
-                                teamId = team.teamId,
-                                name = team.name,
-                                logoUrl = team.logoUrl,
-                                countryName = team.countryName
-                            )
-                        }
+                        onToggleFavorite = onToggleFavoriteTeam
                     )
                     2 -> PlayersTabContent(
                         state = state,
-                        onToggleFavorite = { player ->
-                            viewModel.toggleFavoritePlayer(
-                                playerId = player.playerId,
-                                name = player.name,
-                                imageUrl = player.imageUrl,
-                                nationality = player.nationality,
-                                position = player.position
-                            )
-                        }
+                        onToggleFavorite = onToggleFavoritePlayer
                     )
                 }
             }
 
-            // Sync prompt banner at top if user is a guest and looking at teams
             if (!isLoggedIn && selectedTab == 1) {
                 GuestSyncBanner(
                     modifier = Modifier.align(Alignment.BottomCenter),
@@ -192,14 +218,11 @@ fun FavoritesScreen(
         AddTeamBottomSheet(
             onDismiss = { showAddTeamSheet = false },
             favoriteTeams = state.teams,
-            onToggleFavorite = { id, name, logo, country ->
-                viewModel.toggleFavoriteTeam(id, name, logo, country)
-            }
+            onToggleFavorite = onSearchToggleFavoriteTeam
         )
     }
 }
 
-// ── Sync Banner for Guests ───────────────────────────────────────────────────
 @Composable
 private fun GuestSyncBanner(
     modifier: Modifier = Modifier,
@@ -209,7 +232,7 @@ private fun GuestSyncBanner(
         modifier = modifier
             .fillMaxWidth()
             .padding(16.dp),
-        colors = CardDefaults.cardColors(containerColor = BrandGreenMedium),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -234,7 +257,7 @@ private fun GuestSyncBanner(
             }
             Button(
                 onClick = onLoginClick,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BrandGreenMedium),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = MaterialTheme.colorScheme.primary),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                 shape = RoundedCornerShape(8.dp)
             ) {
@@ -244,16 +267,15 @@ private fun GuestSyncBanner(
     }
 }
 
-// ── Events (Matches) Tab Content ─────────────────────────────────────────────
 @Composable
 private fun EventsTabContent(
     state: FavoritesUiState,
     onMatchClick: (String) -> Unit,
-    onToggleFavoriteMatch: (com.example.soccerworld.model.fixture.Matche) -> Unit
+    onToggleFavoriteMatch: (Matche) -> Unit
 ) {
     if (state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = BrandGreenMedium)
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
     } else if (state.matches.isEmpty()) {
         FavoritesEmptyState(
@@ -283,7 +305,6 @@ private fun EventsTabContent(
     }
 }
 
-// ── Teams Tab Content ────────────────────────────────────────────────────────
 @Composable
 private fun TeamsTabContent(
     state: FavoritesUiState,
@@ -304,7 +325,6 @@ private fun TeamsTabContent(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 90.dp)
     ) {
-        // Grid Header
         item {
             Row(
                 modifier = Modifier
@@ -317,7 +337,7 @@ private fun TeamsTabContent(
                     text = stringResource(R.string.fav_my_teams),
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
-                    color = Color.Black
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
                     text = stringResource(R.string.fav_teams_count, state.teams.size),
@@ -327,7 +347,6 @@ private fun TeamsTabContent(
             }
         }
 
-        // Teams Grid Area
         item {
             Box(
                 modifier = Modifier
@@ -339,14 +358,13 @@ private fun TeamsTabContent(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // Add Button Card
                         Card(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(110.dp)
                                 .clickable { onAddClick() },
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            border = BorderStroke(1.dp, DividerColor),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             shape = RoundedCornerShape(12.dp)
                         ) {
                             Column(
@@ -358,17 +376,16 @@ private fun TeamsTabContent(
                                     modifier = Modifier
                                         .size(36.dp)
                                         .clip(CircleShape)
-                                        .background(BrandGreenMedium.copy(alpha = 0.1f)),
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(Icons.Default.Add, contentDescription = "Add", tint = BrandGreenMedium)
+                                    Icon(Icons.Default.Add, contentDescription = "Add", tint = MaterialTheme.colorScheme.primary)
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text(stringResource(R.string.fav_add_team), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = BrandGreenMedium)
+                                Text(stringResource(R.string.fav_add_team), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                             }
                         }
 
-                        // Populate the first row with favorited teams if available
                         repeat(2) { index ->
                             if (index < state.teams.size) {
                                 val team = state.teams[index]
@@ -381,7 +398,6 @@ private fun TeamsTabContent(
                         }
                     }
 
-                    // Remaining rows for teams
                     if (state.teams.size > 2) {
                         val remainingTeams = state.teams.drop(2)
                         val chunks = remainingTeams.chunked(3)
@@ -408,13 +424,12 @@ private fun TeamsTabContent(
             }
         }
 
-        // Trending Section
         item {
             Text(
                 text = stringResource(R.string.fav_trending_teams),
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
-                color = Color.Black,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 28.dp, bottom = 12.dp)
             )
         }
@@ -424,7 +439,7 @@ private fun TeamsTabContent(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.surface)
                     .clickable { onTeamClick(id) }
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -441,7 +456,7 @@ private fun TeamsTabContent(
                     text = name,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 IconButton(
@@ -464,7 +479,7 @@ private fun TeamsTabContent(
                     )
                 }
             }
-            HorizontalDivider(thickness = 0.5.dp, color = DividerColor)
+            HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
         }
     }
 }
@@ -480,12 +495,11 @@ private fun FavoritedTeamGridItem(
             .fillMaxWidth()
             .height(110.dp)
             .clickable { onTeamClick(team.teamId) },
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, DividerColor),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = RoundedCornerShape(12.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Delete close icon
             IconButton(
                 onClick = { onToggle(team) },
                 modifier = Modifier
@@ -513,7 +527,7 @@ private fun FavoritedTeamGridItem(
                     text = team.name,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -524,7 +538,6 @@ private fun FavoritedTeamGridItem(
     }
 }
 
-// ── Players Tab Content ─────────────────────────────────────────────────────
 @Composable
 private fun PlayersTabContent(
     state: FavoritesUiState,
@@ -532,7 +545,7 @@ private fun PlayersTabContent(
 ) {
     if (state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = BrandGreenMedium)
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
     } else if (state.players.isEmpty()) {
         FavoritesEmptyState(
@@ -553,7 +566,7 @@ private fun PlayersTabContent(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, DividerColor),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Row(
@@ -566,7 +579,7 @@ private fun PlayersTabContent(
                             modifier = Modifier
                                 .size(44.dp)
                                 .clip(CircleShape)
-                                .background(DividerColor),
+                                .background(MaterialTheme.colorScheme.outlineVariant),
                             contentAlignment = Alignment.Center
                         ) {
                             AsyncImage(
@@ -578,9 +591,9 @@ private fun PlayersTabContent(
                                 error = painterResource(id = R.drawable.ic_ball)
                             )
                         }
-                        
+
                         Spacer(modifier = Modifier.width(14.dp))
-                        
+
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = player.name,
@@ -597,7 +610,7 @@ private fun PlayersTabContent(
                                 )
                             }
                         }
-                        
+
                         IconButton(
                             onClick = { onToggleFavorite(player) }
                         ) {
@@ -614,7 +627,6 @@ private fun PlayersTabContent(
     }
 }
 
-// ── Search & Add Team Bottom Sheet ──────────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddTeamBottomSheet(
@@ -625,13 +637,12 @@ private fun AddTeamBottomSheet(
     val context = LocalContext.current
     val repository = remember { Injection.provideFootballRepository(context) }
     val scope = rememberCoroutineScope()
-    
+
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<SearchItemDto>>(emptyList()) }
     var searchJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
     var isSearching by remember { mutableStateOf(false) }
 
-    // Search query debounced observer
     LaunchedEffect(query) {
         if (query.trim().length < 2) {
             results = emptyList()
@@ -685,7 +696,7 @@ private fun AddTeamBottomSheet(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = BrandGreenMedium)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else if (results.isEmpty() && query.trim().length >= 2) {
                 Box(
@@ -745,7 +756,6 @@ private fun AddTeamBottomSheet(
     }
 }
 
-// ── Generic Empty State Composable ───────────────────────────────────────────
 @Composable
 private fun FavoritesEmptyState(message: String, hint: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -757,7 +767,7 @@ private fun FavoritesEmptyState(message: String, hint: String) {
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(DividerColor),
+                    .background(MaterialTheme.colorScheme.outlineVariant),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -785,7 +795,6 @@ private fun FavoritesEmptyState(message: String, hint: String) {
     }
 }
 
-// ── Authentication Login Prompts ─────────────────────────────────────────────
 @Composable
 private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -797,13 +806,13 @@ private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(BrandGreenMedium.copy(alpha = 0.1f)),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = null,
-                    tint = BrandGreenMedium,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(36.dp)
                 )
             }
@@ -825,7 +834,7 @@ private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
             Button(
                 onClick = onNavigateToLogin,
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = BrandGreenMedium)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text(stringResource(R.string.fav_signin), fontWeight = FontWeight.Bold)
             }
@@ -837,7 +846,80 @@ private fun LoginRequiredState(onNavigateToLogin: () -> Unit) {
 @Composable
 fun FavoritesScreenPreview() {
     SoccerWorldTheme {
-        // In preview, isLoggedIn will default to false safely due to the parameter default value.
         FavoritesScreen()
     }
 }
+
+@Preview(showBackground = true, name = "Favorites - Light Mode")
+@Composable
+fun FavoritesScreenLightPreview() {
+    SoccerWorldTheme(darkTheme = false) {
+        FavoritesScreenContent(
+            state = getMockFavoritesState(),
+            isLoggedIn = true,
+            onMatchClick = {},
+            onNavigateToLogin = {},
+            onTeamClick = {},
+            onToggleFavoriteMatch = {},
+            onToggleFavoriteTeam = {},
+            onToggleFavoritePlayer = {},
+            onSearchToggleFavoriteTeam = { _, _, _, _ -> }
+        )
+    }
+}
+
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, name = "Favorites - Dark Mode")
+@Composable
+fun FavoritesScreenDarkPreview() {
+    SoccerWorldTheme(darkTheme = true) {
+        FavoritesScreenContent(
+            state = getMockFavoritesState(),
+            isLoggedIn = true,
+            onMatchClick = {},
+            onNavigateToLogin = {},
+            onTeamClick = {},
+            onToggleFavoriteMatch = {},
+            onToggleFavoriteTeam = {},
+            onToggleFavoritePlayer = {},
+            onSearchToggleFavoriteTeam = { _, _, _, _ -> }
+        )
+    }
+}
+
+private fun getMockFavoritesState() = FavoritesUiState(
+    isLoading = false,
+    matches = listOf(
+        Matche(
+            id = "1",
+            utcDate = "2024-05-19T15:00:00Z",
+            status = "FINISHED",
+            homeTeam = HomeTeam(id = "57", name = "Arsenal", crest = "https://crests.football-data.org/57.png"),
+            awayTeam = AwayTeam(id = "61", name = "Chelsea", crest = "https://crests.football-data.org/61.png"),
+            score = Score(fullTime = FullTime(home = 3, away = 1))
+        ),
+        Matche(
+            id = "2",
+            utcDate = "2024-05-20T19:00:00Z",
+            status = "TIMED",
+            homeTeam = HomeTeam(id = "66", name = "Man United", crest = "https://crests.football-data.org/66.png"),
+            awayTeam = AwayTeam(id = "64", name = "Liverpool", crest = "https://crests.football-data.org/64.png"),
+            score = Score(fullTime = FullTime(home = null, away = null))
+        ),
+        Matche(
+            id = "3",
+            utcDate = "2023-10-27T20:00:00Z",
+            status = "IN_PLAY",
+            homeTeam = HomeTeam(id = "3", name = "Liverpool FC", crest = "https://crests.football-data.org/64.png"),
+            awayTeam = AwayTeam(id = "4", name = "Manchester City FC", crest = "https://crests.football-data.org/65.png"),
+            score = Score(fullTime = FullTime(home = 1, away = 1))
+        )
+    ),
+    teams = listOf(
+        FavoriteTeamEntity("57", "Arsenal", "https://crests.football-data.org/57.png", "England", 0),
+        FavoriteTeamEntity("66", "Man United", "https://crests.football-data.org/66.png", "England", 0)
+    ),
+    players = listOf(
+        FavoritePlayerEntity("1", "Lionel Messi", "https://www.flashscore.com/res/image/data/d8SZZtZg-S4hzKKkP.png", "Argentina", "Forward", 0),
+        FavoritePlayerEntity("2", "C. Ronaldo", "https://www.flashscore.com/res/image/data/nsF9bZdM-bTK8dxEL.png", "Portugal", "Forward", 0)
+    )
+)

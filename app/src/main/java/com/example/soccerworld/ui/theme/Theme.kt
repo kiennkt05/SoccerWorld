@@ -24,14 +24,14 @@ private val DarkColorScheme = darkColorScheme(
     onSecondary          = Color.White,
     secondaryContainer   = Color(0xFF151B26),
     onSecondaryContainer = Color(0xFFF1F5F9),
-    background           = Color(0xFF0F131A),   // Deep Slate Blue background
+    background           = Color(0xFF2B3A4F),   // Deep Slate Blue background (Much Lighter)
     onBackground         = Color(0xFFF1F5F9),   // Ice white text
-    surface              = Color(0xFF151B26),   // Slightly elevated card surface
+    surface              = Color(0xFF374862),   // Elevated card surface (Much Lighter)
     onSurface            = Color(0xFFF1F5F9),   // Ice white text
-    surfaceVariant       = Color(0xFF1E293B),
-    onSurfaceVariant     = Color(0xFF94A3B8),
-    outline              = Color(0xFF232C3F),   // Division outlines
-    outlineVariant       = Color(0xFF1A2230),
+    surfaceVariant       = Color(0xFF475975),
+    onSurfaceVariant     = Color(0xFFCBD5E1),
+    outline              = Color(0xFF64748B),   // Division outlines
+    outlineVariant       = Color(0xFF475569),
     error                = LiveRed,
     onError              = Color.White
 )
@@ -77,14 +77,16 @@ fun SoccerWorldTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = if (darkTheme) Color(0xFF0F131A).toArgb() else BrandGreenDark.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            window.statusBarColor = colorScheme.surface.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }
 
+    val soccerColors = if (darkTheme) DarkSoccerColors else LightSoccerColors
+
     CompositionLocalProvider(
         LocalSpacing provides Spacing(),
-        LocalSoccerColors provides SoccerColors()
+        LocalSoccerColors provides soccerColors
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

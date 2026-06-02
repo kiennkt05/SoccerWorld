@@ -13,7 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -131,8 +131,21 @@ fun PlayerDetailScreen(
             TopAppBar(
                 title = {},
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White)
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 16.dp, end = 8.dp)
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .clickable { onBack() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowLeft, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 },
                 actions = {
@@ -147,11 +160,11 @@ fun PlayerDetailScreen(
                         Icon(
                             imageVector = if (uiState.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Favorite",
-                            tint = if (uiState.isFavorite) FavoriteGold else Color.White
+                            tint = if (uiState.isFavorite) FavoriteGold else MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { padding ->
@@ -164,22 +177,14 @@ fun PlayerDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(230.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF1B2C66),  // Deep Navy Blue
-                                Color(0xFF283A7E),  // Dark Royal Blue
-                                Color(0xFF374DF5).copy(alpha = 0.8f) // Sofascore Blue
-                            )
-                        )
-                    )
+                    .background(MaterialTheme.colorScheme.surface)
             ) {
                 Box(
                     modifier = Modifier
                         .size(240.dp)
                         .align(Alignment.CenterEnd)
                         .offset(x = 55.dp, y = (-15).dp)
-                        .background(Color.White.copy(alpha = 0.05f), CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f), CircleShape)
                 )
                 Row(
                     modifier = Modifier
@@ -191,8 +196,8 @@ fun PlayerDetailScreen(
                     Box(
                         modifier = Modifier
                             .size(96.dp)
-                            .background(Color.White.copy(alpha = 0.18f), CircleShape)
-                            .border(2.dp, Color.White.copy(alpha = 0.6f), CircleShape),
+                            .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+                            .border(2.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         AsyncImage(
@@ -213,7 +218,7 @@ fun PlayerDetailScreen(
                             text = playerData?.name ?: playerInfo.name,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -222,25 +227,25 @@ fun PlayerDetailScreen(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Surface(shape = RoundedCornerShape(6.dp), color = Color.White.copy(alpha = 0.25f)) {
+                            Surface(shape = RoundedCornerShape(6.dp), color = MaterialTheme.colorScheme.primaryContainer) {
                                 Text(
                                     text = positionAbbr,
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     letterSpacing = 1.sp
                                 )
                             }
                             val jersey = playerInfo.jerseyNumber ?: 0
                             if (jersey > 0) {
-                                Surface(shape = RoundedCornerShape(6.dp), color = Color.White.copy(alpha = 0.15f)) {
+                                Surface(shape = RoundedCornerShape(6.dp), color = MaterialTheme.colorScheme.surfaceVariant) {
                                     Text(
                                         text = "#$jersey",
                                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                                         style = MaterialTheme.typography.labelMedium,
                                         fontWeight = FontWeight.SemiBold,
-                                        color = Color.White
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -264,7 +269,7 @@ fun PlayerDetailScreen(
                                 Text(
                                     text = teamName,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.White.copy(alpha = 0.9f),
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -272,7 +277,7 @@ fun PlayerDetailScreen(
                             Text(
                                 text = "🌍  ${playerInfo.nationality}",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.White.copy(alpha = 0.88f),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -289,7 +294,7 @@ fun PlayerDetailScreen(
                     if (selectedTab < tabPositions.size) {
                         TabRowDefaults.SecondaryIndicator(
                             modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                            color = positionColor
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -304,7 +309,7 @@ fun PlayerDetailScreen(
                                 fontWeight = if (selectedTab == i) FontWeight.Bold else FontWeight.Normal
                             )
                         },
-                        selectedContentColor = positionColor,
+                        selectedContentColor = MaterialTheme.colorScheme.primary,
                         unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }

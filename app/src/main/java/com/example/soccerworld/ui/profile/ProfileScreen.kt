@@ -1,5 +1,6 @@
 package com.example.soccerworld.ui.profile
 
+import android.content.res.Configuration
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,16 +17,15 @@ import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.ListAlt
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.*
 import com.example.soccerworld.ui.theme.ThemeConfig
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.Alignment
@@ -44,19 +44,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.soccerworld.R
 import com.example.soccerworld.ui.auth.AuthViewModel
-import com.example.soccerworld.ui.favorites.FavoritesViewModel
-import com.example.soccerworld.ui.onboarding.popularLeagues
 import com.example.soccerworld.ui.theme.AccentNeonOrange
-import com.example.soccerworld.ui.theme.BrandGreenDark
+import com.example.soccerworld.ui.theme.BrandGreenLight
 import com.example.soccerworld.ui.theme.BrandGreenMedium
 import com.example.soccerworld.ui.theme.DividerColor
-import com.example.soccerworld.ui.theme.LightBackground
-import com.example.soccerworld.ui.theme.SofascoreBlue
-import com.example.soccerworld.ui.theme.TextSecondary
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.util.CustomSharedPreferences
-import com.example.soccerworld.util.Injection
-import com.example.soccerworld.util.ViewModelFactory
 import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,7 +64,7 @@ fun ProfileScreen(
     val sharedPrefs = CustomSharedPreferences.invoke(context)
     val isPreview = LocalInspectionMode.current
 
-    var refreshTrigger by remember { mutableStateOf(0) }
+    var refreshTrigger by remember { mutableIntStateOf(0) }
     
     // Safely get Firebase user, avoiding crash in Previews
     val firebaseUser = remember(refreshTrigger) {
@@ -88,14 +81,49 @@ fun ProfileScreen(
     val displayName = firebaseUser?.displayName?.ifBlank { null }
         ?: firebaseUser?.email?.substringBefore("@")
         ?: stringResource(R.string.profile_guest_user)
-    val email = firebaseUser?.email ?: stringResource(R.string.profile_signin_sync)
 
     val currentLeague = sharedPrefs.getLeague()
-    val leagueId = currentLeague?.stageId ?: "PL"
     val currentLeagueName = currentLeague?.name ?: "Unknown League"
-    val currentLeagueLogo = popularLeagues.find { it.id == leagueId }?.logoUrl
-        ?: "https://crests.football-data.org/PL.png"
 
+    ProfileScreenContent(
+        isLoggedIn = isLoggedIn,
+        displayName = displayName,
+        currentLeagueName = currentLeagueName,
+        currentLanguage = sharedPrefs.getLanguage(),
+        currentTheme = ThemeConfig.appThemeState.value,
+        onChangeLeague = onChangeLeague,
+        onNavigateToLogin = onNavigateToLogin,
+        onNavigateToNotificationSettings = onNavigateToNotificationSettings,
+        onLogout = {
+            authViewModel.logout(context)
+            refreshTrigger++
+        },
+        onLanguageChange = { lang ->
+            sharedPrefs.saveLanguage(lang)
+            (context as? android.app.Activity)?.recreate()
+        },
+        onThemeChange = { theme ->
+            sharedPrefs.saveTheme(theme)
+            ThemeConfig.appThemeState.value = theme
+        }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProfileScreenContent(
+    isLoggedIn: Boolean,
+    displayName: String,
+    currentLeagueName: String,
+    currentLanguage: String,
+    currentTheme: String,
+    onChangeLeague: () -> Unit,
+    onNavigateToLogin: () -> Unit,
+    onNavigateToNotificationSettings: () -> Unit,
+    onLogout: () -> Unit,
+    onLanguageChange: (String) -> Unit,
+    onThemeChange: (String) -> Unit
+) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -103,41 +131,21 @@ fun ProfileScreen(
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        refreshTrigger++
-    }
-
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(BrandGreenMedium)
+                    .background(MaterialTheme.colorScheme.surface)
                     .statusBarsPadding()
                     .padding(bottom = 20.dp)
             ) {
-                // Top header icons
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = { showHelpDialog = true }) {
-                        Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = stringResource(R.string.profile_help), tint = Color.White)
-                    }
-                    IconButton(onClick = { showSettingsSheet = true }) {
-                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.profile_settings), tint = Color.White)
-                    }
-                }
-
                 // Profile Info Row
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
+                        .padding(start = 24.dp, top = 24.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Avatar Orange Initials Circle
@@ -164,14 +172,26 @@ fun ProfileScreen(
                             text = displayName,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = Color.White
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = if (isLoggedIn) stringResource(R.string.profile_member_since) else stringResource(R.string.profile_guest_account),
                             fontSize = 12.sp,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { showHelpDialog = true }) {
+                            Icon(Icons.AutoMirrored.Filled.HelpOutline, contentDescription = stringResource(R.string.profile_help), tint = MaterialTheme.colorScheme.onSurface)
+                        }
                     }
                 }
             }
@@ -183,30 +203,6 @@ fun ProfileScreen(
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            // Profile Tabs (Overview / Predictions)
-            TabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = BrandGreenMedium,
-                indicator = { tabPositions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = BrandGreenMedium
-                    )
-                }
-            ) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = { Text(stringResource(R.string.profile_tab_overview), fontWeight = FontWeight.Bold) }
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = { Text(stringResource(R.string.profile_tab_predictions), fontWeight = FontWeight.Bold) }
-                )
-            }
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -217,6 +213,18 @@ fun ProfileScreen(
                         isLoggedIn = isLoggedIn,
                         leagueName = currentLeagueName,
                         onChangeLeague = onChangeLeague,
+                        onChangeLanguage = {
+                            showSettingsSheet = false
+                            showLanguageDialog = true
+                        },
+                        onChangeTheme = {
+                            showSettingsSheet = false
+                            showThemeDialog = true
+                        },
+                        onLogout = {
+                            showSettingsSheet = false
+                            showLogoutDialog = true
+                        },
                         onNavigateToLogin = onNavigateToLogin,
                         onNavigateToNotificationSettings = onNavigateToNotificationSettings
                     )
@@ -235,7 +243,7 @@ fun ProfileScreen(
             text = { Text(stringResource(R.string.profile_support_help_desc)) },
             confirmButton = {
                 TextButton(onClick = { showHelpDialog = false }) {
-                    Text(stringResource(R.string.profile_close), color = BrandGreenMedium)
+                    Text(stringResource(R.string.profile_close), color = MaterialTheme.colorScheme.primary)
                 }
             }
         )
@@ -272,22 +280,19 @@ fun ProfileScreen(
             title = { Text(stringResource(R.string.settings_select_language), fontWeight = FontWeight.Bold) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val currentLang = sharedPrefs.getLanguage()
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                sharedPrefs.saveLanguage("en")
+                                onLanguageChange("en")
                                 showLanguageDialog = false
-                                (context as? android.app.Activity)?.recreate()
                             }
                             .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        RadioButton(selected = currentLang == "en", onClick = {
-                            sharedPrefs.saveLanguage("en")
+                        RadioButton(selected = currentLanguage == "en", onClick = {
+                            onLanguageChange("en")
                             showLanguageDialog = false
-                            (context as? android.app.Activity)?.recreate()
                         })
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("English")
@@ -296,17 +301,15 @@ fun ProfileScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                sharedPrefs.saveLanguage("vi")
+                                onLanguageChange("vi")
                                 showLanguageDialog = false
-                                (context as? android.app.Activity)?.recreate()
                             }
                             .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        RadioButton(selected = currentLang == "vi", onClick = {
-                            sharedPrefs.saveLanguage("vi")
+                        RadioButton(selected = currentLanguage == "vi", onClick = {
+                            onLanguageChange("vi")
                             showLanguageDialog = false
-                            (context as? android.app.Activity)?.recreate()
                         })
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Tiếng Việt")
@@ -315,7 +318,7 @@ fun ProfileScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showLanguageDialog = false }) {
-                    Text(stringResource(R.string.profile_close), color = BrandGreenMedium)
+                    Text(stringResource(R.string.profile_close), color = MaterialTheme.colorScheme.primary)
                 }
             }
         )
@@ -323,7 +326,6 @@ fun ProfileScreen(
 
     // Theme Choice Dialog
     if (showThemeDialog) {
-        val currentTheme = ThemeConfig.appThemeState.value
         val options = listOf(
             "system" to stringResource(R.string.theme_system),
             "light" to stringResource(R.string.theme_light),
@@ -339,8 +341,7 @@ fun ProfileScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    sharedPrefs.saveTheme(value)
-                                    ThemeConfig.appThemeState.value = value
+                                    onThemeChange(value)
                                     showThemeDialog = false
                                 }
                                 .padding(vertical = 12.dp),
@@ -349,11 +350,10 @@ fun ProfileScreen(
                             RadioButton(
                                 selected = currentTheme == value,
                                 onClick = {
-                                    sharedPrefs.saveTheme(value)
-                                    ThemeConfig.appThemeState.value = value
+                                    onThemeChange(value)
                                     showThemeDialog = false
                                 },
-                                colors = RadioButtonDefaults.colors(selectedColor = BrandGreenMedium)
+                                colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(text = label)
@@ -363,7 +363,7 @@ fun ProfileScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showThemeDialog = false }) {
-                    Text(stringResource(R.string.profile_close), color = BrandGreenMedium)
+                    Text(stringResource(R.string.profile_close), color = MaterialTheme.colorScheme.primary)
                 }
             }
         )
@@ -378,8 +378,7 @@ fun ProfileScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        authViewModel.logout(context)
-                        refreshTrigger++
+                        onLogout()
                         showLogoutDialog = false
                     }
                 ) {
@@ -401,9 +400,16 @@ private fun OverviewTab(
     isLoggedIn: Boolean,
     leagueName: String,
     onChangeLeague: () -> Unit,
+    onChangeLanguage: () -> Unit,
+    onChangeTheme: () -> Unit,
+    onLogout: () -> Unit,
     onNavigateToLogin: () -> Unit,
     onNavigateToNotificationSettings: () -> Unit
 ) {
+    val context = LocalContext.current
+    val currentLang = remember { CustomSharedPreferences.invoke(context).getLanguage() }
+    val currentTheme = ThemeConfig.appThemeState.value
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -415,14 +421,14 @@ private fun OverviewTab(
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = BorderStroke(1.dp, DividerColor)
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             Column {
                 Text(
                     text = stringResource(R.string.profile_quick_links),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = BrandGreenMedium,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                 )
 
@@ -430,17 +436,58 @@ private fun OverviewTab(
                     icon = Icons.Default.SportsSoccer,
                     title = stringResource(R.string.profile_change_league),
                     subtitle = stringResource(R.string.profile_active_league, leagueName),
-                    iconColor = BrandGreenMedium,
+                    iconColor = BrandGreenLight,
                     onClick = onChangeLeague
                 )
+            }
+        }
 
-                HorizontalDivider(color = DividerColor, modifier = Modifier.padding(horizontal = 16.dp))
+        // Settings Card
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        ) {
+            Column {
+                Text(
+                    text = stringResource(R.string.profile_settings),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                )
+
+                // Language Selector Row
+                ProfileMenuRow(
+                    icon = Icons.Default.Public,
+                    title = stringResource(R.string.settings_app_language),
+                    subtitle = if (currentLang == "vi") "Tiếng Việt" else "English",
+                    iconColor = Color(0xFF673AB7),
+                    onClick = onChangeLanguage
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(horizontal = 16.dp))
+
+                // Theme Selector Row
+                ProfileMenuRow(
+                    icon = Icons.Default.Palette,
+                    title = stringResource(R.string.settings_app_theme),
+                    subtitle = when (currentTheme) {
+                        "light" -> stringResource(R.string.theme_light)
+                        "dark" -> stringResource(R.string.theme_dark)
+                        else -> stringResource(R.string.theme_system)
+                    },
+                    iconColor = Color(0xFFE91E63),
+                    onClick = onChangeTheme
+                )
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(horizontal = 16.dp))
 
                 ProfileMenuRow(
                     icon = Icons.Default.Notifications,
                     title = stringResource(R.string.profile_notification_settings),
                     subtitle = stringResource(R.string.profile_notification_desc),
-                    iconColor = AccentNeonOrange,
+                    iconColor = Color(0xFFFB8C00),
                     onClick = onNavigateToNotificationSettings
                 )
             }
@@ -450,14 +497,14 @@ private fun OverviewTab(
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = BorderStroke(1.dp, DividerColor)
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
         ) {
             Column {
                 Text(
                     text = stringResource(R.string.profile_support),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = BrandGreenMedium,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                 )
 
@@ -468,7 +515,7 @@ private fun OverviewTab(
                     iconColor = Color(0xFF2196F3)
                 ) {}
 
-                HorizontalDivider(color = DividerColor, modifier = Modifier.padding(horizontal = 16.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(horizontal = 16.dp))
 
                 ProfileMenuRow(
                     icon = Icons.Default.Star,
@@ -479,57 +526,46 @@ private fun OverviewTab(
             }
         }
 
-        // Fantasy League Banner Promo
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(130.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-        ) {
-            Box(
+        // Login/Logout Option
+        if (isLoggedIn) {
+            Button(
+                onClick = onLogout,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(BrandGreenDark, AccentNeonOrange)
-                        )
-                    )
-                    .padding(16.dp)
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(0.65f),
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "SOCCERWORLD FANTASY",
-                        color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 15.sp
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Build your squad, compete with friends, and win prizes!",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 10.sp,
-                        lineHeight = 13.sp
-                    )
-                }
-
-                Button(
-                    onClick = {},
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = BrandGreenMedium),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(stringResource(R.string.profile_play_now), fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                }
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    stringResource(R.string.profile_signout_title),
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
+        } else {
+            Button(
+                onClick = onNavigateToLogin,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                contentPadding = PaddingValues(0.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = Color.White)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    stringResource(R.string.profile_signin_google),
+                    color = Color.White,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 14.sp,
+                    letterSpacing = 0.5.sp
+                )
             }
         }
-
         // Footer version details
         Spacer(modifier = Modifier.height(8.dp))
         Text(
@@ -571,7 +607,7 @@ private fun PredictionsTab() {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, DividerColor),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Row(
@@ -584,10 +620,10 @@ private fun PredictionsTab() {
                         modifier = Modifier
                             .size(36.dp)
                             .clip(CircleShape)
-                            .background(BrandGreenMedium.copy(alpha = 0.1f)),
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ListAlt, contentDescription = null, tint = BrandGreenMedium, modifier = Modifier.size(18.dp))
+                        Icon(Icons.AutoMirrored.Filled.ListAlt, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                     }
 
                     Spacer(modifier = Modifier.width(12.dp))
@@ -639,131 +675,176 @@ private fun SettingsBottomSheet(
 ) {
     val context = LocalContext.current
     val currentLang = remember { CustomSharedPreferences.invoke(context).getLanguage() }
+    val currentTheme = ThemeConfig.appThemeState.value
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = stringResource(R.string.profile_settings),
-                fontWeight = FontWeight.Bold,
-                fontSize = 16.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+        SettingsBottomSheetContent(
+            isLoggedIn = isLoggedIn,
+            currentLang = currentLang,
+            currentTheme = currentTheme,
+            onNavigateToLogin = onNavigateToLogin,
+            onChangeLanguage = onChangeLanguage,
+            onChangeTheme = onChangeTheme,
+            onLogout = onLogout
+        )
+    }
+}
 
-            // Language Selector Row
-            ProfileMenuRow(
-                icon = Icons.Default.Public,
-                title = stringResource(R.string.settings_app_language),
-                subtitle = if (currentLang == "vi") "Tiếng Việt" else "English",
-                iconColor = Color(0xFF673AB7),
-                onClick = onChangeLanguage
-            )
+@Composable
+private fun SettingsBottomSheetContent(
+    isLoggedIn: Boolean,
+    currentLang: String,
+    currentTheme: String,
+    onNavigateToLogin: () -> Unit,
+    onChangeLanguage: () -> Unit,
+    onChangeTheme: () -> Unit,
+    onLogout: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.profile_settings),
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
 
-            HorizontalDivider(color = DividerColor)
+        // Language Selector Row
+        ProfileMenuRow(
+            icon = Icons.Default.Public,
+            title = stringResource(R.string.settings_app_language),
+            subtitle = if (currentLang == "vi") "Tiếng Việt" else "English",
+            iconColor = Color(0xFF673AB7),
+            onClick = onChangeLanguage
+        )
 
-            // Theme Selector Row
-            ProfileMenuRow(
-                icon = Icons.Default.Palette,
-                title = stringResource(R.string.settings_app_theme),
-                subtitle = when (ThemeConfig.appThemeState.value) {
-                    "light" -> stringResource(R.string.theme_light)
-                    "dark" -> stringResource(R.string.theme_dark)
-                    else -> stringResource(R.string.theme_system)
-                },
-                iconColor = Color(0xFFE91E63),
-                onClick = onChangeTheme
-            )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            HorizontalDivider(color = DividerColor)
+        // Theme Selector Row
+        ProfileMenuRow(
+            icon = Icons.Default.Palette,
+            title = stringResource(R.string.settings_app_theme),
+            subtitle = when (currentTheme) {
+                "light" -> stringResource(R.string.theme_light)
+                "dark" -> stringResource(R.string.theme_dark)
+                else -> stringResource(R.string.theme_system)
+            },
+            iconColor = Color(0xFFE91E63),
+            onClick = onChangeTheme
+        )
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
 
-            if (isLoggedIn) {
-                Row(
+        if (isLoggedIn) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onLogout() }
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onLogout() }
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Color.Red.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color.Red.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.Red, modifier = Modifier.size(18.dp))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(stringResource(R.string.profile_signout_title), fontWeight = FontWeight.Bold, color = Color.Red, fontSize = 14.sp)
+                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.Red, modifier = Modifier.size(18.dp))
                 }
-            } else {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigateToLogin() }
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(BrandGreenMedium.copy(alpha = 0.1f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = BrandGreenMedium, modifier = Modifier.size(18.dp))
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(stringResource(R.string.profile_signin_google), fontWeight = FontWeight.Bold, color = BrandGreenMedium, fontSize = 14.sp)
-                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(stringResource(R.string.profile_signout_title), fontWeight = FontWeight.Bold, color = Color.Red, fontSize = 14.sp)
             }
-            Spacer(modifier = Modifier.height(16.dp))
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToLogin() }
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(stringResource(R.string.profile_signin_google), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
+            }
         }
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }
 
 // ── Reusable Menu Row Component ──────────────────────────────────────────────
 @Composable
 private fun ProfileMenuRow(
-    icon: ImageVector,
+    icon: ImageVector?,
     title: String,
-    subtitle: String,
+    subtitle: String?,
     iconColor: Color,
+    contentColor: Color? = null,
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
     onClick: () -> Unit
 ) {
+    val isCentered = horizontalArrangement == Arrangement.Center
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = horizontalArrangement
     ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(iconColor.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center
+        if (icon != null) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(iconColor.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+        }
+
+        Column(
+            modifier = if (isCentered) Modifier else Modifier.weight(1f),
+            horizontalAlignment = if (isCentered) Alignment.CenterHorizontally else Alignment.Start
         ) {
-            Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(18.dp))
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
             Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            Text(subtitle, fontSize = 11.sp, color = Color.Gray)
+            if (subtitle != null) {
+                Text(subtitle, fontSize = 11.sp, color = Color.Gray)
+            }
         }
-        Icon(
-            Icons.AutoMirrored.Filled.ArrowForwardIos,
-            contentDescription = null,
-            tint = Color.LightGray,
-            modifier = Modifier.size(12.dp)
-        )
+
+        if (subtitle != null && !isCentered) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowForwardIos,
+                contentDescription = null,
+                tint = Color.LightGray,
+                modifier = Modifier.size(12.dp)
+            )
+        }
     }
 }
 
@@ -772,5 +853,61 @@ private fun ProfileMenuRow(
 fun ProfileScreenPreview() {
     SoccerWorldTheme {
         ProfileScreen()
+    }
+}
+
+@Preview(showBackground = true, uiMode = Configuration.UI_MODE_NIGHT_YES, name = "Profile Screen - Dark Mode")
+@Composable
+fun ProfileScreenDarkModePreview() {
+    SoccerWorldTheme(darkTheme = true) {
+        ProfileScreenContent(
+            isLoggedIn = true,
+            displayName = "John Doe",
+            currentLeagueName = "Premier League",
+            currentLanguage = "en",
+            currentTheme = "dark",
+            onChangeLeague = {},
+            onNavigateToLogin = {},
+            onNavigateToNotificationSettings = {},
+            onLogout = {},
+            onLanguageChange = {},
+            onThemeChange = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, name = "Settings Sheet - Logged In")
+@Composable
+private fun SettingsBottomSheetContentLoggedInPreview() {
+    SoccerWorldTheme {
+        Surface {
+            SettingsBottomSheetContent(
+                isLoggedIn = true,
+                currentLang = "en",
+                currentTheme = "system",
+                onNavigateToLogin = {},
+                onChangeLanguage = {},
+                onChangeTheme = {},
+                onLogout = {}
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Settings Sheet - Guest")
+@Composable
+private fun SettingsBottomSheetContentGuestPreview() {
+    SoccerWorldTheme {
+        Surface {
+            SettingsBottomSheetContent(
+                isLoggedIn = false,
+                currentLang = "en",
+                currentTheme = "system",
+                onNavigateToLogin = {},
+                onChangeLanguage = {},
+                onChangeTheme = {},
+                onLogout = {}
+            )
+        }
     }
 }

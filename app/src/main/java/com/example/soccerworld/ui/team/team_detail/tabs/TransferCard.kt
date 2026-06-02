@@ -129,7 +129,7 @@ fun TransferCard(
                 Text(
                     text = transfer.transferTypeStr ?: "Transfer",
                     fontSize = 14.sp,
-                    color = BrandGreenMedium // Transfer type accent
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
         }

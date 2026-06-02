@@ -175,7 +175,7 @@ fun TopScorerRow(rank: Int, item: TopScorerEntity, playerImageUrl: String?) {
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = item.teamName,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium,
                     fontSize = 12.sp
                 )

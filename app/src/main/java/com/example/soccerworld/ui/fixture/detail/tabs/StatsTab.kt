@@ -168,7 +168,7 @@ private fun StageToggleBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
-            .background(DividerColor, RoundedCornerShape(20.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(20.dp))
             .padding(4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -186,14 +186,14 @@ private fun StageToggleBar(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(if (isSelected) BrandGreenDark else Color.Transparent)
+                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
                     .clickable { onSelect(index) }
                     .padding(vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = tabName,
-                    color = if (isSelected) Color.White else TextSecondary,
+                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )
@@ -264,7 +264,7 @@ private fun StatProgressRow(stat: EventStatsItem) {
             Text(
                 text = stat.incidentName ?: "",
                 fontSize = 13.sp,
-                color = TextSecondary, // Muted dark gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant, // Muted dark gray
                 textAlign = TextAlign.Center,
                 modifier = Modifier.weight(if (isPercentage) 1.5f else 2f)
             )

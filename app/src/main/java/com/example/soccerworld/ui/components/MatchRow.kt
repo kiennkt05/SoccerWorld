@@ -119,8 +119,7 @@ fun MatchRow(
                 fontWeight = FontWeight.Bold,
                 color = when (activeFilter) {
                     "Live" -> Color(0xFFE53935)
-                    "Finished" -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                    else -> MaterialTheme.colorScheme.primary
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 }
             )
         }

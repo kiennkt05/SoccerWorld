@@ -13,12 +13,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.NotificationsOff
@@ -33,6 +34,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -43,6 +45,7 @@ import com.example.soccerworld.R
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.ui.theme.AccentEmerald
 import com.example.soccerworld.ui.theme.AccentNeonOrange
+import com.example.soccerworld.ui.theme.BrandGreenLight
 import com.example.soccerworld.ui.theme.BrandGreenMedium
 import com.example.soccerworld.ui.theme.BrandNavy
 import com.example.soccerworld.ui.theme.BrandNavyMid
@@ -56,11 +59,14 @@ fun NotificationSettingsScreen(
     onBack: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val isPreview = LocalInspectionMode.current
     val prefs   = remember { CustomSharedPreferences.invoke(context) }
 
     // Notification permission state
     var notifPermissionGranted by remember {
-        mutableStateOf(NotificationHelper.areNotificationsEnabled(context))
+        mutableStateOf(
+            if (isPreview) true else NotificationHelper.areNotificationsEnabled(context)
+        )
     }
 
     // Toggle states (đọc từ SharedPreferences)
@@ -86,12 +92,26 @@ fun NotificationSettingsScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 16.dp, end = 8.dp)
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .clickable { onBack() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowLeft, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -108,9 +128,7 @@ fun NotificationSettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(160.dp)
-                    .background(
-                        Brush.verticalGradient(listOf(BrandNavy, BrandNavyMid))
-                    ),
+                    .background(MaterialTheme.colorScheme.surface),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -133,12 +151,12 @@ fun NotificationSettingsScreen(
                         stringResource(R.string.notif_stay_up_to_date),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         stringResource(R.string.notif_manage_alerts),
                         fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -217,7 +235,7 @@ fun NotificationSettingsScreen(
                 // 1. Match Reminder
                 NotificationToggleRow(
                     icon        = Icons.Default.Schedule,
-                    iconColor   = BrandGreenMedium,
+                    iconColor   = BrandGreenLight,
                     title       = stringResource(R.string.notif_match_reminder),
                     description = stringResource(R.string.notif_match_reminder_desc),
                     checked     = matchReminderEnabled,
@@ -225,8 +243,10 @@ fun NotificationSettingsScreen(
                     onChecked   = { on ->
                         matchReminderEnabled = on
                         prefs.setMatchReminderEnabled(on)
-                        if (on) FcmTopicManager.subscribeToTopic(FcmTopicManager.TOPIC_MATCH_REMINDER)
-                        else    FcmTopicManager.unsubscribeFromTopic(FcmTopicManager.TOPIC_MATCH_REMINDER)
+                        if (!isPreview) {
+                            if (on) FcmTopicManager.subscribeToTopic(FcmTopicManager.TOPIC_MATCH_REMINDER)
+                            else    FcmTopicManager.unsubscribeFromTopic(FcmTopicManager.TOPIC_MATCH_REMINDER)
+                        }
                     },
                     showDivider = true
                 )
@@ -242,8 +262,10 @@ fun NotificationSettingsScreen(
                     onChecked   = { on ->
                         liveScoreEnabled = on
                         prefs.setLiveScoreEnabled(on)
-                        if (on) FcmTopicManager.subscribeToTopic(FcmTopicManager.TOPIC_LIVE_SCORE)
-                        else    FcmTopicManager.unsubscribeFromTopic(FcmTopicManager.TOPIC_LIVE_SCORE)
+                        if (!isPreview) {
+                            if (on) FcmTopicManager.subscribeToTopic(FcmTopicManager.TOPIC_LIVE_SCORE)
+                            else    FcmTopicManager.unsubscribeFromTopic(FcmTopicManager.TOPIC_LIVE_SCORE)
+                        }
                     },
                     showDivider = true
                 )
@@ -259,8 +281,10 @@ fun NotificationSettingsScreen(
                     onChecked   = { on ->
                         matchResultEnabled = on
                         prefs.setMatchResultEnabled(on)
-                        if (on) FcmTopicManager.subscribeToTopic(FcmTopicManager.TOPIC_MATCH_RESULT)
-                        else    FcmTopicManager.unsubscribeFromTopic(FcmTopicManager.TOPIC_MATCH_RESULT)
+                        if (!isPreview) {
+                            if (on) FcmTopicManager.subscribeToTopic(FcmTopicManager.TOPIC_MATCH_RESULT)
+                            else    FcmTopicManager.unsubscribeFromTopic(FcmTopicManager.TOPIC_MATCH_RESULT)
+                        }
                     },
                     showDivider = true
                 )

@@ -242,14 +242,14 @@ private fun H2HMatchRow(
                 text = sofaDate,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = "FT",
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextSecondary.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
             )
         }
 
@@ -297,7 +297,7 @@ private fun H2HMatchRow(
                     text = cleanHomeName,
                     fontSize = 13.sp,
                     fontWeight = if (isHomeCurrent) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isHomeCurrent) MaterialTheme.colorScheme.onSurface else TextSecondary,
+                    color = if (isHomeCurrent) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -333,7 +333,7 @@ private fun H2HMatchRow(
                     text = cleanAwayName,
                     fontSize = 13.sp,
                     fontWeight = if (isAwayCurrent) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isAwayCurrent) MaterialTheme.colorScheme.onSurface else TextSecondary,
+                    color = if (isAwayCurrent) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
