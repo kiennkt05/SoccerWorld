@@ -286,7 +286,7 @@ private fun EventsTabContent(
         LazyColumn(
             modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             items(
                 items = state.matches,
@@ -313,12 +313,11 @@ private fun TeamsTabContent(
     onToggleFavorite: (FavoriteTeamEntity) -> Unit
 ) {
     val trendingTeams = listOf(
-        Triple("66", "Manchester United", "https://crests.football-data.org/66.png"),
-        Triple("86", "Real Madrid", "https://crests.football-data.org/86.png"),
-        Triple("81", "FC Barcelona", "https://crests.football-data.org/81.png"),
-        Triple("64", "Liverpool", "https://crests.football-data.org/64.png"),
-        Triple("57", "Arsenal", "https://crests.football-data.org/57.png"),
-        Triple("vietnam_team", "Vietnam", "https://images.flashscore.info/image/r_4/vietnam-4V0l10a5.png")
+        Triple("ppjDR086", "Manchester United", "https://crests.football-data.org/66.png"),
+        Triple("W8mj7MDD", "Real Madrid", "https://crests.football-data.org/86.png"),
+        Triple("SKbpVP5K", "FC Barcelona", "https://crests.football-data.org/81.png"),
+        Triple("CjhkPw0k", "Paris Saint-Germain", "https://crests.football-data.org/524.png"),
+        Triple("hA1Zm19f", "Arsenal", "https://crests.football-data.org/57.png"),
     )
 
     LazyColumn(
