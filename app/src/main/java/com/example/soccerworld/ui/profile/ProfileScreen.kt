@@ -96,7 +96,7 @@ fun ProfileScreen(
         onNavigateToNotificationSettings = onNavigateToNotificationSettings,
         onLogout = {
             authViewModel.logout(context)
-            refreshTrigger++
+            onNavigateToLogin()
         },
         onLanguageChange = { lang ->
             sharedPrefs.saveLanguage(lang)

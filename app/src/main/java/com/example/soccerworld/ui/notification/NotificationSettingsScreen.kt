@@ -293,8 +293,8 @@ fun NotificationSettingsScreen(
                 NotificationToggleRow(
                     icon        = Icons.Default.Info,
                     iconColor   = MaterialTheme.colorScheme.primary,
-                    title       = "Bình luận trận đấu yêu thích",
-                    description = "Thông báo khi có người bình luận ở trận đấu yêu thích của bạn",
+                    title       = stringResource(R.string.notif_match_comment),
+                    description = stringResource(R.string.notif_match_comment_desc),
                     checked     = matchCommentEnabled,
                     enabled     = notifPermissionGranted,
                     onChecked   = { on ->

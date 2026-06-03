@@ -128,6 +128,8 @@
     <string name="notif_match_result">Kết quả trận đấu</string>
     <string name="notif_match_result_desc">Nhận kết quả cuối trận ngay sau khi trận kết thúc</string>
     <string name="notif_bg_note">Thông báo hoạt động ở nền. Tỉ số trực tiếp được cập nhật mỗi 30 giây khi trận đấu đang diễn ra. Nhắc nhở được kiểm tra mỗi 15 phút.</string>
+    <string name="notif_match_comment">Bình luận trận đấu yêu thích</string>
+    <string name="notif_match_comment_desc">Thông báo khi có người bình luận ở trận đấu yêu thích của bạn</string>
 
     <!-- Matches Screen -->
     <string name="matches_tab_standings">Bảng xếp hạng</string>
