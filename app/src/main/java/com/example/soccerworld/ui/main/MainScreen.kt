@@ -164,7 +164,9 @@ fun MainScreenContent(
                             }
                         },
                         onNavigateToLogin = {
-                            rootNavController.navigate(Screen.Login.route)
+                            rootNavController.navigate(Screen.Login.route) {
+                                popUpTo(rootNavController.graph.id) { inclusive = true }
+                            }
                         },
                         onNavigateToNotificationSettings = {
                             rootNavController.navigate(Screen.NotificationSettings.route)

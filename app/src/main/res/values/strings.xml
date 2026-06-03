@@ -128,6 +128,8 @@
     <string name="notif_match_result">Match Result</string>
     <string name="notif_match_result_desc">Get end-of-match results immediately after the match finishes</string>
     <string name="notif_bg_note">Notifications run in the background. Live scores are updated every 30 seconds during an ongoing match. Match Reminders are checked every 15 minutes.</string>
+    <string name="notif_match_comment">Favorite Match Comments</string>
+    <string name="notif_match_comment_desc">Notify when there is a new comment in the favorite match</string>
 
     <!-- Matches Screen -->
     <string name="matches_tab_standings">Standings</string>

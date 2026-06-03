@@ -31,7 +31,10 @@ fun AppNavigation() {
     val navController = rememberNavController()
     val authViewModel: AuthViewModel = viewModel()
 
-    val startDestination = if (sharedPrefs.hasSelectedLeague()) {
+    // Kiểm tra trạng thái đăng nhập trước, sau đó mới kiểm tra league
+    val startDestination = if (!authViewModel.isLoggedIn) {
+        Screen.Login.route
+    } else if (sharedPrefs.hasSelectedLeague()) {
         Screen.Main.route
     } else {
         Screen.LeagueSelection.route
@@ -51,7 +54,9 @@ fun AppNavigation() {
             LoginScreen(
                 authViewModel = authViewModel,
                 onLoginSuccess = {
-                    navController.popBackStack()
+                    navController.navigate(Screen.Main.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
                 }
             )
         }
