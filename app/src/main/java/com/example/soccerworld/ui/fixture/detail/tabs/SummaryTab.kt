@@ -179,13 +179,6 @@ private fun EventRow(event: MatchEvent) {
         else "$m'"
     }
 
-    // Extract running score if it is a goal
-    val isGoal = event.type.uppercase().contains("GOAL") && !event.type.uppercase().contains("MISSED")
-    val goalParts = if (isGoal) event.description.split(" | ") else emptyList()
-    val homeScore = goalParts.getOrNull(2)?.trim().orEmpty()
-    val awayScore = goalParts.getOrNull(3)?.trim().orEmpty()
-    val hasScores = homeScore.isNotBlank() && awayScore.isNotBlank()
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -248,6 +241,22 @@ private fun EventRow(event: MatchEvent) {
 private fun EventIcon(type: String) {
     val upperType = type.uppercase()
     when {
+        upperType.contains("PENALTY_SCORED") || (upperType.contains("PENALTY") && !upperType.contains("MISSED")) -> {
+            Icon(
+                painter = painterResource(id = R.drawable.penalty),
+                contentDescription = "Penalty Goal",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(14.dp)
+            )
+        }
+        upperType.contains("PENALTY_MISSED") -> {
+            Icon(
+                painter = painterResource(id = R.drawable.penalty),
+                contentDescription = "Penalty Missed",
+                tint = Color.Red,
+                modifier = Modifier.size(14.dp)
+            )
+        }
         upperType.contains("GOAL") -> {
             Text(text = "⚽", fontSize = 13.sp)
         }
@@ -300,7 +309,7 @@ private fun EventIcon(type: String) {
 private fun EventDetails(event: MatchEvent, isHome: Boolean) {
     val upperType = event.type.uppercase()
     when {
-        upperType.contains("GOAL") -> {
+        upperType.contains("GOAL") || upperType.contains("PENALTY") -> {
             val parts = event.description.split(" |")
             val scorer = parts.getOrNull(0)?.trim().orEmpty()
             val assist = parts.getOrNull(1)?.trim().orEmpty()

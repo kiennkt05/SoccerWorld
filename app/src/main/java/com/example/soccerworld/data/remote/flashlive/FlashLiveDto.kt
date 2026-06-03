@@ -68,12 +68,14 @@ data class FlashLiveEvent(
     @SerializedName("HOME_IMAGE_PATH") val homeImagePath: String? = null,
     @SerializedName("HOME_IMAGES") val homeImages: List<String>? = null,
     @SerializedName("HOME_SCORE_CURRENT") val homeScore: String? = null,
+    @SerializedName("HOME_SCORE_FULL") val homeScoreFull: String? = null,
     @SerializedName("AWAY_ID") val awayId: String? = null,
     @SerializedName("AWAY_NAME") val awayName: String? = null,
     @SerializedName("SHORTNAME_AWAY") val shortNameAway: String? = null,
     @SerializedName("AWAY_IMAGE_PATH") val awayImagePath: String? = null,
     @SerializedName("AWAY_IMAGES") val awayImages: List<String>? = null,
     @SerializedName("AWAY_SCORE_CURRENT") val awayScore: String? = null,
+    @SerializedName("AWAY_SCORE_FULL") val awayScoreFull: String? = null,
     @SerializedName("STAGE_TYPE") val stageType: String? = null,
     @SerializedName("ROUND") val round: String? = null
 )

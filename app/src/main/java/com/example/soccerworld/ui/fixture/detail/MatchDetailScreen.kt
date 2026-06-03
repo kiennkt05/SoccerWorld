@@ -95,7 +95,8 @@ fun MatchDetailScreen(fixtureId: String, onBack: () -> Unit, onNavigateToLogin: 
         selectedTabIndex = selectedTabIndex,
         onTabSelected = { matchDetailViewModel.selectTab(it) },
         onBack = onBack,
-        onNavigateToLogin = onNavigateToLogin
+        onNavigateToLogin = onNavigateToLogin,
+        onRefresh = { matchDetailViewModel.refresh(fixtureId) }
     )
 }
 
@@ -107,7 +108,8 @@ fun MatchDetailContent(
     selectedTabIndex: Int,
     onTabSelected: (Int) -> Unit,
     onBack: () -> Unit,
-    onNavigateToLogin: () -> Unit = {}
+    onNavigateToLogin: () -> Unit = {},
+    onRefresh: () -> Unit = {}
 ) {
     val primary = MaterialTheme.colorScheme.primary
     val primaryContainer = MaterialTheme.colorScheme.primaryContainer
@@ -144,10 +146,25 @@ fun MatchDetailContent(
         }
     ) { paddingValues ->
         val tabs = listOf("Details", "Lineups", "Statistics", "News", "Comments", "Matches")
+        var isRefreshing by remember { mutableStateOf(false) }
 
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
+        LaunchedEffect(state.isLoading) {
+            if (!state.isLoading) {
+                isRefreshing = false
+            }
+        }
+
+        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                isRefreshing = true
+                onRefresh()
+            },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
 
             // ── Match Header ─────────────────────────────────────────
             if (state.isLoading) {
@@ -234,6 +251,7 @@ fun MatchDetailContent(
         }
     }
 }
+}
 
 @Composable
 fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
@@ -247,7 +265,10 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
     // Extract all goal events and group them by team
     val goalEvents = enrichment?.events?.filter { event ->
         val typeUpper = event.type.uppercase()
-        typeUpper.contains("GOAL") && !typeUpper.contains("MISSED")
+        (typeUpper.contains("GOAL") || typeUpper.contains("PENALTY")) && 
+        !typeUpper.contains("MISSED") && 
+        !typeUpper.contains("KICK") &&
+        !typeUpper.contains("SHOOTOUT")
     }.orEmpty()
 
     val homeGoalEvents = goalEvents.filter { event ->
@@ -490,7 +511,7 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
                             .joinToString(separator = ", ") { it.trim().removeSuffix("'") + "'" }
 
                         Text(
-                            text = "$name $formattedMins",
+                            text = "$formattedMins $name",
                             style = compactTextStyle.copy(
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                 fontWeight = FontWeight.Medium,
@@ -552,7 +573,8 @@ fun MatchDetailScreenPreview() {
             state = MatchDetailUiState(isLoading = false, data = mockData),
             selectedTabIndex = 0,
             onTabSelected = {},
-            onBack = {}
+            onBack = {},
+            onRefresh = {}
         )
     }
 }

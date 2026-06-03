@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,7 +58,7 @@ fun FixturesScreen(key: Int = 0, onMatchClick: (String) -> Unit = {}) {
 
     LaunchedEffect(key) {
         if (key > 0) {
-            viewModel.getAllFixtureOfLeague(forceRefresh = true)
+            viewModel.refreshIfNeeded(key)
         }
     }
 
@@ -66,11 +68,12 @@ fun FixturesScreen(key: Int = 0, onMatchClick: (String) -> Unit = {}) {
         onToggleTournamentExpanded = { viewModel.toggleTournamentExpanded(it) },
         onToggleFavorite = { viewModel.toggleFavorite(it) },
         onLoadMoreMatches = { viewModel.loadMoreMatches() },
+        onRefresh = { viewModel.getAllFixtureOfLeague(forceRefresh = true) },
         onMatchClick = onMatchClick
     )
 }
 
-@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun FixturesContent(
     state: FixtureUiState,
@@ -78,13 +81,10 @@ fun FixturesContent(
     onToggleTournamentExpanded: (TournamentInfo) -> Unit,
     onToggleFavorite: (Matche) -> Unit,
     onLoadMoreMatches: () -> Unit,
+    onRefresh: () -> Unit,
     onMatchClick: (String) -> Unit
 ) {
-    if (state.isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = SofascoreBlue)
-        }
-    } else if (state.error != null) {
+    if (state.error != null && state.tournamentGroups.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(text = state.error, color = MaterialTheme.colorScheme.error)
         }
@@ -134,9 +134,14 @@ fun FixturesContent(
                 }
         }
 
-        Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-            // Sofascore-style tab bar — Clean white/surface background
-            ScrollableTabRow(
+        PullToRefreshBox(
+            isRefreshing = state.isLoading,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                // Sofascore-style tab bar — Clean white/surface background
+                ScrollableTabRow(
                 selectedTabIndex = selectedTabIndex,
                 modifier = Modifier.fillMaxWidth(),
                 edgePadding = 8.dp,
@@ -216,10 +221,11 @@ fun FixturesContent(
                         }
                     }
                 }
-            }
-        }
-    }
-}
+            } // closes LazyColumn
+        } // closes Column
+        } // closes PullToRefreshBox
+    } // closes else
+} // closes FixturesContent
 
 @Composable
 fun FixtureCard(
@@ -289,6 +295,7 @@ fun FixturesScreenPreview() {
             onToggleTournamentExpanded = {},
             onToggleFavorite = {},
             onLoadMoreMatches = {},
+            onRefresh = {},
             onMatchClick = {}
         )
     }

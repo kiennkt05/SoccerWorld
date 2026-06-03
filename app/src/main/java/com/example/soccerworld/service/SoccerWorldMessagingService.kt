@@ -128,6 +128,10 @@ class SoccerWorldMessagingService : FirebaseMessagingService() {
     }
 
     private fun handleNewComment(data: Map<String, String>) {
+        val commenterId = data["commenterId"] ?: ""
+        val currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        if (currentUserId != null && commenterId == currentUserId) return
+
         NotificationHelper.sendCommentNotification(
             context       = applicationContext,
             matchId       = data["matchId"] ?: return,

@@ -92,7 +92,8 @@ class CommentViewModel : ViewModel() {
                         homeTeam = homeTeamName,
                         awayTeam = awayTeamName,
                         commenterName = displayName,
-                        commentText = text.trim()
+                        commentText = text.trim(),
+                        commenterId = user.uid
                     )
                 } catch (e: Exception) {
                     android.util.Log.e("CommentViewModel", "Failed to send FCM comment notification", e)

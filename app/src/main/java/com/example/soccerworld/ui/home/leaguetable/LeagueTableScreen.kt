@@ -58,6 +58,9 @@ import com.example.soccerworld.util.ViewModelFactory
 // ==========================================
 // 1. HÀM STATEFUL (Dùng để chạy thật trên máy)
 // ==========================================
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.ExperimentalMaterial3Api
+
 @Composable
 fun LeagueTableScreen(key: Int = 0, onTeamClick: (String) -> Unit = {}) {
     val context = LocalContext.current
@@ -71,33 +74,31 @@ fun LeagueTableScreen(key: Int = 0, onTeamClick: (String) -> Unit = {}) {
 
     // Re-fetch when key changes (league was switched)
     LaunchedEffect(key) {
-        if (key > 0) viewModel.refresh()
+        if (key > 0) viewModel.refreshIfNeeded(key)
     }
 
     val state by viewModel.uiState.collectAsState()
 
-    LeagueTableContent(state = state, onTeamClick = onTeamClick)
+    LeagueTableContent(
+        state = state,
+        onTeamClick = onTeamClick,
+        onRefresh = { viewModel.refresh(forceRefresh = true) }
+    )
 }
 
 // ==========================================
 // 2. HÀM STATELESS (Dùng để vẽ giao diện và Preview)
 // ==========================================
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LeagueTableContent(state: LeagueTableUiState, onTeamClick: (String) -> Unit = {}) {
+fun LeagueTableContent(state: LeagueTableUiState, onTeamClick: (String) -> Unit = {}, onRefresh: () -> Unit = {}) {
     var highlightedTeamId by remember { mutableStateOf<String?>(null) }
 
-    when {
-        state.isLoading -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = SofascoreBlue)
-            }
+    if (state.error != null && state.standings.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(text = state.error, color = Color.Red)
         }
-        state.error != null -> {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = state.error, color = Color.Red)
-            }
-        }
-        else -> {
+    } else {
             val standings = state.standings
             val context = LocalContext.current
             val imageSizePx = with(LocalDensity.current) { 28.dp.roundToPx() }
@@ -119,12 +120,17 @@ fun LeagueTableContent(state: LeagueTableUiState, onTeamClick: (String) -> Unit 
                     }
             }
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-                contentPadding = PaddingValues(start = 0.dp, end = 0.dp, top = 0.dp, bottom = 88.dp)
+            PullToRefreshBox(
+                isRefreshing = state.isLoading,
+                onRefresh = onRefresh,
+                modifier = Modifier.fillMaxSize()
             ) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentPadding = PaddingValues(start = 0.dp, end = 0.dp, top = 0.dp, bottom = 88.dp)
+                ) {
                 standings.forEach { standing ->
                     val groupName = standing.group?.toString()
                     val itemsList = standing.table?.filterNotNull() ?: emptyList()
@@ -169,10 +175,10 @@ fun LeagueTableContent(state: LeagueTableUiState, onTeamClick: (String) -> Unit 
                         }
                     }
                 }
-            }
-        }
-    }
-}
+            } // closes LazyColumn
+            } // closes PullToRefreshBox
+        } // closes else
+    } // closes LeagueTableContent
 
 // ==========================================
 // HEADER ROW

@@ -25,17 +25,28 @@ class LeagueTableViewModel(private val repository: FootballRepository) : ViewMod
     private val _uiState = MutableStateFlow(LeagueTableUiState())
     val uiState = _uiState.asStateFlow()
 
+    private var lastRefreshKey = 0
+
     init {
         // Vừa vào app là gọi mạng luôn
         fetchStandings()
     }
 
-    private fun fetchStandings() {
+    fun refreshIfNeeded(key: Int) {
+        if (key > lastRefreshKey) {
+            lastRefreshKey = key
+            fetchStandings()
+        }
+    }
+
+    fun refresh(forceRefresh: Boolean = false) = fetchStandings(forceRefresh)
+
+    private fun fetchStandings(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             val league = repository.getSelectedLeague()
-            when (val result = repository.getLeagueTable(league)) {
+            when (val result = repository.getLeagueTable(league, forceRefresh)) {
                 is DataResult.Success -> {
                     val data = result.data.standings?.filterNotNull() ?: emptyList()
                     _uiState.update { it.copy(isLoading = false, standings = data) }

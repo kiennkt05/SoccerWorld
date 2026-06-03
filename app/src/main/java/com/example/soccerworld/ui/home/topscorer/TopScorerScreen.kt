@@ -35,6 +35,8 @@ import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+
 @Composable
 fun TopScorersScreen(key: Int = 0) {
     val context = LocalContext.current
@@ -43,25 +45,25 @@ fun TopScorersScreen(key: Int = 0) {
     )
 
     LaunchedEffect(key) {
-        if (key > 0) viewModel.refresh()
+        if (key > 0) viewModel.refreshIfNeeded(key)
     }
 
     val state by viewModel.uiState.collectAsState()
 
-    TopScorersContent(state = state)
+    TopScorersContent(
+        state = state,
+        onRefresh = { viewModel.refresh(forceRefresh = true) }
+    )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TopScorersContent(state: TopScorerUiState) {
-    if (state.isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-    } else if (state.error != null) {
+fun TopScorersContent(state: TopScorerUiState, onRefresh: () -> Unit = {}) {
+    if (state.error != null && state.topScorerList.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(text = state.error, color = MaterialTheme.colorScheme.error)
         }
-    } else if (state.topScorerList.isEmpty()) {
+    } else if (state.topScorerList.isEmpty() && !state.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
                 text = "No top scorers data available for this league",
@@ -70,6 +72,11 @@ fun TopScorersContent(state: TopScorerUiState) {
             )
         }
     } else {
+        PullToRefreshBox(
+            isRefreshing = state.isLoading,
+            onRefresh = onRefresh,
+            modifier = Modifier.fillMaxSize()
+        ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 88.dp)
@@ -84,9 +91,10 @@ fun TopScorersContent(state: TopScorerUiState) {
                     item = player,
                     playerImageUrl = state.playerImageUrls[player.playerId]
                 )
-            }
-        }
-    }
+            } // closes itemsIndexed
+        } // closes LazyColumn
+        } // closes PullToRefreshBox
+    } // closes else
 }
 
 @Composable

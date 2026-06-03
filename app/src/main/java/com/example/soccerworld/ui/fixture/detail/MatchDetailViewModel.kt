@@ -45,11 +45,13 @@ class MatchDetailViewModel(
         }
     }
 
-    fun loadMatchDetail(fixtureId: String) {
+    fun refresh(fixtureId: String) = loadMatchDetail(fixtureId, forceRefresh = true)
+
+    fun loadMatchDetail(fixtureId: String, forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             Log.d(tag, "Loading aggregate for fixtureId=$fixtureId")
-            when (val result = repository.getMatchDetailAggregate(fixtureId)) {
+            when (val result = repository.getMatchDetailAggregate(fixtureId, forceRefresh)) {
                 is DataResult.Success -> {
                     Log.d(
                         tag,
@@ -83,7 +85,7 @@ class MatchDetailViewModel(
             while (isActive) {
                 kotlinx.coroutines.delay(30_000L)
                 Log.d(tag, "Auto-refreshing match detail...")
-                val result = repository.getMatchDetailAggregate(fixtureId)
+                val result = repository.getMatchDetailAggregate(fixtureId, forceRefresh = true)
                 if (result is DataResult.Success) {
                     _uiState.update { it.copy(data = result.data) }
                     val status = result.data.core?.status ?: "FINISHED"

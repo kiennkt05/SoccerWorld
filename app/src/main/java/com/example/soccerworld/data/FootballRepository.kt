@@ -98,15 +98,15 @@ class FootballRepository(
 
     fun getSelectedLeague(): FlashLiveLeague = customPreferences.getLeague() ?: Constant.FLASHLIVE_LEAGUES["PL"]!!
 
-    suspend fun getLeagueTable(league: FlashLiveLeague): DataResult<LeagueTableResponse> {
+    suspend fun getLeagueTable(league: FlashLiveLeague, forceRefresh: Boolean = false): DataResult<LeagueTableResponse> {
         val leagueId = league.stageId
         val updateTime = customPreferences.getStandingsTime() ?: 0L
         val now = System.currentTimeMillis()
         val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
-        leagueTableCache[leagueId]?.takeIf { isCacheValid }?.let {
+        leagueTableCache[leagueId]?.takeIf { isCacheValid && !forceRefresh }?.let {
             return DataResult.Success(it, fromCache = true)
         }
-        if (isCacheValid) {
+        if (isCacheValid && !forceRefresh) {
             dao.getStandingsCache(leagueId)?.takeIf { isStillValid(it.updatedAt, now) }?.let { cached ->
                 deserialize<LeagueTableResponse>(cached.payloadJson)?.also {
                     leagueTableCache[leagueId] = it
@@ -149,12 +149,12 @@ class FootballRepository(
         }
     }
 
-    suspend fun getTopScorers(league: FlashLiveLeague): DataResult<List<TopScorerEntity>> {
+    suspend fun getTopScorers(league: FlashLiveLeague, forceRefresh: Boolean = false): DataResult<List<TopScorerEntity>> {
         val leagueId = league.stageId
         val updateTime = customPreferences.getTopScorersTime() ?: 0L
         val now = System.currentTimeMillis()
         val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
-        if (isCacheValid) {
+        if (isCacheValid && !forceRefresh) {
             val localData = dao.getTopScorers(leagueId)
             if (localData.isNotEmpty()) return DataResult.Success(localData, fromCache = true)
         }
@@ -347,15 +347,13 @@ class FootballRepository(
             ).also {
                 fixtureCache[cacheKey] = it
                 customPreferences.saveFixturesTime(now)
-                if (!forceRefresh) {
-                    dao.upsertFixturesCache(
-                        FixturesCacheEntity(
-                            queryKey = cacheKey,
-                            payloadJson = serialize(it),
-                            updatedAt = now
-                        )
+                dao.upsertFixturesCache(
+                    FixturesCacheEntity(
+                        queryKey = cacheKey,
+                        payloadJson = serialize(it),
+                        updatedAt = now
                     )
-                }
+                )
             }
         }
     }
@@ -625,8 +623,8 @@ class FootballRepository(
                 ),
                 score = StatsScore(
                     fullTime = StatsFullTime(
-                        home = event?.homeScore?.toIntOrNull(),
-                        away = event?.awayScore?.toIntOrNull()
+                        home = event?.homeScoreFull?.toIntOrNull() ?: event?.homeScore?.toIntOrNull(),
+                        away = event?.awayScoreFull?.toIntOrNull() ?: event?.awayScore?.toIntOrNull()
                     )
                 )
             )
@@ -639,7 +637,7 @@ class FootballRepository(
         }
     }
 
-    suspend fun getMatchDetailAggregate(fixtureId: String): DataResult<MatchDetailAggregate> {
+    suspend fun getMatchDetailAggregate(fixtureId: String, forceRefresh: Boolean = false): DataResult<MatchDetailAggregate> {
         val updateTime = customPreferences.getMatchDetailTime(fixtureId) ?: 0L
         val now = System.currentTimeMillis()
 
@@ -664,7 +662,7 @@ class FootballRepository(
             (now - updateTime) < ttl
         } ?: false
 
-        if (isCacheValid && cachedData != null) {
+        if (isCacheValid && cachedData != null && !forceRefresh) {
             matchDetailCache[fixtureId] = cachedData
             return DataResult.Success(cachedData, fromCache = true)
         }
@@ -678,7 +676,7 @@ class FootballRepository(
         }
         val status = coreResult.data.status ?: "FINISHED"
         val isLive = status == "IN_PLAY" || status == "PAUSED" || status == "LIVE" || status == "HALFTIME"
-        val hasCachedFullData = cachedData != null && cachedData.enrichment != null && cachedData.h2h.isNotEmpty()
+        val hasCachedFullData = cachedData != null && cachedData.enrichment != null && cachedData.h2h.isNotEmpty() && !forceRefresh
 
         val h2hList = if (isLive && hasCachedFullData) {
             cachedData!!.h2h
@@ -777,49 +775,100 @@ class FootballRepository(
         lineups: LineupsResponse,
         news: EventNewsResponse = EventNewsResponse()
     ): MatchEnrichmentDetail {
+        var cumulativeHome = 0
+        var cumulativeAway = 0
+        val stageScores = mutableMapOf<String, Pair<Int, Int>>()
+
+        // First pass to calculate cumulative scores for regular/extra time stages
+        summary.data.orEmpty().forEach { stage ->
+            val rh = stage.resultHome?.toIntOrNull() ?: 0
+            val ra = stage.resultAway?.toIntOrNull() ?: 0
+            val stageName = stage.stageName ?: ""
+            if (!stageName.contains("Penalties", ignoreCase = true)) {
+                cumulativeHome += rh
+                cumulativeAway += ra
+                stageScores[stageName] = cumulativeHome to cumulativeAway
+            } else {
+                // For penalties, just use its own result
+                stageScores[stageName] = rh to ra
+            }
+        }
+
         val events = summary.data.orEmpty().reversed().flatMap { stage ->
             val rawItems = stage.items.orEmpty()
             val stageMappedEvents = mutableListOf<MatchEvent>()
+            val stageName = stage.stageName ?: "Stage"
 
             rawItems.forEach { item ->
-                val participants = item.participants.orEmpty()
+                val participants = item.participants.orEmpty().filter {
+                    val type = it.type?.uppercase() ?: ""
+                    !type.contains("PENALTY_KICK")
+                }
+                
+                if (participants.isEmpty()) return@forEach
+
                 val isHome = item.team == 1
                 val teamStr = if (isHome) "home" else "away"
 
-                val hasGoal = participants.any { it.type?.uppercase()?.contains("GOAL") == true }
+                val hasGoal = participants.any { 
+                    val type = it.type?.uppercase() ?: ""
+                    type.contains("GOAL") || type.contains("PENALTY_SCORED")
+                }
                 val hasAssist = participants.any { it.type?.uppercase()?.contains("ASSIST") == true }
+                val isPenaltyStage = stageName.contains("Penalties", ignoreCase = true)
 
                 when {
+                    isPenaltyStage && (hasGoal || participants.any { it.type?.uppercase()?.contains("PENALTY_MISSED") == true }) -> {
+                        val part = participants.find { 
+                            val type = it.type?.uppercase() ?: ""
+                            type.contains("PENALTY_SCORED") || type.contains("PENALTY_MISSED")
+                        }
+                        val player = part?.participantName ?: ""
+                        val rawType = part?.type ?: "PENALTY"
+                        val type = if (rawType.uppercase().startsWith("SHOOTOUT")) rawType else "SHOOTOUT_$rawType"
+                        
+                        stageMappedEvents.add(
+                            MatchEvent(
+                                minute = item.time ?: "--",
+                                type = type,
+                                description = player,
+                                team = teamStr
+                            )
+                        )
+                    }
+
                     hasGoal && hasAssist -> {
-                        val goalPart = participants.find { it.type?.uppercase()?.contains("GOAL") == true }
+                        val goalPart = participants.find { 
+                            val type = it.type?.uppercase() ?: ""
+                            type.contains("GOAL") || type.contains("PENALTY_SCORED")
+                        }
                         val assistPart = participants.find { it.type?.uppercase()?.contains("ASSIST") == true }
 
                         val scorer = goalPart?.participantName ?: ""
                         val assist = assistPart?.participantName ?: ""
-                        val homeScore = goalPart?.homeScore ?: ""
-                        val awayScore = goalPart?.awayScore ?: ""
 
                         stageMappedEvents.add(
                             MatchEvent(
                                 minute = item.time ?: "--",
                                 type = goalPart?.type ?: "GOAL",
-                                description = "$scorer | $assist | $homeScore | $awayScore",
+                                description = if (assist.isNotBlank()) "$scorer | $assist" else scorer,
                                 team = teamStr
                             )
                         )
                     }
 
                     hasGoal -> {
-                        val goalPart = participants.find { it.type?.uppercase()?.contains("GOAL") == true }
+                        val goalPart = participants.find { 
+                            val type = it.type?.uppercase() ?: ""
+                            type.contains("GOAL") || type.contains("PENALTY_SCORED")
+                        }
                         val scorer = goalPart?.participantName ?: ""
-                        val homeScore = goalPart?.homeScore ?: ""
-                        val awayScore = goalPart?.awayScore ?: ""
 
                         stageMappedEvents.add(
                             MatchEvent(
                                 minute = item.time ?: "--",
                                 type = goalPart?.type ?: "GOAL",
-                                description = "$scorer | | $homeScore | $awayScore",
+                                description = scorer,
                                 team = teamStr
                             )
                         )
@@ -886,14 +935,13 @@ class FootballRepository(
                 ))
             }
 
-            val resultHome = stage.resultHome ?: ""
-            val resultAway = stage.resultAway ?: ""
-            val scoreText = if (resultHome.isNotBlank() && resultAway.isNotBlank()) " $resultHome - $resultAway" else ""
-            val rawName = stage.stageName ?: "Stage"
+            val stageScore = stageScores[stageName]
+            val scoreText = if (stageScore != null) " ${stageScore.first} - ${stageScore.second}" else ""
             val stageLabel = when {
-                rawName.contains("1st", ignoreCase = true) -> "HT$scoreText"
-                rawName.contains("2nd", ignoreCase = true) -> "FT$scoreText"
-                else -> "$rawName$scoreText"
+                stageName.contains("1st", ignoreCase = true) -> "HT$scoreText"
+                stageName.contains("2nd", ignoreCase = true) -> "FT$scoreText"
+                stageName.contains("Extra", ignoreCase = true) -> "AET$scoreText"
+                else -> "$stageName$scoreText"
             }
 
             stageMappedEvents.add(0, MatchEvent(
@@ -1031,7 +1079,7 @@ class FootballRepository(
             competition = Competition(code = leagueCode, name = leagueName, emblem = leagueEmblem),
             homeTeam = HomeTeam(id = homeId, name = homeName, shortName = homeName, crest = homeCrest),
             awayTeam = AwayTeam(id = awayId, name = awayName, shortName = awayName, crest = awayCrest),
-            score = Score(fullTime = FullTime(home = homeScore?.toIntOrNull(), away = awayScore?.toIntOrNull()))
+            score = Score(fullTime = FullTime(home = homeScoreFull?.toIntOrNull() ?: homeScore?.toIntOrNull(), away = awayScoreFull?.toIntOrNull() ?: awayScore?.toIntOrNull()))
         )
     }
 

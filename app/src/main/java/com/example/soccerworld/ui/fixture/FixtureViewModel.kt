@@ -53,9 +53,18 @@ class FixtureViewModel(private val repository: FootballRepository) : ViewModel()
     private val _uiState = MutableStateFlow(FixtureUiState())
     val uiState = _uiState.asStateFlow()
 
+    private var lastRefreshKey = 0
+
     init {
         observeFavorites()
         getAllFixtureOfLeague()
+    }
+
+    fun refreshIfNeeded(key: Int) {
+        if (key > lastRefreshKey) {
+            lastRefreshKey = key
+            getAllFixtureOfLeague(forceRefresh = false)
+        }
     }
 
     fun getAllFixtureOfLeague(forceRefresh: Boolean = false) {

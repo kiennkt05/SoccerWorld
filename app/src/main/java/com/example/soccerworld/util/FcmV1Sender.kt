@@ -123,7 +123,8 @@ object FcmV1Sender {
         homeTeam: String,
         awayTeam: String,
         commenterName: String,
-        commentText: String
+        commentText: String,
+        commenterId: String
     ) = sendToTopic(
         context = context,
         topic   = "comment_match_$matchId",
@@ -135,7 +136,8 @@ object FcmV1Sender {
             "homeTeam"      to homeTeam,
             "awayTeam"      to awayTeam,
             "commenterName" to commenterName,
-            "commentText"   to commentText
+            "commentText"   to commentText,
+            "commenterId"   to commenterId
         )
     )
 
@@ -231,14 +233,19 @@ object FcmV1Sender {
                 awayScore = data["awayScore"]?.toIntOrNull() ?: 0,
                 winner    = data["winner"]
             )
-            "NEW_COMMENT" -> NotificationHelper.sendCommentNotification(
-                context       = context,
-                matchId       = data["matchId"] ?: "0",
-                homeTeam      = data["homeTeam"] ?: "Home",
-                awayTeam      = data["awayTeam"] ?: "Away",
-                commenterName = data["commenterName"] ?: "User",
-                commentText   = data["commentText"] ?: ""
-            )
+            "NEW_COMMENT" -> {
+                val commenterId = data["commenterId"] ?: ""
+                val currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                if (currentUserId != null && commenterId == currentUserId) return
+                NotificationHelper.sendCommentNotification(
+                    context       = context,
+                    matchId       = data["matchId"] ?: "0",
+                    homeTeam      = data["homeTeam"] ?: "Home",
+                    awayTeam      = data["awayTeam"] ?: "Away",
+                    commenterName = data["commenterName"] ?: "User",
+                    commentText   = data["commentText"] ?: ""
+                )
+            }
         }
     }
 

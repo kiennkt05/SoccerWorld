@@ -27,17 +27,28 @@
         private val _uiState = MutableStateFlow(TopScorerUiState())
         val uiState = _uiState.asStateFlow()
 
+        private var lastRefreshKey = 0
+
         init {
             getTopScorers()
         }
 
-        fun getTopScorers() {
+        fun refreshIfNeeded(key: Int) {
+            if (key > lastRefreshKey) {
+                lastRefreshKey = key
+                getTopScorers()
+            }
+        }
+
+        fun refresh(forceRefresh: Boolean = false) = getTopScorers(forceRefresh)
+
+        private fun getTopScorers(forceRefresh: Boolean = false) {
             viewModelScope.launch {
                 _uiState.update { it.copy(isLoading = true, error = null) }
 
                 val league = repository.getSelectedLeague()
 
-                when (val result = repository.getTopScorers(league)) {
+                when (val result = repository.getTopScorers(league, forceRefresh)) {
                     is DataResult.Success -> {
                         val imageUrls = repository.preloadPlayerMediaInParallel(result.data)
                         _uiState.update {
