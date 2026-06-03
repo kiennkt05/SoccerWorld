@@ -1,9 +1,11 @@
 package com.example.soccerworld.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -85,13 +87,19 @@ fun MatchRow(
     onClick: (String) -> Unit = {},
     onToggleFavorite: () -> Unit = {}
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { match.id?.let { onClick(it) } }
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { match.id?.let { onClick(it) } }
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
         // Left Column: Date & Status
         Column(
             modifier = Modifier.width(60.dp),
@@ -288,6 +296,7 @@ fun MatchRow(
                 tint = if (isFavorite) FavoriteGold else MaterialTheme.colorScheme.outlineVariant,
                 modifier = Modifier.size(20.dp)
             )
+        }
         }
     }
 }
