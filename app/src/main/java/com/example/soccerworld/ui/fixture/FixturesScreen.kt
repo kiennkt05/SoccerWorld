@@ -109,11 +109,7 @@ fun FixturesContent(
 
         LaunchedEffect(state.selectedTab, totalItems) {
             if (totalItems == 0) return@LaunchedEffect
-            if (state.selectedTab == "SCHEDULED") {
-                listState.scrollToItem(totalItems - 1)
-            } else {
-                listState.scrollToItem(0)
-            }
+            listState.scrollToItem(0)
         }
 
         // Detect scroll tới cuối để load more (with debounce)

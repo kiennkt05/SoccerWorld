@@ -220,7 +220,7 @@ class FixtureViewModel(private val repository: FootballRepository) : ViewModel()
         return orderedStageKeys.associateWith { stage ->
             val stageMatches = groupedByStage[stage].orEmpty()
             
-            // Group by tournament
+            // Group by tournament and sort matches based on stage type
             stageMatches.groupBy { 
                 TournamentInfo(
                     id = it.competition?.code ?: "Unknown",
@@ -229,8 +229,13 @@ class FixtureViewModel(private val repository: FootballRepository) : ViewModel()
                     areaName = it.area?.name,
                     areaFlag = it.area?.flag
                 )
+            }.mapValues { (_, matchesList) ->
+                if (stage == "SCHEDULED") {
+                    matchesList.sortedBy { it.utcDate ?: "" }
+                } else {
+                    matchesList.sortedByDescending { it.utcDate ?: "" }
+                }
             }
-            // Matches are already sorted by utcDate from parent, no need to re-sort
         }
     }
 
