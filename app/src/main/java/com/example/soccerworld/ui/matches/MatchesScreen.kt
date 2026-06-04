@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -40,7 +41,7 @@ fun MatchesScreen(
 ) {
     val context = LocalContext.current
     val sharedPrefs = remember { CustomSharedPreferences.invoke(context) }
-    var refreshKey by remember { mutableIntStateOf(0) }
+    var refreshKey by rememberSaveable { mutableIntStateOf(0) }
 
     val currentLeague by remember(refreshKey) {
         derivedStateOf { sharedPrefs.getLeague() }

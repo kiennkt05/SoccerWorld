@@ -148,7 +148,7 @@ fun LeagueTableContent(state: LeagueTableUiState, onTeamClick: (String) -> Unit 
                                         text = groupName,
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isSystemInDarkTheme()) Color.White else Color.Black
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                             }
@@ -258,7 +258,7 @@ fun TeamRow(
     // Alternating row background for contrast, or premium highlighted light blue/indigo
     val normalBg = if (position % 2 == 0) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
     val rowBg = if (isHighlighted) {
-        if (isSystemInDarkTheme()) Color(0xFF1E3A8A).copy(alpha = 0.4f) else Color(0xFFE3F2FD)
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
     } else {
         normalBg
     }
