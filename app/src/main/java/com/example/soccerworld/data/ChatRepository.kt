@@ -40,7 +40,8 @@ class ChatRepository(
             val conversationMessages = mutableListOf<GroqMessage>()
             conversationMessages.add(GroqMessage(role = "system", content = systemPrompt))
             
-            val recentMessages = currentHistory.takeLast(20)
+            // Không gửi lịch sử hội thoại dài đi để tránh phồng token gây lỗi Rate Limit (429) do các câu hỏi demo độc lập
+            val recentMessages = currentHistory.takeLast(0)
             recentMessages.forEach {
                 conversationMessages.add(GroqMessage(role = it.role, content = it.content))
             }

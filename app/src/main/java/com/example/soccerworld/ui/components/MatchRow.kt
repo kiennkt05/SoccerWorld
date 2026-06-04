@@ -23,7 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import coil.compose.AsyncImage
 import com.example.soccerworld.R
 import com.example.soccerworld.model.fixture.*
-import com.example.soccerworld.ui.theme.FavoriteGold
+import com.example.soccerworld.ui.theme.LocalSoccerColors
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -126,7 +126,7 @@ fun MatchRow(
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 color = when (activeFilter) {
-                    "Live" -> Color(0xFFE53935)
+                    "Live" -> LocalSoccerColors.current.liveRed
                     else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 }
             )
@@ -261,10 +261,11 @@ fun MatchRow(
                 }
             }
 
+            val soccerColors = LocalSoccerColors.current
             val badgeColor = when (outcome) {
-                "W" -> Color(0xFF2EA64F) // SofaScore Green
-                "L" -> Color(0xFFE53935) // Red
-                else -> Color(0xFF9E9E9E) // Grey
+                "W" -> soccerColors.matchWin
+                "L" -> soccerColors.matchLoss
+                else -> soccerColors.matchDraw
             }
 
             Box(
@@ -279,7 +280,7 @@ fun MatchRow(
                     style = MaterialTheme.typography.labelSmall,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
             }
         }
@@ -293,7 +294,7 @@ fun MatchRow(
             Icon(
                 imageVector = Icons.Default.Star,
                 contentDescription = "Toggle favorite",
-                tint = if (isFavorite) FavoriteGold else MaterialTheme.colorScheme.outlineVariant,
+                tint = if (isFavorite) LocalSoccerColors.current.favoriteActive else MaterialTheme.colorScheme.outlineVariant,
                 modifier = Modifier.size(20.dp)
             )
         }

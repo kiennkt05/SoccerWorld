@@ -35,5 +35,9 @@ data class PlayerResponse(
     @SerializedName("staff")
     val staff: List<Any?>? = null,
     @SerializedName("lastUpdated")
-    val lastUpdated: String? = null
+    val lastUpdated: String? = null,
+    @SerializedName("actualStageId")
+    val actualStageId: String? = null,
+    @SerializedName("actualSeasonId")
+    val actualSeasonId: String? = null
 )

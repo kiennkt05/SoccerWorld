@@ -12,7 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
@@ -59,12 +59,7 @@ import com.example.soccerworld.model.statistic.StatisticsResponse
 import com.example.soccerworld.ui.fixture.detail.components.HighlightList
 import com.example.soccerworld.ui.fixture.detail.components.getRatingColor
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
-import com.example.soccerworld.ui.theme.TextDark
-import com.example.soccerworld.ui.theme.TextSecondary
-import com.example.soccerworld.ui.theme.DividerColor
-import com.example.soccerworld.ui.theme.LoserText
-import com.example.soccerworld.ui.theme.FavoriteGold
-import com.example.soccerworld.ui.theme.LiveRed
+import com.example.soccerworld.ui.theme.LocalSoccerColors
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import java.text.SimpleDateFormat
@@ -130,7 +125,7 @@ fun MatchDetailContent(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.KeyboardArrowLeft, 
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft, 
                             contentDescription = "Back",
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(24.dp)
@@ -335,7 +330,7 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
                     Icon(
                         imageVector = if (isHomeFav) Icons.Filled.Star else Icons.Outlined.StarBorder,
                         contentDescription = "Favorite Home Team",
-                        tint = if (isHomeFav) FavoriteGold else Color.LightGray,
+                        tint = if (isHomeFav) LocalSoccerColors.current.favoriteActive else MaterialTheme.colorScheme.outlineVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -398,7 +393,7 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
                         status == "TIMED" -> "Upcoming"
                         else -> status
                     },
-                    color = if (isLive) LiveRed else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    color = if (isLive) LocalSoccerColors.current.liveRed else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     fontWeight = FontWeight.Bold,
                     fontSize = 11.sp,
                     textAlign = TextAlign.Center
@@ -443,7 +438,7 @@ fun MatchHeader(core: StatisticsResponse?, enrichment: MatchEnrichmentDetail?) {
                     Icon(
                         imageVector = if (isAwayFav) Icons.Filled.Star else Icons.Outlined.StarBorder,
                         contentDescription = "Favorite Away Team",
-                        tint = if (isAwayFav) FavoriteGold else Color.LightGray,
+                        tint = if (isAwayFav) LocalSoccerColors.current.favoriteActive else MaterialTheme.colorScheme.outlineVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }

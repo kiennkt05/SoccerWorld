@@ -41,6 +41,34 @@ class LeagueTableViewModel(private val repository: FootballRepository) : ViewMod
 
     fun refresh(forceRefresh: Boolean = false) = fetchStandings(forceRefresh)
 
+    fun fetchStandingsForLeague(stageId: String, seasonId: String?, forceRefresh: Boolean = false) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            val matchedLeague = com.example.soccerworld.util.Constant.FLASHLIVE_LEAGUES.values.firstOrNull {
+                it.stageId == stageId || it.allStageIds.contains(stageId)
+            }
+            val league = matchedLeague ?: com.example.soccerworld.util.FlashLiveLeague(
+                stageId = stageId,
+                seasonId = seasonId,
+                name = "League"
+            )
+
+            when (val result = repository.getLeagueTable(league, forceRefresh)) {
+                is DataResult.Success -> {
+                    val data = result.data.standings?.filterNotNull() ?: emptyList()
+                    _uiState.update { it.copy(isLoading = false, standings = data) }
+                }
+                is DataResult.Error -> {
+                    _uiState.update { it.copy(isLoading = false, error = result.message ?: "Error loading standings") }
+                }
+                DataResult.Loading -> {
+                    _uiState.update { it.copy(isLoading = true) }
+                }
+            }
+        }
+    }
+
     private fun fetchStandings(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }

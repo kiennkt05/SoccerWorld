@@ -60,10 +60,7 @@ import com.example.soccerworld.model.statistic.StatisticsResponse
 import com.example.soccerworld.ui.fixture.detail.components.HighlightList
 import com.example.soccerworld.ui.fixture.detail.components.getRatingColor
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
-import com.example.soccerworld.ui.theme.TextDark
-import com.example.soccerworld.ui.theme.TextSecondary
-import com.example.soccerworld.ui.theme.DividerColor
-import com.example.soccerworld.ui.theme.LoserText
+import com.example.soccerworld.ui.theme.LocalSoccerColors
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import java.text.SimpleDateFormat
@@ -146,7 +143,7 @@ fun H2HTab(
                     // Divider between header and first match row
                     HorizontalDivider(
                         thickness = 0.5.dp,
-                        color = DividerColor
+                        color = MaterialTheme.colorScheme.outlineVariant
                     )
                 }
             }
@@ -165,7 +162,7 @@ fun H2HTab(
                     HorizontalDivider(
                         modifier = Modifier.padding(horizontal = 14.dp),
                         thickness = 0.5.dp,
-                        color = DividerColor
+                        color = MaterialTheme.colorScheme.outlineVariant
                     )
                 }
             }
@@ -259,7 +256,7 @@ private fun H2HMatchRow(
                 .padding(horizontal = 10.dp)
                 .width(0.7.dp)
                 .height(38.dp)
-                .background(DividerColor)
+                .background(MaterialTheme.colorScheme.outlineVariant)
         )
 
         // Center Column: Team Stack (Crests & Names)
@@ -381,10 +378,11 @@ private fun H2HMatchRow(
             }
         }
 
+        val soccerColors = LocalSoccerColors.current
         val badgeColor = when (outcome) {
-            "W" -> Color(0xFF2EA64F) // SofaScore Green
-            "L" -> Color(0xFFE53935) // Red
-            else -> Color(0xFF9E9E9E) // Grey
+            "W" -> soccerColors.matchWin
+            "L" -> soccerColors.matchLoss
+            else -> soccerColors.matchDraw
         }
 
         Box(
@@ -399,7 +397,7 @@ private fun H2HMatchRow(
                 style = MaterialTheme.typography.labelSmall,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onPrimary
             )
         }
     }

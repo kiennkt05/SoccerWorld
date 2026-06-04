@@ -35,18 +35,20 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.soccerworld.data.remote.flashlive.dto.Formation
 import com.example.soccerworld.data.remote.flashlive.dto.LineupPlayer
+import com.example.soccerworld.ui.theme.LocalSoccerColors
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.util.buildFormationLayers
 import com.example.soccerworld.R
 
 @Composable
 fun InteractivePitchView(homeFormation: Formation, awayFormation: Formation) {
+    val soccerColors = LocalSoccerColors.current
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1f / 2.2f) // 1. Fixed Aspect Ratio to 1:2.2
             .clip(RectangleShape)
-            .background(Color(0xFF1E5A22))
+            .background(soccerColors.pitchGreen)
     ) {
         val pitchWidth = this.maxWidth
         val pitchHeight = this.maxHeight
@@ -115,11 +117,12 @@ fun InteractivePitchView(homeFormation: Formation, awayFormation: Formation) {
 
 @Composable
 fun SoccerPitchBackground(modifier: Modifier = Modifier) {
+    val soccerColors = LocalSoccerColors.current
     Canvas(modifier = modifier.fillMaxSize()) {
         val w = size.width
         val h = size.height
 
-        drawRect(color = Color(0xFF3C7F62))
+        drawRect(color = soccerColors.pitchLine)
 
         val strokeWidth = 1.5.dp.toPx()
         val lineColor = Color.White.copy(alpha = 0.2f)
@@ -199,7 +202,7 @@ fun PitchPlayerMarker(player: LineupPlayer, isHome: Boolean, modifier: Modifier 
                     .background(Color.White)
                     .border(
                         width = 1.dp,
-                        color = if (isHome) Color(0xFF1E88E5) else Color(0xFFE53935),
+                        color = if (isHome) LocalSoccerColors.current.pitchHomeMarker else LocalSoccerColors.current.pitchAwayMarker,
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -217,7 +220,7 @@ fun PitchPlayerMarker(player: LineupPlayer, isHome: Boolean, modifier: Modifier 
                     Icon(
                         painter = painterResource(id = R.drawable.sports_soccer),
                         contentDescription = null,
-                        tint = if (isHome) Color(0xFF1E88E5).copy(alpha = alpha) else Color(0xFFE53935).copy(alpha = alpha),
+                        tint = if (isHome) LocalSoccerColors.current.pitchHomeMarker.copy(alpha = alpha) else LocalSoccerColors.current.pitchAwayMarker.copy(alpha = alpha),
                         modifier = Modifier.size(18.dp)
                     )
                 }
@@ -332,12 +335,13 @@ fun IncidentIcon(code: Int) {
         .background(Color.White, CircleShape)
         .padding(0.5.dp)
 
+    val soccerColors = LocalSoccerColors.current
     when (code) {
-        1 -> Icon(painter = painterResource(id = R.drawable.rectangle), contentDescription = "Yellow Card", tint = Color(0xFFFBC02D), modifier = modifier.scale(scaleX = 0.6f, scaleY = 1f))
-        2 -> Icon(painter = painterResource(id = R.drawable.rectangle), contentDescription = "Red Card", tint = Color(0xFFD32F2F), modifier = modifier.scale(scaleX = 0.6f, scaleY = 1f))
+        1 -> Icon(painter = painterResource(id = R.drawable.rectangle), contentDescription = "Yellow Card", tint = soccerColors.yellowCard, modifier = modifier.scale(scaleX = 0.6f, scaleY = 1f))
+        2 -> Icon(painter = painterResource(id = R.drawable.rectangle), contentDescription = "Red Card", tint = soccerColors.redCard, modifier = modifier.scale(scaleX = 0.6f, scaleY = 1f))
         3, 10 -> Icon(painter = painterResource(id = R.drawable.ic_ball), contentDescription = "Goal", tint = Color.Black, modifier = modifier)
-        6 -> Icon(painter = painterResource(id = R.drawable.swap_horiz), contentDescription = "Subbed Out", tint = Color(0xFFD32F2F), modifier = modifier)
-        7 -> Icon(painter = painterResource(id = R.drawable.swap_horiz), contentDescription = "Subbed In", tint = Color(0xFF388E3C), modifier = modifier)
+        6 -> Icon(painter = painterResource(id = R.drawable.swap_horiz), contentDescription = "Subbed Out", tint = soccerColors.subOut, modifier = modifier)
+        7 -> Icon(painter = painterResource(id = R.drawable.swap_horiz), contentDescription = "Subbed In", tint = soccerColors.subIn, modifier = modifier)
         8 -> Icon(painter = painterResource(id = R.drawable.shoe_cleats), contentDescription = "Assist", modifier = modifier.graphicsLayer(rotationY = 180f)) // Assumed 8 for assist
     }
 }
@@ -414,7 +418,7 @@ fun PitchPlayerMarkerPreview() {
     SoccerWorldTheme {
         Box(
             modifier = Modifier
-                .background(Color(0xFF1B4D22))
+                .background(LocalSoccerColors.current.pitchGreenDark)
                 .padding(20.dp),
             contentAlignment = Alignment.Center
         ) {

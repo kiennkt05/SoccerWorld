@@ -24,6 +24,10 @@ private val DarkColorScheme = darkColorScheme(
     onSecondary          = Color.White,
     secondaryContainer   = Color(0xFF151B26),
     onSecondaryContainer = Color(0xFFF1F5F9),
+    tertiary             = AccentNeonMint,
+    onTertiary           = Color(0xFF003300),
+    tertiaryContainer    = Color(0xFF004D26),
+    onTertiaryContainer  = Color(0xFFA5F3C4),
     background           = Color(0xFF2B3A4F),   // Deep Slate Blue background (Much Lighter)
     onBackground         = Color(0xFFF1F5F9),   // Ice white text
     surface              = Color(0xFF374862),   // Elevated card surface (Much Lighter)
@@ -46,6 +50,10 @@ private val LightColorScheme = lightColorScheme(
     onSecondary          = Color.White,
     secondaryContainer   = Color(0xFFEBF5F0),   // Light emerald-green tint
     onSecondaryContainer = BrandGreenMedium,
+    tertiary             = Color(0xFF00C853),   // Slightly darker emerald for text readability
+    onTertiary           = Color.White,
+    tertiaryContainer    = Color(0xFFE0F7E9),
+    onTertiaryContainer  = Color(0xFF003300),
     background           = LightBackground,
     onBackground         = TextDark,
     surface              = LightSurface,
@@ -91,8 +99,8 @@ fun SoccerWorldTheme(
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,
+            shapes = AppShapes,
             content = content
         )
     }
 }
-

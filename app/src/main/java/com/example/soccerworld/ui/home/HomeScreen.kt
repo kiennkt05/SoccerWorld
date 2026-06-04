@@ -59,14 +59,14 @@ fun HomeScreen(
         TabRow(
             selectedTabIndex = selectedTabIndex,
             containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = AccentEmerald,
+            contentColor = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
             indicator = { tabPositions ->
                 if (selectedTabIndex < tabPositions.size) {
                     TabRowDefaults.SecondaryIndicator(
                         modifier = Modifier
                             .tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = AccentEmerald
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -82,7 +82,7 @@ fun HomeScreen(
                             fontSize = 13.sp
                         )
                     },
-                    selectedContentColor = AccentEmerald,
+                    selectedContentColor = MaterialTheme.colorScheme.primary,
                     unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -107,7 +107,10 @@ private fun CompactLeagueBar(
             .fillMaxWidth()
             .background(
                 Brush.horizontalGradient(
-                    colors = listOf(BrandNavy, BrandNavyMid)
+                    colors = listOf(
+                        MaterialTheme.colorScheme.primary,
+                        MaterialTheme.colorScheme.primaryContainer
+                    )
                 )
             )
             .padding(horizontal = 16.dp, vertical = 10.dp),
@@ -118,7 +121,7 @@ private fun CompactLeagueBar(
             modifier = Modifier
                 .size(32.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.onPrimary)
                 .padding(4.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -133,7 +136,7 @@ private fun CompactLeagueBar(
                 Icon(
                     imageVector = Icons.Default.SportsSoccer,
                     contentDescription = null,
-                    tint = AccentEmerald,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -146,7 +149,7 @@ private fun CompactLeagueBar(
             text = leagueName,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier.weight(1f)
         )
 
@@ -154,7 +157,7 @@ private fun CompactLeagueBar(
         Surface(
             modifier = Modifier.clickable { onChangeLeague() },
             shape = RoundedCornerShape(8.dp),
-            color = AccentEmerald.copy(alpha = 0.18f)
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
@@ -164,12 +167,12 @@ private fun CompactLeagueBar(
                     text = "Change",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = AccentEmerald
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
-                    tint = AccentEmerald,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(14.dp)
                 )
             }

@@ -59,10 +59,7 @@ import com.example.soccerworld.model.statistic.StatisticsResponse
 import com.example.soccerworld.ui.fixture.detail.components.HighlightList
 import com.example.soccerworld.ui.fixture.detail.components.getRatingColor
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
-import com.example.soccerworld.ui.theme.TextDark
-import com.example.soccerworld.ui.theme.TextSecondary
-import com.example.soccerworld.ui.theme.DividerColor
-import com.example.soccerworld.ui.theme.LoserText
+import com.example.soccerworld.ui.theme.LocalSoccerColors
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import java.text.SimpleDateFormat
@@ -253,7 +250,7 @@ private fun EventIcon(type: String) {
             Icon(
                 painter = painterResource(id = R.drawable.penalty),
                 contentDescription = "Penalty Missed",
-                tint = Color.Red,
+                tint = MaterialTheme.colorScheme.error,
                 modifier = Modifier.size(14.dp)
             )
         }
@@ -265,7 +262,7 @@ private fun EventIcon(type: String) {
                 modifier = Modifier
                     .size(width = 9.dp, height = 13.dp)
                     .clip(RoundedCornerShape(1.5.dp))
-                    .background(Color(0xFFFBC02D))
+                    .background(LocalSoccerColors.current.yellowCard)
             )
         }
         upperType.contains("RED_CARD") || upperType.contains("YELLOW_RED_CARD") -> {
@@ -273,26 +270,26 @@ private fun EventIcon(type: String) {
                 modifier = Modifier
                     .size(width = 9.dp, height = 13.dp)
                     .clip(RoundedCornerShape(1.5.dp))
-                    .background(Color(0xFFD32F2F))
+                    .background(LocalSoccerColors.current.redCard)
             )
         }
         upperType.contains("SUBSTITUTION") -> {
             Icon(
                 imageVector = Icons.Default.SwapHoriz,
                 contentDescription = "Substitution",
-                tint = Color(0xFF4CAF50),
+                tint = LocalSoccerColors.current.subIn,
                 modifier = Modifier.size(16.dp)
             )
         }
         upperType.contains("VAR") -> {
             Surface(
-                color = Color(0xFF1E88E5),
+                color = LocalSoccerColors.current.assistText,
                 shape = RoundedCornerShape(2.dp),
                 modifier = Modifier.padding(horizontal = 2.dp)
             ) {
                 Text(
                     text = "VAR",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontSize = 8.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 3.dp, vertical = 0.5.dp)

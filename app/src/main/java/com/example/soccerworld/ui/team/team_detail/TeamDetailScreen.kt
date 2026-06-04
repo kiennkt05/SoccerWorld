@@ -51,6 +51,13 @@ fun TeamDetailScreen(
     // val tabs = listOf("Details", "Matches", "Standings", "Squad", "Transfers")
     val tabs = listOf("Squad", "Matches", "Standings", "Transfers")
 
+    val actualStageId = state.actualStageId
+    val actualSeasonId = state.actualSeasonId
+    val subText = state.resolvedLeagueName ?: "0 Followers"
+    
+    val isSquadLoading = state.squadState is TabState.Loading
+    val isSquadSuccess = state.squadState is TabState.Success
+
     val fallbackPainter = painterResource(id = R.drawable.ic_ball)
     
     val imageRequest = remember(state.teamCrest) {
@@ -122,7 +129,7 @@ fun TeamDetailScreen(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(text = state.teamName.ifEmpty { "Loading..." }, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text(text = "0 Followers", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = subText, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -153,7 +160,12 @@ fun TeamDetailScreen(
                         onToggleFavoriteMatch = { viewModel.toggleFavoriteMatch(it) },
                         onLoadMore = { viewModel.loadMoreMatches() }
                     )
-                    2 -> TeamStandingsTab(teamId = state.teamId)
+                    2 -> TeamStandingsTab(
+                        teamId = state.teamId,
+                        leagues = state.resolvedLeagues,
+                        isSquadLoading = isSquadLoading,
+                        isSquadSuccess = isSquadSuccess
+                    )
                     3 -> TeamTransfersTab(state.transfersState)
                 }
             }

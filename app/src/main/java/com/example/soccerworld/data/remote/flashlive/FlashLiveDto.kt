@@ -214,7 +214,10 @@ data class TeamData(
     @SerializedName("ID") val id: String? = null,
     @SerializedName("NAME") val name: String? = null,
     @SerializedName("IMAGE_PATH") val imagePath: String? = null,
-    @SerializedName("TVN") val stadium: String? = null
+    @SerializedName("TVN") val stadium: String? = null,
+    @SerializedName("COUNTRY_NAME") val countryName: String? = null,
+    @SerializedName("ACTUAL_TOURNAMENT_STAGE_ID") val actualTournamentStageId: String? = null,
+    @SerializedName("ACTUAL_TOURNAMENT_SEASON_ID") val actualTournamentSeasonId: String? = null
 )
 
 data class SquadResponse(

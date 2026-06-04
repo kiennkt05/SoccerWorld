@@ -25,7 +25,11 @@ data class TeamDetailUiState(
     val matchesPage: Int = 1,
     val hasMoreMatches: Boolean = true,
     val isFavorite: Boolean = false,
-    val favoriteMatchIds: Set<String> = emptySet()
+    val favoriteMatchIds: Set<String> = emptySet(),
+    val actualStageId: String? = null,
+    val actualSeasonId: String? = null,
+    val resolvedLeagueName: String? = null,
+    val resolvedLeagues: List<com.example.soccerworld.util.FlashLiveLeague> = emptyList()
 )
 
 sealed class TabState<out T> {
@@ -103,37 +107,119 @@ class TeamDetailViewModel(private val repository: FootballRepository) : ViewMode
         }
     }
 
-    private fun loadSquad(teamId: String, isDetails: Boolean) {
+    private fun loadSquad(teamId: String, isDetails: Boolean, forceRefresh: Boolean = false) {
         val stateToCheck = if (isDetails) _uiState.value.detailsState else _uiState.value.squadState
-        if (stateToCheck is TabState.Success) return
+        if (stateToCheck is TabState.Success && !forceRefresh) return
         
         viewModelScope.launch {
             if (isDetails) _uiState.update { it.copy(detailsState = TabState.Loading) }
             else _uiState.update { it.copy(squadState = TabState.Loading) }
 
-            when (val result = repository.getAllPlayersOfTeam(teamId)) {
+            when (val result = repository.getAllPlayersOfTeam(teamId, forceRefresh)) {
                 is DataResult.Success -> {
+                    val playerResponse = result.data
+                    val fromCache = result.fromCache
+                    
+                    var stageId = playerResponse.actualStageId
+                    var seasonId = playerResponse.actualSeasonId
+                    
+                    // 1. Search in local database cache
+                    val localLeagues = repository.findLeaguesForTeam(teamId)
+                    
+                    var resolvedStageId = stageId ?: localLeagues.firstOrNull()?.stageId
+                    var resolvedSeasonId = seasonId ?: localLeagues.firstOrNull()?.seasonId
+                    
+                    // 2. If still null and it was cached, force a refresh from network to get the fresh data
+                    if (resolvedStageId == null && fromCache) {
+                        loadSquad(teamId, isDetails, forceRefresh = true)
+                        return@launch
+                    }
+                    
+                    val apiLeague = stageId?.let { sId ->
+                        com.example.soccerworld.util.Constant.FLASHLIVE_LEAGUES.values.firstOrNull {
+                            it.stageId == sId || it.allStageIds.contains(sId)
+                        }
+                    }
+                    
+                    val mergedLeagues = (listOfNotNull(apiLeague) + localLeagues).distinct()
+                    val domesticCodes = listOf("PL", "PD", "BL1", "SA", "FL1")
+                    val sortedLeagues = mergedLeagues.sortedWith(compareBy { league ->
+                        val key = com.example.soccerworld.util.Constant.FLASHLIVE_LEAGUES.entries.firstOrNull { it.value == league }?.key
+                        val index = domesticCodes.indexOf(key)
+                        if (index != -1) index else domesticCodes.size + 1
+                    })
+                    
+                    // The first league in sorted list is the primary/domestic league
+                    val primaryLeague = sortedLeagues.firstOrNull()
+                    val resolvedName = primaryLeague?.name ?: playerResponse.area?.name
+                    
+                    if (resolvedStageId == null) {
+                        resolvedStageId = primaryLeague?.stageId
+                        resolvedSeasonId = primaryLeague?.seasonId
+                    }
+                    
                     _uiState.update { 
-                        val cleanedName = (result.data.name ?: it.teamName).replace("*", "").trim()
+                        val cleanedName = (playerResponse.name ?: it.teamName).replace("*", "").trim()
+                        val updatedResponse = playerResponse.copy(
+                            actualStageId = resolvedStageId,
+                            actualSeasonId = resolvedSeasonId
+                        )
                         if (isDetails) {
                             it.copy(
-                                detailsState = TabState.Success(result.data),
+                                detailsState = TabState.Success(updatedResponse),
                                 teamName = cleanedName,
-                                teamCrest = result.data.crest ?: it.teamCrest
+                                teamCrest = playerResponse.crest ?: it.teamCrest,
+                                actualStageId = resolvedStageId,
+                                actualSeasonId = resolvedSeasonId,
+                                resolvedLeagueName = resolvedName,
+                                resolvedLeagues = sortedLeagues
                             )
                         } else {
                             it.copy(
-                                squadState = TabState.Success(result.data),
+                                squadState = TabState.Success(updatedResponse),
                                 teamName = cleanedName,
-                                teamCrest = result.data.crest ?: it.teamCrest
+                                teamCrest = playerResponse.crest ?: it.teamCrest,
+                                actualStageId = resolvedStageId,
+                                actualSeasonId = resolvedSeasonId,
+                                resolvedLeagueName = resolvedName,
+                                resolvedLeagues = sortedLeagues
                             )
                         }
                     }
                 }
                 is DataResult.Error -> {
-                    _uiState.update { 
-                        if (isDetails) it.copy(detailsState = TabState.Error(result.message ?: "Error"))
-                        else it.copy(squadState = TabState.Error(result.message ?: "Error"))
+                    // Try to resolve locally as fallback
+                    val localLeagues = repository.findLeaguesForTeam(teamId)
+                    if (localLeagues.isNotEmpty()) {
+                        val primaryLeague = localLeagues.first()
+                        val stageId = primaryLeague.stageId
+                        val seasonId = primaryLeague.seasonId
+                        val resolvedName = primaryLeague.name
+                        _uiState.update {
+                            val dummyResponse = PlayerResponse(actualStageId = stageId, actualSeasonId = seasonId)
+                            if (isDetails) {
+                                it.copy(
+                                    detailsState = TabState.Success(dummyResponse),
+                                    actualStageId = stageId,
+                                    actualSeasonId = seasonId,
+                                    resolvedLeagueName = resolvedName,
+                                    resolvedLeagues = localLeagues
+                                )
+                            } else {
+                                it.copy(
+                                    squadState = TabState.Success(dummyResponse),
+                                    actualStageId = stageId,
+                                    actualSeasonId = seasonId,
+                                    resolvedLeagueName = resolvedName,
+                                    resolvedLeagues = localLeagues
+                                )
+                            }
+                        }
+                    } else {
+                        _uiState.update { 
+                            if (isDetails) it.copy(detailsState = TabState.Error(result.message ?: "Error"))
+                            else it.copy(squadState = TabState.Error(result.message ?: "Error"))
+                        }
                     }
                 }
                 else -> {}

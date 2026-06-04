@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -50,7 +51,7 @@ fun HighlightCard(highlight: MatchHighlight, onClick: () -> Unit) {
         modifier = Modifier
             .width(200.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp)
+        shape = MaterialTheme.shapes.small
     ) {
         Column {
             AsyncImage(
@@ -62,7 +63,7 @@ fun HighlightCard(highlight: MatchHighlight, onClick: () -> Unit) {
             Text(
                 text = highlight.title ?: "Highlight",
                 modifier = Modifier.padding(8.dp),
-                fontSize = 13.sp,
+                style = MaterialTheme.typography.labelMedium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )

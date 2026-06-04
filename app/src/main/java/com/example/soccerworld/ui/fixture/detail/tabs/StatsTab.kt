@@ -60,11 +60,8 @@ import com.example.soccerworld.model.statistic.StatisticsResponse
 import com.example.soccerworld.ui.fixture.detail.components.HighlightList
 import com.example.soccerworld.ui.fixture.detail.components.getRatingColor
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
-import com.example.soccerworld.ui.theme.TextDark
-import com.example.soccerworld.ui.theme.TextSecondary
-import com.example.soccerworld.ui.theme.DividerColor
-import com.example.soccerworld.ui.theme.LoserText
-import com.example.soccerworld.ui.theme.BrandGreenDark
+import com.example.soccerworld.ui.theme.LocalSoccerColors
+
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import java.text.SimpleDateFormat
@@ -80,7 +77,7 @@ import com.example.soccerworld.model.statistic.FullTime as StatFullTime
 fun StatsTab(stages: List<EventStatsStage>) {
     if (stages.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Không có thống kê", color = Color.Gray)
+            Text("Không có thống kê", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         return
     }
@@ -204,6 +201,10 @@ private fun StageToggleBar(
 
 @Composable
 private fun StatProgressRow(stat: EventStatsItem) {
+    val soccerColors = LocalSoccerColors.current
+    val HomeColor = soccerColors.statsHome
+    val AwayColor = soccerColors.statsAway
+
     val homeStr = stat.valueHome ?: "0"
     val awayStr = stat.valueAway ?: "0"
 
@@ -249,7 +250,7 @@ private fun StatProgressRow(stat: EventStatsItem) {
                         .background(HomeColor)
                         .padding(horizontal = 8.dp, vertical = 2.dp)
                 ) {
-                    Text(text = homeStr, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(text = homeStr, color = MaterialTheme.colorScheme.onPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             } else {
                 Text(
@@ -277,7 +278,7 @@ private fun StatProgressRow(stat: EventStatsItem) {
                         .background(AwayColor)
                         .padding(horizontal = 8.dp, vertical = 2.dp)
                 ) {
-                    Text(text = awayStr, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(text = awayStr, color = MaterialTheme.colorScheme.onPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             } else {
                 Text(

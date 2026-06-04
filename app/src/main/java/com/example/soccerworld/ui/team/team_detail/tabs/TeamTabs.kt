@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -674,60 +676,122 @@ fun TeamSquadTab(squadState: TabState<PlayerResponse>, teamId: String = "", onNa
 // ── P6: Tab Standings ──────────────────────────────────────────────────────────
 
 @Composable
-fun TeamStandingsTab(teamId: String) {
+fun TeamStandingsTab(
+    teamId: String,
+    leagues: List<com.example.soccerworld.util.FlashLiveLeague>,
+    isSquadLoading: Boolean,
+    isSquadSuccess: Boolean
+) {
     val context = LocalContext.current
     val viewModel: LeagueTableViewModel = viewModel(
         factory = ViewModelFactory(Injection.provideFootballRepository(context))
     )
+    
+    var selectedLeagueIndex by remember(leagues) { mutableStateOf(0) }
+    val selectedLeague = leagues.getOrNull(selectedLeagueIndex)
+    
+    LaunchedEffect(selectedLeague) {
+        if (selectedLeague != null) {
+            viewModel.fetchStandingsForLeague(selectedLeague.stageId, selectedLeague.seasonId)
+        }
+    }
+    
     val state by viewModel.uiState.collectAsState()
 
     val primary = MaterialTheme.colorScheme.primary
     val highlightBg = primary.copy(alpha = 0.12f)
 
-    when {
-        state.isLoading -> {
-            Box(Modifier.fillMaxSize(), Alignment.Center) {
-                CircularProgressIndicator(color = primary)
-            }
-        }
-        state.error != null -> {
-            Box(Modifier.fillMaxSize(), Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("⚠️", fontSize = 36.sp)
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        text = state.error ?: "Error loading standings",
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-        }
-        else -> {
-            val list = state.standings.flatMap { it.table?.filterNotNull() ?: emptyList() }
-            if (list.isEmpty()) {
-                Box(Modifier.fillMaxSize(), Alignment.Center) {
-                    Text("No standings found", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp)
-                ) {
-                    // Header row
-                    item {
-                        StandingsHeaderRow()
-                        Spacer(Modifier.height(4.dp))
-                    }
-                    items(list) { item ->
-                        val isHighlighted = item.team?.id == teamId
-                        StandingsRow(
-                            item = item,
-                            isHighlighted = isHighlighted,
-                            highlightBg = highlightBg,
-                            highlightBorder = primary,
-                            primaryBlue = primary
+    Column(modifier = Modifier.fillMaxSize()) {
+        if (leagues.size > 1) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                leagues.forEachIndexed { index, league ->
+                    val isSelected = index == selectedLeagueIndex
+                    Box(
+                        modifier = Modifier
+                            .height(32.dp)
+                            .clip(RoundedCornerShape(18.dp))
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
+                                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            )
+                            .clickable { selectedLeagueIndex = index }
+                            .padding(horizontal = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = league.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                }
+            }
+        }
+        
+        Box(modifier = Modifier.fillMaxSize().weight(1f)) {
+            when {
+                isSquadLoading || (selectedLeague != null && state.isLoading) -> {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) {
+                        CircularProgressIndicator(color = primary)
+                    }
+                }
+                isSquadSuccess && leagues.isEmpty() -> {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) {
+                        Text(
+                            text = "No standings data found for this team",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                state.error != null -> {
+                    Box(Modifier.fillMaxSize(), Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("⚠️", fontSize = 36.sp)
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = state.error ?: "Error loading standings",
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+                else -> {
+                    val list = state.standings.flatMap { it.table?.filterNotNull() ?: emptyList() }
+                    if (list.isEmpty()) {
+                        Box(Modifier.fillMaxSize(), Alignment.Center) {
+                            Text("No standings found", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp)
+                        ) {
+                            // Header row
+                            item {
+                                StandingsHeaderRow()
+                                Spacer(Modifier.height(4.dp))
+                            }
+                            items(list) { item ->
+                                val isHighlighted = item.team?.id == teamId
+                                StandingsRow(
+                                    item = item,
+                                    isHighlighted = isHighlighted,
+                                    highlightBg = highlightBg,
+                                    highlightBorder = primary,
+                                    primaryBlue = primary
+                                )
+                            }
+                        }
                     }
                 }
             }

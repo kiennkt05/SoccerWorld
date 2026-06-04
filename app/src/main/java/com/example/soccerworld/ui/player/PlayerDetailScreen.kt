@@ -13,7 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -49,7 +49,7 @@ import com.example.soccerworld.model.fixture.Matche
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.soccerworld.ui.theme.FavoriteGold
+import com.example.soccerworld.ui.theme.LocalSoccerColors
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -100,13 +100,14 @@ fun PlayerDetailScreen(
         playerData?.typeName ?: playerInfo.position ?: "Midfielder"
     }
 
-    val positionColor = remember(activePosition) {
+    val soccerColors = LocalSoccerColors.current
+    val positionColor = remember(activePosition, soccerColors) {
         when {
-            activePosition.contains("goalkeeper", ignoreCase = true) -> Color(0xFFFFB300)
-            activePosition.contains("defender", ignoreCase = true) -> Color(0xFF1E88E5)
-            activePosition.contains("midfielder", ignoreCase = true) -> Color(0xFF43A047)
-            activePosition.contains("forward", ignoreCase = true) -> Color(0xFFE53935)
-            else -> Color(0xFF546E7A)
+            activePosition.contains("goalkeeper", ignoreCase = true) -> soccerColors.positionGK
+            activePosition.contains("defender", ignoreCase = true) -> soccerColors.positionDef
+            activePosition.contains("midfielder", ignoreCase = true) -> soccerColors.positionMid
+            activePosition.contains("forward", ignoreCase = true) -> soccerColors.positionFwd
+            else -> soccerColors.positionDefault
         }
     }
 
@@ -141,7 +142,7 @@ fun PlayerDetailScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.KeyboardArrowLeft, 
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft, 
                             contentDescription = "Back",
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(24.dp)
@@ -160,7 +161,7 @@ fun PlayerDetailScreen(
                         Icon(
                             imageVector = if (uiState.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Favorite",
-                            tint = if (uiState.isFavorite) FavoriteGold else MaterialTheme.colorScheme.onSurface
+                            tint = if (uiState.isFavorite) LocalSoccerColors.current.favoriteActive else MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },

@@ -8,7 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import com.example.soccerworld.ui.theme.LocalSoccerColors
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -129,7 +130,7 @@ fun CommentTab(
                     contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Login,
+                        imageVector = Icons.AutoMirrored.Filled.Login,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
@@ -244,11 +245,9 @@ private fun CommentItem(
     val timeText = remember(comment.timestamp) { formatCommentTime(comment.timestamp) }
 
     // Deterministic avatar color based on char code
-    val avatarColors = listOf(
-        Color(0xFF1976D2), Color(0xFF388E3C), Color(0xFFF57C00),
-        Color(0xFF7B1FA2), Color(0xFFD32F2F), Color(0xFF00796B)
-    )
-    val avatarColor = avatarColors[abs(initial.code) % avatarColors.size]
+    val avatarColor = LocalSoccerColors.current.avatarColors.let { colors ->
+        colors[abs(initial.code) % colors.size]
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -265,7 +264,7 @@ private fun CommentItem(
             Text(
                 text = initial.toString(),
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onPrimary,
                 fontSize = 15.sp
             )
         }

@@ -10,16 +10,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.soccerworld.model.matchdetail.MatchLineupTeam
-import com.example.soccerworld.ui.theme.LightBackground
 
-val AppBackground = LightBackground
-val HomeColor = Color(0xFF00B050)
-val AwayColor = Color(0xFF2B44FF)
 
 @Composable
 internal fun EmptyState(message: String) {

@@ -60,10 +60,7 @@ import com.example.soccerworld.model.statistic.StatisticsResponse
 import com.example.soccerworld.ui.fixture.detail.components.HighlightList
 import com.example.soccerworld.ui.fixture.detail.components.getRatingColor
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
-import com.example.soccerworld.ui.theme.TextDark
-import com.example.soccerworld.ui.theme.TextSecondary
-import com.example.soccerworld.ui.theme.DividerColor
-import com.example.soccerworld.ui.theme.LoserText
+import com.example.soccerworld.ui.theme.LocalSoccerColors
 import com.example.soccerworld.util.Injection
 import com.example.soccerworld.util.ViewModelFactory
 import java.text.SimpleDateFormat
@@ -191,7 +188,7 @@ fun LineupsTab(
                             modifier = Modifier
                                 .size(34.dp)
                                 .clip(CircleShape)
-                                .background(Color.LightGray)
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
@@ -284,7 +281,7 @@ private fun TeamLineupHeader(
                 ) {
                     Text(
                         text = String.format(Locale.US, "%.1f", averageRating),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Black
                     )
@@ -385,14 +382,14 @@ private fun DetailedSubstituteRow(sub: MatchLineupPlayer, events: List<MatchEven
                         imageVector = getSwapHorizIcon(),
                         contentDescription = "Sub In",
                         modifier = Modifier.size(20.dp),
-                        tint = Color(0xFF388E3C)
+                        tint = LocalSoccerColors.current.subIn
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "${subEvent.minute}'",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF388E3C)
+                        color = LocalSoccerColors.current.subIn
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -417,7 +414,7 @@ private fun DetailedSubstituteRow(sub: MatchLineupPlayer, events: List<MatchEven
             ) {
                 Text(
                     text = sub.rating,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
                 )

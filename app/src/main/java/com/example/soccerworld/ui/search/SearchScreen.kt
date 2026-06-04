@@ -23,10 +23,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.SportsSoccer
-import com.example.soccerworld.ui.theme.TextSecondary
-import com.example.soccerworld.ui.theme.BrandGreenMedium
-import com.example.soccerworld.ui.theme.AccentNeonOrange
-import com.example.soccerworld.ui.theme.AccentNeonMint
+import com.example.soccerworld.ui.theme.LocalSoccerColors
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -167,7 +164,7 @@ private fun SearchScreenContent(
                         .padding(end = 8.dp)
                         .height(40.dp)
                         .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
-                    textStyle = TextStyle(color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                     singleLine = true,
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                     decorationBox = { innerTextField ->
@@ -180,7 +177,7 @@ private fun SearchScreenContent(
                             Icon(
                                 imageVector = Icons.Default.Search,
                                 contentDescription = null,
-                                tint = Color.Gray,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
@@ -191,8 +188,8 @@ private fun SearchScreenContent(
                                 if (state.query.isEmpty()) {
                                     Text(
                                         text = stringResource(R.string.search_placeholder),
-                                        color = Color.Gray,
-                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                        style = MaterialTheme.typography.bodyMedium,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -207,7 +204,7 @@ private fun SearchScreenContent(
                                     Icon(
                                         imageVector = Icons.Default.Clear,
                                         contentDescription = "Clear",
-                                        tint = Color.Gray,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(16.dp)
                                     )
                                 }
@@ -278,12 +275,11 @@ private fun SearchScreenContent(
                         text = {
                             Text(
                                 text = stringResource(R.string.search_tab_suggested),
-                                fontWeight = if (selectedSubTab == 0) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 13.sp
+                                style = if (selectedSubTab == 0) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium
                             )
                         },
                         selectedContentColor = MaterialTheme.colorScheme.primary,
-                        unselectedContentColor = Color.Gray
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                     Tab(
                         selected = selectedSubTab == 1,
@@ -291,12 +287,11 @@ private fun SearchScreenContent(
                         text = {
                             Text(
                                 text = stringResource(R.string.search_tab_recent),
-                                fontWeight = if (selectedSubTab == 1) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 13.sp
+                                style = if (selectedSubTab == 1) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium
                             )
                         },
                         selectedContentColor = MaterialTheme.colorScheme.primary,
-                        unselectedContentColor = Color.Gray
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 }
 
@@ -493,32 +488,30 @@ private fun SuggestedTabContent(
                 title = "World",
                 icon = Icons.Default.Public,
                 badge = null,
-                badgeColor = AccentNeonMint,
+                badgeColor = LocalSoccerColors.current.accentEmerald,
                 isExpanded = expandedStates["World"] == true,
                 onToggle = { expandedStates["World"] = !(expandedStates["World"] == true) }
-            )
-            AnimatedVisibility(
-                visible = expandedStates["World"] == true,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
             ) {
-                Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
-                    val items = listOf(
-                        Constant.FLASHLIVE_LEAGUES["WC"]!!,
-                        Constant.FLASHLIVE_LEAGUES["CWC"]!!,
-                        Constant.FLASHLIVE_LEAGUES["FCC"]!!
+                val items = listOf(
+                    Constant.FLASHLIVE_LEAGUES["WC"]!!,
+                    Constant.FLASHLIVE_LEAGUES["CWC"]!!,
+                    Constant.FLASHLIVE_LEAGUES["FCC"]!!
+                )
+                items.forEachIndexed { index, league ->
+                    Text(
+                        text = league.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onCompetitionClick(league) }
+                            .padding(start = 48.dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
                     )
-                    items.forEach { league ->
-                        Text(
-                            text = league.name,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onCompetitionClick(league) }
-                                .padding(horizontal = 32.dp, vertical = 12.dp)
+                    if (index < items.size - 1) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 48.dp, end = 16.dp),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant
                         )
-                        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                     }
                 }
             }
@@ -533,32 +526,30 @@ private fun SuggestedTabContent(
                 badgeColor = MaterialTheme.colorScheme.primary,
                 isExpanded = expandedStates["Europe"] == true,
                 onToggle = { expandedStates["Europe"] = !(expandedStates["Europe"] == true) }
-            )
-            AnimatedVisibility(
-                visible = expandedStates["Europe"] == true,
-                enter = fadeIn() + expandVertically(),
-                exit = fadeOut() + shrinkVertically()
             ) {
-                Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
-                    val items = listOf(
-                        Constant.FLASHLIVE_LEAGUES["CL"]!!,
-                        Constant.FLASHLIVE_LEAGUES["PL"]!!,
-                        Constant.FLASHLIVE_LEAGUES["PD"]!!,
-                        Constant.FLASHLIVE_LEAGUES["BL1"]!!,
-                        Constant.FLASHLIVE_LEAGUES["SA"]!!,
-                        Constant.FLASHLIVE_LEAGUES["FL1"]!!
+                val items = listOf(
+                    Constant.FLASHLIVE_LEAGUES["CL"]!!,
+                    Constant.FLASHLIVE_LEAGUES["PL"]!!,
+                    Constant.FLASHLIVE_LEAGUES["PD"]!!,
+                    Constant.FLASHLIVE_LEAGUES["BL1"]!!,
+                    Constant.FLASHLIVE_LEAGUES["SA"]!!,
+                    Constant.FLASHLIVE_LEAGUES["FL1"]!!
+                )
+                items.forEachIndexed { index, league ->
+                    Text(
+                        text = league.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onCompetitionClick(league) }
+                            .padding(start = 48.dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
                     )
-                    items.forEach { league ->
-                        Text(
-                            text = league.name,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onCompetitionClick(league) }
-                                .padding(horizontal = 32.dp, vertical = 12.dp)
+                    if (index < items.size - 1) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 48.dp, end = 16.dp),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant
                         )
-                        HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                     }
                 }
             }
@@ -579,7 +570,7 @@ private fun RecentTabContent(
             Text(
                 text = stringResource(R.string.search_no_recent),
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         return
@@ -606,11 +597,11 @@ private fun RecentTabContent(
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = query,
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
                         )
@@ -618,7 +609,7 @@ private fun RecentTabContent(
                             onClick = { onRemoveItem(query) },
                             modifier = Modifier.size(24.dp)
                         ) {
-                            Icon(Icons.Default.Clear, contentDescription = "Remove", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Clear, contentDescription = "Remove", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                         }
                     }
                     if (index < recentSearches.size - 1) {
@@ -635,7 +626,7 @@ private fun RecentTabContent(
             contentAlignment = Alignment.Center
         ) {
             TextButton(onClick = onClearAll) {
-                Text(stringResource(R.string.search_clear_history), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.search_clear_history), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -647,8 +638,7 @@ private fun RecentTabContent(
 private fun SuggestedHeader(title: String) {
     Text(
         text = title,
-        fontSize = 14.sp,
-        fontWeight = FontWeight.Bold,
+        style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 10.dp)
     )
@@ -674,7 +664,7 @@ private fun SuggestedCard(name: String, logo: String, onClick: () -> Unit) {
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(4.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -690,9 +680,7 @@ private fun SuggestedCard(name: String, logo: String, onClick: () -> Unit) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = name,
-                fontSize = 11.sp,
-                lineHeight = 1.2.em,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
@@ -738,8 +726,7 @@ private fun SuggestedPlayerCard(name: String, photo: String, onClick: () -> Unit
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = name,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
                 maxLines = 2,
@@ -783,8 +770,7 @@ private fun SuggestedRankingCard(name: String, icon: ImageVector, onClick: () ->
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = name,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
@@ -799,56 +785,72 @@ private fun ExpandableCategoryRow(
     title: String,
     icon: ImageVector,
     badge: String?,
-    badgeColor: Color = Color.Gray,
+    badgeColor: Color = Color.Unspecified,
     isExpanded: Boolean,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 2.dp)
-            .clickable { onToggle() },
-        shape = RoundedCornerShape(8.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(imageVector = icon, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = title,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f)
-            )
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onToggle() }
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
 
-            if (badge != null) {
-                Surface(
-                    color = badgeColor.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    Text(
-                        text = badge,
-                        color = badgeColor,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                    )
+                if (badge != null) {
+                    val resolvedBadgeColor = if (badgeColor == Color.Unspecified) MaterialTheme.colorScheme.onSurfaceVariant else badgeColor
+                    Surface(
+                        color = resolvedBadgeColor.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Text(
+                            text = badge,
+                            color = resolvedBadgeColor,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                        )
+                    }
                 }
+
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            Icon(
-                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = Color.Gray
-            )
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                ) {
+                    content()
+                }
+            }
         }
     }
 }
@@ -951,8 +953,7 @@ private fun GroupHeader(title: String, icon: ImageVector, count: Int) {
         ) {
             Text(
                 text = "$count",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelSmall,
                 color = primary,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
             )
@@ -993,9 +994,9 @@ fun SearchItemCard(
     }
     val typeColor = when (item) {
         is TeamSearchItemDto -> MaterialTheme.colorScheme.primary
-        is PlayerSearchItemDto -> AccentNeonOrange
-        is TournamentSearchItemDto -> AccentNeonMint
-        else -> Color.Gray
+        is PlayerSearchItemDto -> LocalSoccerColors.current.accentOrange
+        is TournamentSearchItemDto -> LocalSoccerColors.current.accentEmerald
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Column(
@@ -1047,7 +1048,7 @@ fun SearchItemCard(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(CircleShape)
-                    .background(if (!imageUrl.isNullOrBlank()) Color.White else typeColor.copy(alpha = 0.08f))
+                    .background(if (!imageUrl.isNullOrBlank()) MaterialTheme.colorScheme.surfaceVariant else typeColor.copy(alpha = 0.08f))
                     .padding(if (!imageUrl.isNullOrBlank()) 4.dp else 0.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -1084,7 +1085,7 @@ fun SearchItemCard(
                 )
                 Text(
                     text = subtitle,
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis

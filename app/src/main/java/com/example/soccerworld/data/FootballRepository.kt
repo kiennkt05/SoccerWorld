@@ -98,6 +98,40 @@ class FootballRepository(
 
     fun getSelectedLeague(): FlashLiveLeague = customPreferences.getLeague() ?: Constant.FLASHLIVE_LEAGUES["PL"]!!
 
+    suspend fun findLeaguesForTeam(teamId: String): List<FlashLiveLeague> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val allStandings = dao.getAllStandingsCache()
+                val matchedLeagues = mutableListOf<FlashLiveLeague>()
+                for (cache in allStandings) {
+                    val response = deserialize<LeagueTableResponse>(cache.payloadJson)
+                    val hasTeam = response?.standings?.any { standing ->
+                        standing?.table?.any { row -> row?.team?.id == teamId } == true
+                    } == true
+                    if (hasTeam) {
+                        val league = Constant.FLASHLIVE_LEAGUES.values.firstOrNull {
+                            it.stageId == cache.leagueId || it.allStageIds.contains(cache.leagueId)
+                        }
+                        if (league != null && !matchedLeagues.contains(league)) {
+                            matchedLeagues.add(league)
+                        }
+                    }
+                }
+                
+                // Prioritize domestic leagues
+                val domesticCodes = listOf("PL", "PD", "BL1", "SA", "FL1")
+                matchedLeagues.sortedWith(compareBy { league ->
+                    val key = Constant.FLASHLIVE_LEAGUES.entries.firstOrNull { it.value == league }?.key
+                    val index = domesticCodes.indexOf(key)
+                    if (index != -1) index else domesticCodes.size + 1
+                })
+            } catch (e: Exception) {
+                Log.e("FootballRepository", "Error finding leagues for team: ${e.message}")
+                emptyList()
+            }
+        }
+    }
+
     suspend fun getLeagueTable(league: FlashLiveLeague, forceRefresh: Boolean = false): DataResult<LeagueTableResponse> {
         val leagueId = league.stageId
         val updateTime = customPreferences.getStandingsTime() ?: 0L
@@ -240,10 +274,10 @@ class FootballRepository(
         }
     }
 
-    suspend fun getAllPlayersOfTeam(teamId: String): DataResult<PlayerResponse> {
+    suspend fun getAllPlayersOfTeam(teamId: String, forceRefresh: Boolean = false): DataResult<PlayerResponse> {
         val updateTime = customPreferences.getTeamDetailTime(teamId) ?: 0L
         val now = System.currentTimeMillis()
-        val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS
+        val isCacheValid = (now - updateTime) < CacheTtl.CACHE_WINDOW_MS && !forceRefresh
         teamPlayersCache[teamId]?.takeIf { isCacheValid }?.let {
             return DataResult.Success(it, fromCache = true)
         }
@@ -283,7 +317,10 @@ class FootballRepository(
                 crest = teamData?.imagePath,
                 venue = teamData?.stadium,
                 coach = coachDto?.let { com.example.soccerworld.model.player.Coach(name = it.playerName) },
-                squad = players
+                squad = players,
+                area = teamData?.countryName?.let { com.example.soccerworld.model.player.Area(name = it) },
+                actualStageId = teamData?.actualTournamentStageId,
+                actualSeasonId = teamData?.actualTournamentSeasonId
             ).also {
                 teamPlayersCache[teamId] = it
                 customPreferences.saveTeamDetailTime(teamId, now)

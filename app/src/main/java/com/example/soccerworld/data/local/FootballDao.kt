@@ -32,6 +32,9 @@ interface FootballDao {
     @Query("SELECT * FROM standings_cache WHERE leagueId = :leagueId LIMIT 1")
     suspend fun getStandingsCache(leagueId: String): StandingsCacheEntity?
 
+    @Query("SELECT * FROM standings_cache")
+    suspend fun getAllStandingsCache(): List<StandingsCacheEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertFixturesCache(item: FixturesCacheEntity)
 

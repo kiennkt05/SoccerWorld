@@ -44,10 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.soccerworld.R
 import com.example.soccerworld.ui.auth.AuthViewModel
-import com.example.soccerworld.ui.theme.AccentNeonOrange
-import com.example.soccerworld.ui.theme.BrandGreenLight
-import com.example.soccerworld.ui.theme.BrandGreenMedium
-import com.example.soccerworld.ui.theme.DividerColor
+import com.example.soccerworld.ui.theme.LocalSoccerColors
 import com.example.soccerworld.ui.theme.SoccerWorldTheme
 import com.example.soccerworld.util.CustomSharedPreferences
 import com.google.firebase.auth.FirebaseAuth
@@ -150,18 +147,18 @@ private fun ProfileScreenContent(
                 ) {
                     // Avatar Orange Initials Circle
                     val initials = if (isLoggedIn) displayName.take(2).uppercase() else "GU"
+                    val soccerColors = LocalSoccerColors.current
                     Box(
                         modifier = Modifier
                             .size(72.dp)
                             .clip(CircleShape)
-                            .background(AccentNeonOrange),
+                            .background(soccerColors.accentOrange),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = initials,
                             color = Color.White,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.ExtraBold
+                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold)
                         )
                     }
 
@@ -170,14 +167,13 @@ private fun ProfileScreenContent(
                     Column {
                         Text(
                             text = displayName,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.ExtraBold,
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.ExtraBold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = if (isLoggedIn) stringResource(R.string.profile_member_since) else stringResource(R.string.profile_guest_account),
-                            fontSize = 12.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -382,7 +378,7 @@ private fun ProfileScreenContent(
                         showLogoutDialog = false
                     }
                 ) {
-                    Text(stringResource(R.string.profile_signout_title), color = Color.Red, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.profile_signout_title), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -409,6 +405,7 @@ private fun OverviewTab(
     val context = LocalContext.current
     val currentLang = remember { CustomSharedPreferences.invoke(context).getLanguage() }
     val currentTheme = ThemeConfig.appThemeState.value
+    val soccerColors = LocalSoccerColors.current
 
     Column(
         modifier = Modifier
@@ -426,8 +423,7 @@ private fun OverviewTab(
             Column {
                 Text(
                     text = stringResource(R.string.profile_quick_links),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                 )
@@ -436,7 +432,7 @@ private fun OverviewTab(
                     icon = Icons.Default.SportsSoccer,
                     title = stringResource(R.string.profile_change_league),
                     subtitle = stringResource(R.string.profile_active_league, leagueName),
-                    iconColor = BrandGreenLight,
+                    iconColor = soccerColors.brandLight,
                     onClick = onChangeLeague
                 )
             }
@@ -451,8 +447,7 @@ private fun OverviewTab(
             Column {
                 Text(
                     text = stringResource(R.string.profile_settings),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                 )
@@ -462,7 +457,7 @@ private fun OverviewTab(
                     icon = Icons.Default.Public,
                     title = stringResource(R.string.settings_app_language),
                     subtitle = if (currentLang == "vi") "Tiếng Việt" else "English",
-                    iconColor = Color(0xFF673AB7),
+                    iconColor = soccerColors.profileIconPurple,
                     onClick = onChangeLanguage
                 )
 
@@ -477,7 +472,7 @@ private fun OverviewTab(
                         "dark" -> stringResource(R.string.theme_dark)
                         else -> stringResource(R.string.theme_system)
                     },
-                    iconColor = Color(0xFFE91E63),
+                    iconColor = soccerColors.profileIconPink,
                     onClick = onChangeTheme
                 )
 
@@ -487,7 +482,7 @@ private fun OverviewTab(
                     icon = Icons.Default.Notifications,
                     title = stringResource(R.string.profile_notification_settings),
                     subtitle = stringResource(R.string.profile_notification_desc),
-                    iconColor = Color(0xFFFB8C00),
+                    iconColor = soccerColors.profileIconOrange,
                     onClick = onNavigateToNotificationSettings
                 )
             }
@@ -502,8 +497,7 @@ private fun OverviewTab(
             Column {
                 Text(
                     text = stringResource(R.string.profile_support),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                 )
@@ -512,7 +506,7 @@ private fun OverviewTab(
                     icon = Icons.Default.Info,
                     title = stringResource(R.string.profile_faq),
                     subtitle = stringResource(R.string.profile_faq_desc),
-                    iconColor = Color(0xFF2196F3)
+                    iconColor = soccerColors.profileIconBlue
                 ) {}
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(horizontal = 16.dp))
@@ -521,7 +515,7 @@ private fun OverviewTab(
                     icon = Icons.Default.Star,
                     title = stringResource(R.string.profile_send_feedback),
                     subtitle = stringResource(R.string.profile_feedback_desc),
-                    iconColor = Color(0xFFFFB300)
+                    iconColor = soccerColors.profileIconAmber
                 ) {}
             }
         }
@@ -541,8 +535,7 @@ private fun OverviewTab(
                 Text(
                     stringResource(R.string.profile_signout_title),
                     color = MaterialTheme.colorScheme.error,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
+                    style = MaterialTheme.typography.titleSmall
                 )
             }
         } else {
@@ -553,16 +546,17 @@ private fun OverviewTab(
                     .height(56.dp),
                 contentPadding = PaddingValues(0.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
-                Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
                 Spacer(Modifier.width(8.dp))
                 Text(
                     stringResource(R.string.profile_signin_google),
-                    color = Color.White,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 14.sp,
-                    letterSpacing = 0.5.sp
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold, letterSpacing = 0.5.sp)
                 )
             }
         }
@@ -570,8 +564,8 @@ private fun OverviewTab(
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "SoccerWorld v1.0.0",
-            fontSize = 11.sp,
-            color = Color.Gray,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
@@ -596,8 +590,7 @@ private fun PredictionsTab() {
         item {
             Text(
                 text = stringResource(R.string.profile_predictions_title),
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
+                style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
@@ -629,19 +622,20 @@ private fun PredictionsTab() {
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = match, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Text(text = stringResource(R.string.profile_predicted_label, prediction), fontSize = 11.sp, color = Color.Gray)
+                        Text(text = match, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                        Text(text = stringResource(R.string.profile_predicted_label, prediction), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
 
+                    val soccerColors = LocalSoccerColors.current
                     val badgeBg = when (status) {
-                        "SUCCESS" -> Color(0xFFE8F5E9)
-                        "FAILED" -> Color(0xFFFFEBEE)
-                        else -> Color(0xFFFFF3E0)
+                        "SUCCESS" -> soccerColors.statusSuccessBg
+                        "FAILED" -> soccerColors.statusFailedBg
+                        else -> soccerColors.statusPendingBg
                     }
                     val badgeText = when (status) {
-                        "SUCCESS" -> Color(0xFF2E7D32)
-                        "FAILED" -> Color(0xFFC62828)
-                        else -> Color(0xFFEF6C00)
+                        "SUCCESS" -> soccerColors.statusSuccessText
+                        "FAILED" -> soccerColors.statusFailedText
+                        else -> soccerColors.statusPendingText
                     }
 
                     Surface(
@@ -651,8 +645,7 @@ private fun PredictionsTab() {
                         Text(
                             text = status,
                             color = badgeText,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
@@ -709,8 +702,7 @@ private fun SettingsBottomSheetContent(
     ) {
         Text(
             text = stringResource(R.string.profile_settings),
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
+            style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
@@ -719,7 +711,7 @@ private fun SettingsBottomSheetContent(
             icon = Icons.Default.Public,
             title = stringResource(R.string.settings_app_language),
             subtitle = if (currentLang == "vi") "Tiếng Việt" else "English",
-            iconColor = Color(0xFF673AB7),
+            iconColor = LocalSoccerColors.current.profileIconPurple,
             onClick = onChangeLanguage
         )
 
@@ -734,7 +726,7 @@ private fun SettingsBottomSheetContent(
                 "dark" -> stringResource(R.string.theme_dark)
                 else -> stringResource(R.string.theme_system)
             },
-            iconColor = Color(0xFFE91E63),
+            iconColor = LocalSoccerColors.current.profileIconPink,
             onClick = onChangeTheme
         )
 
@@ -754,13 +746,13 @@ private fun SettingsBottomSheetContent(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .background(Color.Red.copy(alpha = 0.1f)),
+                        .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = Color.Red, modifier = Modifier.size(18.dp))
+                    Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(stringResource(R.string.profile_signout_title), fontWeight = FontWeight.Bold, color = Color.Red, fontSize = 14.sp)
+                Text(stringResource(R.string.profile_signout_title), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.error)
             }
         } else {
             Row(
@@ -781,7 +773,7 @@ private fun SettingsBottomSheetContent(
                     Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
                 }
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(stringResource(R.string.profile_signin_google), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
+                Text(stringResource(R.string.profile_signin_google), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
             }
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -831,9 +823,9 @@ private fun ProfileMenuRow(
             modifier = if (isCentered) Modifier else Modifier.weight(1f),
             horizontalAlignment = if (isCentered) Alignment.CenterHorizontally else Alignment.Start
         ) {
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text(title, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
             if (subtitle != null) {
-                Text(subtitle, fontSize = 11.sp, color = Color.Gray)
+                Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
 
@@ -841,7 +833,7 @@ private fun ProfileMenuRow(
             Icon(
                 Icons.AutoMirrored.Filled.ArrowForwardIos,
                 contentDescription = null,
-                tint = Color.LightGray,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                 modifier = Modifier.size(12.dp)
             )
         }
